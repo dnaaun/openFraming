@@ -1,5 +1,7 @@
 Session.vim
 
+openFraming
+
 venv/
 
 *.pyc
@@ -10,6 +12,8 @@ instance/
 .pytest_cache/
 .coverage
 htmlcov/
+
+.idea
 
 dist/
 build/
