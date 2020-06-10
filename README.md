@@ -7,13 +7,14 @@ Clone this repo and `cd` into this directory.
 
 First, setup a virtual environment and install the required packages.
 
-	python -m venv /your/desired/directory/openFraming
-	pip install -r requirements.txt
-	source /your/desired/directory/openFraming/bin/activate
+	$ python -m venv /your/desired/directory/openFraming
+	$ pip install -r requirements.txt
+        $ cd api
+	$ source /your/desired/directory/openFraming/bin/activate
 
 You should be able to run the server using.
 	
-	flask run --host=0.0.0.0 --port=5000 --debugger --reload 
+	$ flask run --host=0.0.0.0 --port=5000 --debugger --reload 
 
 If you go to your browser and try the following URLS, you should get a simple JSON 
 response back.
