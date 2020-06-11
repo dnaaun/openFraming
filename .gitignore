@@ -1,8 +1,9 @@
+# For the database
+sqlite.db
+
+# Vim related
 Session.vim
 
-openFraming
-
-venv/
 
 *.pyc
 __pycache__/
