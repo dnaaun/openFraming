@@ -117,7 +117,7 @@ class Corpus(object):
 
 
 	def what_preprocessing_was_completed(self):
-		return sekf.preprocessing_completed
+		return self.preprocessing_completed
 
 	def remove_phrases(self):
 		if len(self.phrases_to_remove) == 0:
