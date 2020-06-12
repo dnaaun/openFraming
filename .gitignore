@@ -6,6 +6,7 @@ Session.vim
 
 
 *.pyc
+*.swp
 __pycache__/
 
 instance/
