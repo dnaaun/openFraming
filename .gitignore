@@ -5,6 +5,7 @@ openFraming
 venv/
 
 *.pyc
+*.swp
 __pycache__/
 
 instance/

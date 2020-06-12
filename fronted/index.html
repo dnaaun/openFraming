@@ -5,7 +5,10 @@
     <title>OpenFraming</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="main.css">
+    <script src="jquery-3.5.1.min.js"></script>
+    <script src="main.js"></script>
     <script src="js/bootstrap.min.js"></script>
+
 </head>
 <body class="container">
 <header>
@@ -14,10 +17,12 @@
 </header>
 <div class="wrapper">
     <div class="form-group purple-border">
-        <label for="exampleFormControlTextarea4">Please input your text for framing classification!</label>
-        <textarea class="form-control" id="exampleFormControlTextarea4" rows="3"></textarea>
-        <br>
-        <input type="submit" class="btn btn-purple purple-border" value="Submit">
+        <form id="submitform">
+            <label for="mytextarea">Please input your text for framing classification!</label>
+            <textarea class="form-control" id="mytextarea" rows="3"></textarea>
+            <br>
+            <input type="submit" class="btn btn-purple purple-border" value="Submit">
+        </form>
     </div>
 
     <div class="form-group" >
