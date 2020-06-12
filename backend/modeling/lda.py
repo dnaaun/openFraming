@@ -117,7 +117,7 @@ class Corpus(object):
 
 
 	def what_preprocessing_was_completed(self):
-		return sef.preprocessing_completed
+		return sekf.preprocessing_completed
 
 	def remove_phrases(self):
 		if len(self.phrases_to_remove) == 0:
@@ -312,6 +312,7 @@ phrases_to_join = [
 'los angeles',
 'san francisco',
 'elissa slotkin']
+
 dir_docs = '../../../Downloads/test_docs/'
 my_corpus = Corpus(dir_docs, 'Unnamed: 3', phrases_to_remove=phrases_to_remove, phrases_to_join=phrases_to_join, header=True)
 modeler = LDAModeler(my_corpus)
