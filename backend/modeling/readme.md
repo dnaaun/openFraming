@@ -16,13 +16,11 @@ print(c.eval_model())
 
 To run the queueing:
 - get Redis; start a redis instance w/ default settings (redis-server in terminal)
-- in one process run:
+- in another terminal run:
 ```
-from train_queue import ModelTrainer
-m = ModelTrainer()
-m.do()
+rq worker
 ```
-this will be the queue that keeps track of processes and schedules them.  
+this will be the worker that keeps track of processes and schedules them.  
 It will run until the server is shut down.
 - in another process run:
 ```
