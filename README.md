@@ -1,5 +1,5 @@
 ## Python version
-This was made on Python 3.7.3. It should work on any Python3.
+This was made and tested on Python 3.7.3 and Anaconda Python 3.6.5. It should work on any Python3. Please create a GitHub issue if otherwise.
 
 ## Quick setup to get the server going
 
@@ -9,7 +9,7 @@ First, setup a virtual environment and install the required packages.
 
 	$ python -m venv /your/desired/directory/openFraming
 	$ pip install -r requirements.txt
-        $ cd api
+    $ cd api
 	$ source /your/desired/directory/openFraming/bin/activate
 
 You should be able to run the server using.
