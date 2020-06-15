@@ -13,3 +13,18 @@ c = ClassifierModel(labels, 'bert-base-uncased', filepath_base, './')
 c.train()
 print(c.eval_model())
 ```
+
+To run the queueing:
+- get Redis; start a redis instance w/ default settings (redis-server in terminal)
+- in another terminal run:
+```
+rq worker
+```
+this will be the worker that keeps track of processes and schedules them.  
+It will run until the server is shut down.
+- in another process run:
+```
+from train_queue import ModelScheduler
+s = ModelScheduler()
+s.add_training_process([1, 2, 99], 'bert-base-uncased', '../../../Downloads/bu_com_climate_change_tweets_2063_deduplicated_splits/2/')
+```
