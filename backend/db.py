@@ -6,7 +6,6 @@ import peewee as pw  # type: ignore
 
 DATABASE = "sqlite.db"
 DEBUG = True
-SECRET_KEY = "1kw=nxaf5ohgs@c#r5e6(o($kpdvp43zdtsdq=h+d-vxcsz(uj"
 
 database = pw.SqliteDatabase(DATABASE)
 
@@ -58,27 +57,90 @@ class ProgressEnum(str, enum.Enum):
     DONE = "DONE"
 
 
-class Classifier(BaseModel):  # noqa: D101
+class Metrics(BaseModel):
+    """Metrics on a labeled set.
+
+    Attributes:
+        macro_f1:
+        macro_precision:
+        macro_recall:
+        accuracy:
+    """
+
+    macro_f1 = pw.FloatField()
+    macro_precision = pw.FloatField()
+    macro_recall = pw.FloatField()
+    accuracy = pw.FloatField()
+
+
+class LabeledSet(BaseModel):
+    """This is either a training set, or a test set.
+
+    We don't need a "name" field for this because there will only be one training set
+    and one test set per classifier. For the same reason, we don't store a foreign key
+    to the classifier here.
+
+    Attributes:
+        id: set id.
+        file_path: file path relative to classifier file path.
+        training_or_inference_completed: Whether the training or the inference has
+            completed this set.
+        metrics: Metrics on set. Can be null in the case of a training set.
+    """
+
+    id = pw.AutoField(primary_key=True)
+    file_path = pw.CharField(null=False)
+    training_or_inference_completed = pw.BooleanField()
+    metrics = pw.ForeignKeyField(Metrics, null=True)
+
+
+class Classifier(BaseModel):
+    """.
+
+    Attributes:
+        name: Name of classiifer.
+        category_names: Comma separated names of categories. Means category names can't
+            have commas.
+        dir_path: Path where classifier related files (models, training set, dev set,
+            test sets) are stored.
+        trained_by_openFraming: Whether this is a classifier that openFraming provides,
+            or a user trained.
+        training_completed: Whether training was completed for classifer.
+        training_set: The training set for classififer.
+        test_set: The test set for classififer.
+    """
+
+    classifier_id = pw.AutoField(primary_key=True)
     name = pw.TextField()
     category_names = pw.TextField()
-    progress = EnumField(enum_class=ProgressEnum, default=ProgressEnum.NOT_TRAINED)
+    dir_path = pw.CharField()
+    trained_by_openFraming = pw.BooleanField(default=False)
+    training_set = pw.ForeignKeyField(LabeledSet)
+    test_set = pw.ForeignKeyField(LabeledSet)
 
 
-class ExampleSet(BaseModel):  # noqa: D101
-    # TODO: Add a SQL constraint to make sure
-    # all examples' labels are one of from the list of
-    # possible of possible labels for set
-    pass
+class UnlabelledSet(BaseModel):
+    """This will be a prediction set.
 
+    Attributes:
+        id: set id.
+        classifier: The classifier this set is intended for.
+        name: User given name of the set.
+        file_path: file path relative to classifier file path.
+        inference_completed: Whether the training or the inference has
+            completed this set.
+    """
 
-class Example(BaseModel):  # noqa: D101
-    text = pw.TextField()
-    label = pw.TextField()
+    id = pw.AutoField(primary_key=True)
+    classifier = pw.ForeignKeyField(Classifier)
+    name = pw.CharField()
+    file_path = pw.CharField(null=False)
+    inference_completed = pw.BooleanField()
 
 
 def _create_tables() -> None:
     with database:
-        database.create_tables([Classifier])
+        database.create_tables(BaseModel.__subclasses__())
 
 
 if __name__ == "__main__":
