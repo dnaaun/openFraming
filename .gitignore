@@ -11,7 +11,9 @@ openFraming
 *.pyc
 *.swp
 
+# Python/mypy related
 __pycache__/
+.mypy_cache/
 
 instance/
 
