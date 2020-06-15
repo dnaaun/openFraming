@@ -1,12 +1,16 @@
 # For the database
 sqlite.db
 
-# Vim related
+# vim related
 Session.vim
 
+# related to virt env openFraming
+openFraming
 
+# py cache and swap files
 *.pyc
 *.swp
+
 __pycache__/
 
 instance/
