@@ -2,7 +2,6 @@
 import typing as T
 
 from flask import Flask
-from flask import request
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
 from flask_restful import Resource
@@ -14,15 +13,6 @@ Json = T.Optional[T.Union[T.List[T.Any], T.Dict[str, T.Any], int, str, bool]]
 
 app = Flask(__name__, static_url_path="/", static_folder="../frontend")
 api = Api(app,)
-
-
-@app.before_request
-def print_request_url_and_body() -> None:
-    """Debugging tool to print request body."""
-    print(f"The request url is {request.url}")
-    print(f"The request body is {str(request.data)}")
-    if "api" in request.url:
-        breakpoint()
 
 
 class BaseResource(Resource):
