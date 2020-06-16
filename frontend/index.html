@@ -45,7 +45,7 @@
         <br>
         <br>
         <p>Please select one of the following policy issues that corresponds to your document:</p>
-        <form>
+        <form id="create_a_classifier_form">
             <div class="form-check-inline">
                 <label class="form-check-label">
                     <input type="radio" class="form-check-input" id="gunviolence" name="gunviolence" value="gunviolence" checked>Gun Violence
@@ -69,8 +69,6 @@
                 </label>
             </div>
 
-            <br>
-            <br>
 
             <div class="form-check-inline">
                 <label class="form-check-label">
@@ -84,8 +82,8 @@
                 </label>
             </div>
 
-            <label for="framestextarea">Please enter the frames for issue framing classification with comma separated values like the example below</label>
-            <textarea class="form-control" id="framestextarea" rows="3">gun rights,gun control,politics,mental health,school/public space safety,race/ethnicity,public opinion,society/culture,economic consequences</textarea>
+            <label for="category_names">Please enter the frames for issue framing classification with comma separated values like the example below</label>
+            <textarea class="form-control" id="category_names" rows="3">gun rights,gun control,politics,mental health,school/public space safety,race/ethnicity,public opinion,society/culture,economic consequences</textarea>
             <br>
 
             <div class="col-md-3">
