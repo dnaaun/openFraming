@@ -3,8 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>OpenFraming</title>
-    <link rel="stylesheet" href="css/bootstrap.min.css">
-    <link rel="stylesheet" href="css/main.css">
+
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <!--<link href="fontawesome-free-5.13.0-web/css/fontawesome.css" rel="stylesheet">-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/js/all.js" integrity="sha256-2JRzNxMJiS0aHOJjG+liqsEOuBb6++9cY4dSOyiijX4=" crossorigin="anonymous"></script>
+   <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/all.min.css" rel="stylesheet">-->
+    <!-- <script src="https://kit.fontawesome.com/56018e5250.js" crossorigin="anonymous"></script> -->
     <script src="js/jquery-3.5.1.min.js"></script>
     <script src="js/main.js"></script>
     <script src="js/bootstrap.min.js"></script>
@@ -72,6 +77,14 @@
 
             <label for="framestextarea">Please enter the frames for issue framing classification with comma separated values like the example below</label>
             <textarea class="form-control" id="framestextarea" rows="3">gun rights,gun control,politics,mental health,school/public space safety,race/ethnicity,public opinion,society/culture,economic consequences</textarea>
+            <br>
+
+            <div class="col-md-3">
+                <i class="fas fa-envelope fa-lg"></i>
+                <label data-error="wrong" data-success="right">Enter your email</label>
+                <input type="email" class="form-control validate purple-border">
+
+            </div>
             <br>
             <button type="submit" class="btn btn-purple purple-border">Perform Frame Classification</button>
         </form>
