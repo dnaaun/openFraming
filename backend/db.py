@@ -4,10 +4,13 @@ import typing as T
 
 import peewee as pw  # type: ignore
 
-DATABASE = "sqlite.db"
-DEBUG = True
 
-database = pw.SqliteDatabase(DATABASE)
+_database = pw.SqliteDatabase("sqlite.db")
+"""The database connection.
+
+Ideally, this should depend on flask.current_app.config, but I don't know how to do
+that.
+"""
 
 
 class BaseModel(pw.Model):
@@ -16,7 +19,7 @@ class BaseModel(pw.Model):
     class Meta:
         """meta class."""
 
-        database = database
+        database = _database
 
 
 # From: https://github.com/coleifer/peewee/issues/630

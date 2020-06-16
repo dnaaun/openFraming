@@ -1,11 +1,11 @@
 """All the flask api endpoints."""
+import csv
+import io
 import logging
 import os
 import typing as T
-from functools import lru_cache
 from pathlib import Path
 
-from flask import current_app
 from flask import Flask
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
@@ -15,34 +15,13 @@ from werkzeug.exceptions import BadRequest
 from werkzeug.exceptions import NotFound
 
 import db
+import utils
 
 API_URL_PREFIX = "/api"
 
 logger = logging.getLogger("__main__")
 # mypy doesn't support recrsive types, so this is the best we can do
 Json = T.Optional[T.Union[T.List[T.Any], T.Dict[str, T.Any], int, str, bool]]
-
-
-class Files:
-    """A class for defining where files will be stored."""
-
-    @classmethod
-    @lru_cache
-    def project_data_dir(cls) -> Path:
-        """Dir where all project related files will be stored."""
-        return current_app.config["PROJECT_DATA_DIR"]  # type: ignore
-
-    @classmethod
-    @lru_cache
-    def supervised_dir(cls) -> Path:
-        """Dir for classifier weights, training and inference data."""
-        return cls.project_data_dir() / "supervised"
-
-    @classmethod
-    @lru_cache
-    def unsupervised_dir(cls) -> Path:
-        """Dir for LDA results, training and inference data."""
-        return cls.project_data_dir() / "unsupervised"
 
 
 class BaseResource(Resource):
@@ -90,7 +69,8 @@ class Classifiers(BaseResource):
                 "classifier_id": int,
                 "name": str,
                 "trained_by_openFraming": bool,
-                "training_completed": bool
+                "category_names": T.List[str],
+                "status": T.Union["not_begun", "training", "completed"]
           }
         """
         if clsf.training_set is None:
@@ -101,10 +81,13 @@ class Classifiers(BaseResource):
             else:
                 status = "training"
 
+        category_names = clsf.category_names.split(",")
+
         return {
             "classifier_id": clsf.classifier_id,
             "name": clsf.name,
             "trained_by_openFraming": clsf.trained_by_openFraming,
+            "category_names": category_names,
             "status": status,
         }
 
@@ -115,8 +98,17 @@ class Classifiers(BaseResource):
             json:
                 {
                     "name": str,
-                    "category_names": [str, ...]
+                    "category_names": T.List[str]
                 }
+
+        Returns:
+            {
+                "classifier_id": int,
+                "name": str,
+                "trained_by_openFraming": bool,
+                "status": "not_begun",
+                "category_names": T.List[str],
+            }
         """
         args = self.reqparse.parse_args()
         if (
@@ -145,7 +137,8 @@ class Classifiers(BaseResource):
                 "classifier_id": int,
                 "name": str,
                 "trained_by_openFraming": bool,
-                "training_completed": bool
+                "status": T.Union["not_begun", "training", "completed"]
+                "category_names": T.List[str],
               },
               ...
             ]
@@ -177,33 +170,69 @@ class ClassifierTrainingFile(BaseResource):
         clsf.category_names.
         """
 
-    def post(self) -> Json:
+    def post(self, classifier_id: int) -> Json:
         """."""
+        try:
+            _ = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
+        except db.Classifier.DoesNotExist:
+            raise NotFound("classifier not found.")
+
+        args = self.reqparse.parse_args()
+        file_ = args["file"]
+        try:
+            # TODO: Check if the file size is too large
+            # TODO: Maybe don't read all the file into memory even if it's small enough?
+            # Not sure though.
+            rows = list(csv.reader(io.TextIOWrapper(file_)))
+        except Exception as e:
+            logger.warning(f"Invalid CSV file: {e}")
+            raise BadRequest("Not a valid CSV file.")
+
+        header, rows = rows[0], rows[1:]
+
+        if [h.lower() for h in header] != ["example", "category"]:
+            raise BadRequest("CSV file needs to have headers 'example' and 'category'")
+
+        if [h.lower() for h in header] != ["example", "category"]:
+            raise BadRequest("CSV file needs to have headers 'example' and 'category'")
+
+        unique_categories = set([category for _, category in rows])
+
+        return None
 
     def get(self) -> Json:
         """."""
 
 
-def create_app() -> Flask:
-    """App factory to avoid forcibly creating an app object at import time.
+def create_app(project_data_dir: T.Optional[Path] = None) -> Flask:
+    """App factory to for easier testing.
 
-    Useful for testing.
+    Args:
+        project_data_dir: If None, will be read from the PROJECT_DATA_DIR environment
+            variable, or will be set to ./project_data.
+
+    Sets:
+        app.config["PROJECT_DATA_DIR"]
+
+    Returns:
+        app: Flask() object.
     """
     app = Flask(__name__, static_url_path="/", static_folder="../frontend")
-    app.config["PROJECT_DATA_DIR"] = Path(
-        os.environ.get("PROJECT_DATA_DIR", "./project_data")
-    )
-    api = Api(app)
 
+    if project_data_dir is None:
+        project_data_dir = Path(os.environ.get("PROJECT_DATA_DIR", "./project_data"))
+    app.config["PROJECT_DATA_DIR"] = project_data_dir or Path()
+
+    api = Api(app)
     # `Directories` uses flask.current_app. Since we're not
     # handling a request just yet, we need this.
     with app.app_context():
         # Create the project data directory
         # In the future, this hould be disabled.
         for dir_ in [
-            Files.project_data_dir(),
-            Files.supervised_dir(),
-            Files.unsupervised_dir(),
+            utils.Files.project_data_dir(),
+            utils.Files.supervised_dir(),
+            utils.Files.unsupervised_dir(),
         ]:
             if not dir_.exists():
                 logger.warning(f"Creating {str(dir_)} because it doesn't exist.")
