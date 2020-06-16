@@ -115,8 +115,8 @@ class Classifier(BaseModel):
     category_names = pw.TextField()
     dir_path = pw.CharField()
     trained_by_openFraming = pw.BooleanField(default=False)
-    training_set = pw.ForeignKeyField(LabeledSet)
-    test_set = pw.ForeignKeyField(LabeledSet)
+    training_set = pw.ForeignKeyField(LabeledSet, null=True)
+    test_set = pw.ForeignKeyField(LabeledSet, null=True)
 
 
 class UnlabelledSet(BaseModel):
