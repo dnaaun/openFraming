@@ -20,6 +20,7 @@ MALLET_PATH = '~/Downloads/mallet-2.0.8/bin/mallet'
 
 class Corpus(object):
 	"""
+	Creates a dataset suitable for LDA analysis; does text preprocessing.
 	"""
 	def __init__(
 		self, 
@@ -184,7 +185,9 @@ class Corpus(object):
 		return True
 
 class LDAModeler(object):
-	"""docstring for ClassName"""
+	"""
+	Runs LDA modeling given a Corpus.
+	"""
 	def __init__(
 		self, content: Corpus, 
 		low_bound_dict=0.02, 
@@ -275,45 +278,3 @@ class LDAModeler(object):
 	    z = group_topic_proba / sum(group_topic_proba)
 
 	    return z
-
-
-# phrases_to_remove = [
-#     "subscribe",
-#     "utc",
-#     "chat with us in facebook messenger",
-#     "find out what's happening in the world as it unfolds",
-#     "get all the latest news on coronavirus and more delivered daily to your inbox.",
-#     "sign up here",
-#     "continue reading the main story",
-#     "get breaking news alerts and special reports",
-#     "the news and stories that matter, delivered weekday mornings",
-#     "a link has been posted to your facebook feed",
-#     "a link has been sent to your friend's email address",
-# ]
-
-# phrases_to_join = [
-# 'donald trump',
-# 'white house',
-# 'social distancing',
-# 'stock market',
-# 'new york',
-# 'joe biden',
-# 'bernie sanders',
-# 'world health organization',
-# 'face mask',
-# 'mike pence',
-# 'vice president',
-# 'hong kong',
-# 'united states',
-# 'diamond princess',
-# 'new hampshire',
-# 'whats happening',
-# 'lunar year',
-# 'los angeles',
-# 'san francisco',
-# 'elissa slotkin']
-
-# dir_docs = '../../../Downloads/test_docs/'
-# my_corpus = Corpus(dir_docs, 'Unnamed: 3', phrases_to_remove=phrases_to_remove, phrases_to_join=phrases_to_join, header=True)
-# modeler = LDAModeler(my_corpus)
-# modeler.model_topics_to_spreadsheet()

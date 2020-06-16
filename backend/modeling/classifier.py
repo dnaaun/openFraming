@@ -69,7 +69,16 @@ class ClassificationDataset(Dataset):
 
 
 class ClassifierModel(object):
+    """
+    Trainable BERT-based classifier given a training & eval set.
+    """
     def __init__(self, labels: list, model_path: str, data_dir: str, cache_dir: str):
+        """
+        labels: list of valid labels used in the dataset
+        model_path: name of model being used or filepath to where the model is stored
+        data_dir: directory where the training & eval sets are stored, as train.* and eval.*
+        cache_dir: directory where cache & output are kept.
+        """
         self.cache_dir = cache_dir
         self.model_path = model_path
         self.labels = labels
@@ -98,14 +107,37 @@ class ClassifierModel(object):
         self.eval_dataset = self.make_dataset('dev.csv', 'tweet', 'sentiment')
 
     def make_dataset(self, fname: str, content_column: str, label_column: str) -> ClassificationDataset:
+        """
+        Creates a Torch dataset object from a file using the built-in tokenizer. 
+
+        Inputs:
+            fname: name of the file being used
+            content_column: column that contains the text we want to analyze
+            label_column: column containing the label
+
+        Returns:
+            ClassificationDataset object (which is a Torch dataset underneath)
+        """
         return ClassificationDataset(self.labels, self.tokenizer, self.data_dir + fname, content_column, label_column)
 
     def train(self):
+        """
+        Train a BERT-based model, using the training set to train & the eval set as validation.
+        """
         def simple_accuracy(preds: list, labels: list):
+            """
+            Checks how often preds == labels
+            """
             return (preds == labels).mean()
 
         def build_compute_metrics_fn() -> Callable[[EvalPrediction], Dict]:
+            """
+            Get a metrics computation function
+            """
             def compute_metrics_fn(p: EvalPrediction):
+                """
+                Compute accuracy of predictions vs labels
+                """
                 preds = np.argmax(p.predictions, axis=1)
                 return {"acc": simple_accuracy(preds, labels)}
 
@@ -124,5 +156,8 @@ class ClassifierModel(object):
         self.trainer.save_model()
 
     def eval_model(self):
+        """
+        Wrapper on the trainer.evaluate method; evaluate model's performance on eval set provided by the user.
+        """
         return self.trainer.evaluate(eval_dataset=self.eval_dataset)
 
