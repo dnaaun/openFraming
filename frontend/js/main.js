@@ -25,24 +25,33 @@ $(function () {
 // The API endpoint prefix
 var API_PREFIX = "/api";
 
+
 $(function(){
+
+		$("button[type='submit']").on('click', function (){
+			let radioValue = $("input[name='gunviolence']:checked").val();
+			alert(radioValue)
+			console.log(radioValue)
+			debugger;
+		})
+
 	$("#create_a_classifier_form").on('submit',  function(e){
 		// alert("Submitted");
-		var form = $(this);
+		let form = $(this);
 
-		var name = form.find('#name').val();
-		var raw_category_names = form.find('#category_names').val();
+		let name = form.find('#name').val();
+		let raw_category_names = form.find('#category_names').val();
 
-		var url = API_PREFIX + '/classifiers';
+		let url = API_PREFIX + '/classifiers';
 
-		var category_names = raw_category_names.split(',');
-		var json_data = {
+		let category_names = raw_category_names.split(',');
+		let json_data = {
 		 	"name": name,
 		 	"category_names": category_names
 		}
-		var data = JSON.stringify(json_data);
-		debugger;
-		
+		let data = JSON.stringify(json_data);
+		//debugger;
+
 		$.ajax(
 			{
 				url: url,
@@ -66,3 +75,4 @@ $(function(){
 		// alert(data);
     });
 });
+
