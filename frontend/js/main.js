@@ -29,7 +29,7 @@ var API_PREFIX = "/api";
 $(function(){
 
 		$("button[type='submit']").on('click', function (){
-			let radioValue = $("input[name='gunviolence']:checked").val();
+			let radioValue = $("input[name='policyissue']:checked").val();
 			alert(radioValue)
 			console.log(radioValue)
 			debugger;
