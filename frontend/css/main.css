@@ -15,7 +15,9 @@
     background-color: mediumpurple;
 }
 
-
+.email{
+  width: 140%;
+}
 
 .wrapper {
     min-height: 100%;
@@ -26,4 +28,3 @@ html, body {
     height: 100%;
     margin: 0;
 }
-
