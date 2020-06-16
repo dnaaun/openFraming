@@ -26,6 +26,10 @@ htmlcov/
 
 .idea
 
+# OSX related files
+.DS_Store
+
+
 dist/
 build/
 *.egg-info/
