@@ -2,30 +2,47 @@
 import logging
 import os
 import typing as T
+from functools import lru_cache
 from pathlib import Path
 
+from flask import current_app
 from flask import Flask
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
 from flask_restful import Resource
+from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import NotFound
 
 import db
 
+API_URL_PREFIX = "/api"
+
 logger = logging.getLogger("__main__")
-
-PROJECT_DATA_DIR = Path(os.environ.get("PROJECT_DATA_DIR", "./project_data"))
-"""The data directory under which model weights, training files, and predictions
-will be stored."""
-
-SUPERVISED_DATA_DIR = PROJECT_DATA_DIR / "supervised"
-UNSUPERVISED_DATA_DIR = PROJECT_DATA_DIR / "unsupervised"
-
 # mypy doesn't support recrsive types, so this is the best we can do
 Json = T.Optional[T.Union[T.List[T.Any], T.Dict[str, T.Any], int, str, bool]]
 
-app = Flask(__name__, static_url_path="/", static_folder="../frontend")
-api = Api(app)
+
+class Files:
+    """A class for defining where files will be stored."""
+
+    @classmethod
+    @lru_cache
+    def project_data_dir(cls) -> Path:
+        """Dir where all project related files will be stored."""
+        return current_app.config["PROJECT_DATA_DIR"]  # type: ignore
+
+    @classmethod
+    @lru_cache
+    def supervised_dir(cls) -> Path:
+        """Dir for classifier weights, training and inference data."""
+        return cls.project_data_dir() / "supervised"
+
+    @classmethod
+    @lru_cache
+    def unsupervised_dir(cls) -> Path:
+        """Dir for LDA results, training and inference data."""
+        return cls.project_data_dir() / "unsupervised"
 
 
 class BaseResource(Resource):
@@ -139,29 +156,63 @@ class Classifiers(BaseResource):
         return res
 
 
-def main() -> None:
-    """Add the resource classes with api.add_resource."""
-    url_prefix = "/api"
+class ClassifierTrainingFile(BaseResource):
+    """Upload training data to the classifier."""
 
-    # Create the project data directory
-    # In the future, this hould be disabled.
-    if not PROJECT_DATA_DIR.exists():
-        logger.warning("Creating PROJECT_DATA_DIR because it doesn't exist.")
-        PROJECT_DATA_DIR.mkdir()
-    else:
-        if not SUPERVISED_DATA_DIR.exists():
-            logger.warning("Creating SUPERVISED_DATA_DIR because it doesn't exist.")
-            SUPERVISED_DATA_DIR.mkdir()
-        if not UNSUPERVISED_DATA_DIR.exists():
-            logger.warning("Creating UNSUPERVISED_DATA_DIR because it doesn't exist.")
-            UNSUPERVISED_DATA_DIR.mkdir()
+    url = "/classifiers/<int:classifier_id>/training/file"
+
+    def __init__(self) -> None:
+        """Set up request parser."""
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument(
+            name="file", type=FileStorage, required=True, location="files"
+        )
+
+    @staticmethod
+    def _training_data_is_valid(clsf: db.Classifier, data: T.List[T.List[str]]) -> bool:
+        """Check if the data indicated is a valid training file for clsf.
+
+        Check that every "sentence" and "category" column is non empty, no category
+        contains a comma, and that the set of unique categories matches
+        clsf.category_names.
+        """
+
+    def post(self) -> Json:
+        """."""
+
+    def get(self) -> Json:
+        """."""
+
+
+def create_app() -> Flask:
+    """App factory to avoid forcibly creating an app object at import time.
+
+    Useful for testing.
+    """
+    app = Flask(__name__, static_url_path="/", static_folder="../frontend")
+    app.config["PROJECT_DATA_DIR"] = Path(
+        os.environ.get("PROJECT_DATA_DIR", "./project_data")
+    )
+    api = Api(app)
+
+    # `Directories` uses flask.current_app. Since we're not
+    # handling a request just yet, we need this.
+    with app.app_context():
+        # Create the project data directory
+        # In the future, this hould be disabled.
+        for dir_ in [
+            Files.project_data_dir(),
+            Files.supervised_dir(),
+            Files.unsupervised_dir(),
+        ]:
+            if not dir_.exists():
+                logger.warning(f"Creating {str(dir_)} because it doesn't exist.")
 
     for resource_cls in BaseResource.__subclasses__():
         assert (
             resource_cls.url[0] == "/"
         ), f"{resource_cls.__name__}.url must start with a /"
-        url = url_prefix + resource_cls.url
+        url = API_URL_PREFIX + resource_cls.url
         api.add_resource(resource_cls, url)
 
-
-main()
+    return app
