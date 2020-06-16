@@ -139,31 +139,6 @@ class Classifiers(BaseResource):
         return res
 
 
-class ClassifiersProgress(BaseResource):
-    """Get classsifier progress."""
-
-    url = "/classifiers/<int:classifier_id>/progress"
-
-    def get(self, classifier_id: int = 20) -> Json:
-        """Get clf progress.
-
-        Returns:
-            One_of["training_model", "running_inference_on_dev_set", "done"]
-        """
-        progress = 50
-        if classifier_id == 0:
-            stage = "training_model"
-        elif classifier_id == 1:
-            stage = "running_inference_on_dev_set"
-        elif classifier_id == 2:
-            stage = "done"
-            progress = 100
-        else:
-            raise Exception("classifier_id provided doesn't exist.")
-
-        return {"progress": progress, "stage": stage}
-
-
 def main() -> None:
     """Add the resource classes with api.add_resource."""
     url_prefix = "/api"
