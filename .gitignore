@@ -1,3 +1,6 @@
+# For the uploaded files and model weights
+project_data/
+
 # For the database
 sqlite.db
 
@@ -11,7 +14,9 @@ openFraming
 *.pyc
 *.swp
 
+# Python/mypy related
 __pycache__/
+.mypy_cache/
 
 instance/
 
