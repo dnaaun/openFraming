@@ -76,18 +76,19 @@ class Classifiers(BaseResource):
                 "training_completed": bool
           }
         """
-        training_completed = (
-            # TODO: Will probably have to change once we actually upload a training
-            # set
-            clsf.training_set is not None
-            and clsf.training_set.training_or_inference_completed
-        )  # Training has completed
+        if clsf.training_set is None:
+            status = "not_begun"
+        else:
+            if clsf.training_set.training_or_inference_completed:
+                status = "completed"
+            else:
+                status = "training"
 
         return {
             "classifier_id": clsf.classifier_id,
             "name": clsf.name,
             "trained_by_openFraming": clsf.trained_by_openFraming,
-            "training_completed": training_completed,
+            "status": status,
         }
 
     def post(self) -> Json:
