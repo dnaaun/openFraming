@@ -31,6 +31,28 @@ $(function(){
 
 
 
+
+	$("#category_names").on('keyup', function (event) {
+		$(".error").hide();
+		let hasError = false;
+
+		let isValid = true;
+		$('#category_names').each(function() {
+			if (($.trim($(this).val()).indexOf(",") == -1)) {
+				//alert('Please separate multiple keywords with a comma.');
+				$('#commaerror').show();
+				hasError = true;
+			} else {
+				$('#commaerror').hide()
+				hasError = false;
+			}
+		});
+		$('button[type="submit"]').prop('disabled', hasError);
+
+
+	})
+
+
 	$("#email").on('keyup', function() {
 		$(".error").hide();
 		let hasError = false;
