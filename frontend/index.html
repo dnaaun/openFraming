@@ -37,7 +37,7 @@
             <div class="btn  float-left">
 
                 <span>Please choose a document file!
-                <input type="file" name="documentfile" id="documentfile">
+                <input type="file" name="documentfile" id="documentfile" accept=".xlsx, .xls, .csv">
                 </span>
             </div>
         </div>
@@ -45,57 +45,91 @@
         <br>
         <br>
         <p>Please select one of the following policy issues that corresponds to your document:</p>
-        <form>
+        <form id="create_a_classifier_form">
             <div class="form-check-inline">
                 <label class="form-check-label">
-                    <input type="radio" class="form-check-input" id="gunviolence" name="switch" value="gunviolence" checked>Gun Violence
+
+                    <input type="radio" class="form-check-input" id="gunviolence" name="policyissue" value="gunviolence" checked>Gun Violence
+
                 </label>
             </div>
             <div class="form-check-inline">
                 <label class="form-check-label">
-                    <input type="radio" class="form-check-input" id="immigration" name="switch" value="immigration">Immigration
+
+                    <input type="radio" class="form-check-input" id="immigration" name="policyissue" value="immigration">Immigration
+
                 </label>
             </div>
 
             <div class="form-check-inline">
                 <label class="form-check-label">
-                    <input type="radio" class="form-check-input" id="tobocco" name="switch" value="tobocco">Tobocco
+
+                    <input type="radio" class="form-check-input" id="tobocco" name="policyissue" value="tobocco">Tobocco
+
                 </label>
             </div>
 
             <div class="form-check-inline">
                 <label class="form-check-label">
-                    <input type="radio" class="form-check-input" id="samesexmarriage" name="switch" value="samesexmarriage">Same-sex Marriage
+
+                    <input type="radio" class="form-check-input" id="samesexmarriage" name="policyissue" value="samesexmarriage">Same-sex Marriage
+
                 </label>
             </div>
+
+
+            <div class="form-check-inline">
+                <label class="form-check-label">
+
+                    <input type="radio" class="form-check-input" id="covid19" name="policyissue" value="covid19">COVID-19
+
+                </label>
+            </div>
+
+            <div class="form-check-inline">
+                <label class="form-check-label">
+
+                    <input type="radio" class="form-check-input" id="climatechange" name="policyissue" value="climatechange">Climate Change
+                </label>
+            </div>
+
+            <div class="form-check-inline">
+                <label class="form-check-label">
+                    <input type="radio" class="form-check-input" id="other" name="policyissue" value="other">Other
+                </label>
+            </div>
+
 
             <br>
             <br>
 
-            <div class="form-check-inline">
-                <label class="form-check-label">
-                    <input type="radio" class="form-check-input" id="covid19" name="switch" value="covid19">COVID-19
-                </label>
-            </div>
+            <label for="category_names">Please enter the frames for issue framing classification with comma separated values like the example below</label>
+            <textarea class="form-control" id="category_names" rows="3" placeholder="gun rights,gun control,politics,mental health,school/public space safety,race/ethnicity,public opinion,society/culture,economic consequences"></textarea>
 
-            <div class="form-check-inline">
-                <label class="form-check-label">
-                    <input type="radio" class="form-check-input" id="climatechange" name="switch" value="climatechange">Climate Change
-                </label>
-            </div>
+            <span style="color: red" id="commaerror"><b>Please separate the frame names with a comma</b></span>
 
-            <label for="framestextarea">Please enter the frames for issue framing classification with comma separated values like the example below</label>
-            <textarea class="form-control" id="framestextarea" rows="3" placeholder="gun rights,gun control,politics,mental health,school/public space safety,race/ethnicity,public opinion,society/culture,economic consequences"></textarea>
+            <br>
+            <div class="file-field">
+                <div class="btn  float-left">
+
+                <span>If you chose <b>Other</b> for <b>Policy Issue</b> please upload a sample annotated data in CSV, xls, or xlsx format.
+                <input type="file" name="annotatedsamplefile" id="annotatedsamplefile" accept=".xlsx, .xls, .csv">
+                </span>
+                </div>
+            </div>
             <br>
 
+           <br>
+            <br>
             <div class="col-md-3">
                 <i class="fas fa-envelope fa-lg"></i>
                 <label data-error="wrong" data-success="right">Enter your email</label>
-                <input type="email" class="form-control validate purple-border email" placeholder="john.doe@example.com">
+
+                <input type="email" class="form-control validate purple-border email" id="email" placeholder="john.doe@example.com">
 
             </div>
             <br>
-            <button type="submit" class="btn btn-purple purple-border">Perform Frame Classification</button>
+            <button type="submit" class="btn btn-purple purple-border" id="submitbutton" disabled="disabled">Perform Frame Classification</button>
         </form>
     </div>
 </div>
