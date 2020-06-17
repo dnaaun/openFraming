@@ -29,37 +29,43 @@ var API_PREFIX = "/api";
 $(function(){
 
 
+	$("#otherradiobutton").on('click', function () {
 
-
-
-	$("#category_names").on('keyup', function (event) {
-		$(".error").hide();
 		let hasError = false;
+		let color = 'red';
 
-		let isValid = true;
-		$('#category_names').each(function() {
-			if (($.trim($(this).val()).indexOf(",") == -1)) {
-				//alert('Please separate multiple keywords with a comma.');
-				$('#commaerror').show();
-				hasError = true;
-			} else {
-				$('#commaerror').hide()
-				hasError = false;
-			}
-		});
+		if ($("annotatedsamplefile").val() == null){
+			alert('null');
+			$('#emptysamplefileerror').show();
+			$('#emptysamplefileerror').css('color', color);
+			hasError = true;
+		}
+		else {
+			$('#emptysamplefileerror').hide();
+			hasError = false;
+		}
+
+
 		$('button[type="submit"]').prop('disabled', hasError);
-
 
 	})
 
 
-	$("#email").on('keyup', function() {
-		$(".error").hide();
+	function validate() {
+		$(".error, #commaerror").hide();
 		let hasError = false;
 
+		// validate category names
+		$('#category_names').each(function() {
+			if ($(this).val().indexOf(",") == -1) {
+				//alert('Please separate multiple keywords with a comma.');
+				$('#commaerror').show();
+				hasError = true;
+			}
+		});
+		// validate email
 		let emailReg = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/;
-
-		let emailAddressVal = $(this).val();
+		let emailAddressVal = $('#email').val();
 		if (emailAddressVal == '') {
 			$("#email").after('<span class="error">Please enter your email address.</span>');
 			hasError = true;
@@ -69,8 +75,13 @@ $(function(){
 			hasError = true;
 		}
 
-		$('button[type="submit"]').prop('disabled', hasError);
-	})
+		return hasError;
+	}
+
+	$("#category_names, #email").on('keyup', function(event) {
+		$('button[type="submit"]').prop('disabled', validate());
+	});
+
 
 
 	$("button[type='submit']").on('click', function (){
