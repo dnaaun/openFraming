@@ -31,6 +31,7 @@ $(function(){
 
 
 
+
 	$("#category_names").on('keyup', function (event) {
 		$(".error").hide();
 		let hasError = false;
@@ -50,6 +51,7 @@ $(function(){
 
 
 	})
+
 
 	$("#email").on('keyup', function() {
 		$(".error").hide();
