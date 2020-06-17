@@ -28,12 +28,55 @@ var API_PREFIX = "/api";
 
 $(function(){
 
-		$("button[type='submit']").on('click', function (){
-			let radioValue = $("input[name='policyissue']:checked").val();
-			alert(radioValue)
-			console.log(radioValue)
-			debugger;
-		})
+
+
+
+	$("#category_names").on('keyup', function (event) {
+		$(".error").hide();
+		let hasError = false;
+
+		let isValid = true;
+		$('#category_names').each(function() {
+			if (($.trim($(this).val()).indexOf(",") == -1)) {
+				//alert('Please separate multiple keywords with a comma.');
+				$('#commaerror').show();
+				hasError = true;
+			} else {
+				$('#commaerror').hide()
+				hasError = false;
+			}
+		});
+		$('button[type="submit"]').prop('disabled', hasError);
+
+
+	})
+
+	$("#email").on('keyup', function() {
+		$(".error").hide();
+		let hasError = false;
+
+		let emailReg = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/;
+
+		let emailAddressVal = $(this).val();
+		if (emailAddressVal == '') {
+			$("#email").after('<span class="error">Please enter your email address.</span>');
+			hasError = true;
+		}
+		else if (!emailReg.test(emailAddressVal)) {
+			$("#email").after('<span class="error">Enter a valid email address.</span>');
+			hasError = true;
+		}
+
+		$('button[type="submit"]').prop('disabled', hasError);
+	})
+
+
+	$("button[type='submit']").on('click', function (){
+		let radioValue = $("input[name='policyissue']:checked").val();
+		alert(radioValue);
+		console.log(radioValue);
+		debugger;
+	})
 
 	$("#create_a_classifier_form").on('submit',  function(e){
 		// alert("Submitted");

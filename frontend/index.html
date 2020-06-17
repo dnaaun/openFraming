@@ -92,8 +92,9 @@
             <br>
 
             <label for="category_names">Please enter the frames for issue framing classification with comma separated values like the example below</label>
-            <textarea class="form-control" id="category_names" rows="3">gun rights,gun control,politics,mental health,school/public space safety,race/ethnicity,public opinion,society/culture,economic consequences</textarea>
-            <br>
+            <textarea class="form-control" id="category_names" rows="3">gun rights, gun control, politics, mental health, school/public space safety, race/ethnicity, public opinion, society/culture, economic consequences</textarea>
+
+            <span style="color: red" id="commaerror"><b>Please separate the frame names with a comma</b></span>
 
             <br>
             <div class="file-field">
@@ -107,15 +108,15 @@
             <br>
 
            <br>
-            <br>g
+            <br>
             <div class="col-md-3">
                 <i class="fas fa-envelope fa-lg"></i>
                 <label data-error="wrong" data-success="right">Enter your email</label>
-                <input type="email" class="form-control validate purple-border">
+                <input type="email" class="form-control validate purple-border" id="email">
 
             </div>
             <br>
-            <button type="submit" class="btn btn-purple purple-border">Perform Frame Classification</button>
+            <button type="submit" class="btn btn-purple purple-border" id="submitbutton" disabled="disabled">Perform Frame Classification</button>
         </form>
     </div>
 </div>
