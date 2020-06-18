@@ -9,8 +9,13 @@ max-line-length = 88
 extend-ignore =
     # See https://github.com/PyCQA/pycodestyle/issues/373
     E203,
+
+    # Allow lambda
+    E731
     # Relax doc restricitons
     D101
     D102
+    D105
     D107
+    D400
 
