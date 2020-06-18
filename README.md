@@ -8,7 +8,7 @@ Clone this repo and `cd` into this directory.
 First, setup a virtual environment and install the required packages.
 
 	$ python -m venv /your/desired/directory/openFraming
-	$ pip install -r requirements.txt
+	$ pip install -r backend/requirements.txt
     $ cd api
 	$ source /your/desired/directory/openFraming/bin/activate
 
