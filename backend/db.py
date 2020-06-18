@@ -5,11 +5,9 @@ import typing as T
 import peewee as pw  # type: ignore
 
 
-_database = pw.SqliteDatabase("sqlite.db")
+_DATABASE = pw.SqliteDatabase("sqlite.db")
 """The database connection.
 
-Ideally, this should depend on flask.current_app.config, but I don't know how to do
-that.
 """
 
 
@@ -19,7 +17,7 @@ class BaseModel(pw.Model):
     class Meta:
         """meta class."""
 
-        database = _database
+        database = _DATABASE
 
 
 # From: https://github.com/coleifer/peewee/issues/630
@@ -125,7 +123,7 @@ class LabeledSet(BaseModel):
 
     id = pw.AutoField(primary_key=True)
     file_path = pw.CharField(null=False)
-    training_or_inference_completed = pw.BooleanField()
+    training_or_inference_completed = pw.BooleanField(default=False)
     metrics = pw.ForeignKeyField(Metrics, null=True)
 
 
@@ -173,9 +171,13 @@ class UnlabelledSet(BaseModel):
     inference_completed = pw.BooleanField()
 
 
-def _create_tables() -> None:
+MODELS = BaseModel.__subclasses__()
+
+
+def _create_tables(database: pw.Database = _DATABASE) -> None:
+    """Create the tables in the database."""
     with database:
-        database.create_tables(BaseModel.__subclasses__())
+        database.create_tables(MODELS)
 
 
 if __name__ == "__main__":

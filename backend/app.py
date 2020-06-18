@@ -1,15 +1,20 @@
 """All the flask api endpoints."""
+import csv
 import logging
 import os
+import shutil
 import typing as T
+from collections import Counter
 from pathlib import Path
 
 from flask import Flask
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
 from flask_restful import Resource
+from sklearn import model_selection
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import NotFound
 
 import db
@@ -22,14 +27,38 @@ logger = logging.getLogger(__name__)
 Json = T.Optional[T.Union[T.List[T.Any], T.Dict[str, T.Any], int, str, bool]]
 
 
+class UnprocessableEntity(HTTPException):
+    """."""
+
+    code = 422
+    description = "The entity supplied has errors and cannot be processed."
+
+
+class AlreadyExists(HTTPException):
+    """."""
+
+    code = 403
+    description = "The resource already exists."
+
+
 class BaseResource(Resource):
-    """Used to make sure that subclasses have a .url attribute.
+    """Every resource derives from this.
 
     Attributes:
         url:
     """
 
     url: str
+
+    @staticmethod
+    def _write_headers_and_data_to_csv(
+        headers: T.List[str], data: T.List[T.List[str]], csvfile: Path
+    ) -> None:
+
+        with csvfile.open("w") as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+            writer.writerows(data)
 
 
 class ClassifierRelatedResource(BaseResource):
@@ -128,6 +157,11 @@ class Classifiers(ClassifierRelatedResource):
         dir_path = f"classifier_{clsf.classifier_id}"
         clsf.dir_path = dir_path
         clsf.save()
+
+        dir_ = utils.Files.classifier_dir(classifier_id=clsf.classifier_id)
+        if dir_.exists():
+            shutil.rmtree(dir_)
+        dir_.mkdir()
         return self._classifier_status(clsf)
 
     def get(self) -> Json:
@@ -173,27 +207,93 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         """
 
     def post(self, classifier_id: int) -> Json:
-        """."""
+        """Upload a training set for classifier.
+
+        Body:
+            FormData: with "file" item.
+
+        Returns:
+            {
+                "classifier_id": int,
+                "name": str,
+                "trained_by_openFraming": bool,
+                "category_names": T.List[str],
+                "training_status": "training"
+            }
+
+        Raises:
+            BadRequest
+            UnprocessableEntity
+
+        """
+        # TODO: Write tests for all of these!
         try:
             classifier = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
         except db.Classifier.DoesNotExist:
             raise NotFound("classifier not found.")
 
+        if classifier.training_set is not None:
+            raise AlreadyExists("This classifier already has a training set.")
+
         args = self.reqparse.parse_args()
         file_: FileStorage = args["file"]
 
-        table = utils.Validate.csv_and_get_table(file_.stream)  # type: ignore
+        table = utils.Validate.csv_and_get_table(file_)  # type: ignore
 
         utils.Validate.table_has_num_columns(table, 2)
         utils.Validate.table_has_headers(table, ["example", "category"])
 
-        table_data = table[1:]
+        table_headers, table_data = table[0], table[1:]
 
-        unique_category_names = set([category for _, category in table_data])
+        # TODO: Low priority: Make this more efficient.
+        category_names_counter = Counter(category for _, category in table_data)
 
-        classifier.category_names
+        unique_category_names = category_names_counter.keys()
+        if set(classifier.category_names) != unique_category_names:
+            # TODO: Lower case category names before checking.
+            # TODO: More helpful error messages when there is an error with the
+            # the categories in an uploaded training file.
+            raise UnprocessableEntity(
+                f"The categories for '{classifier.name}' are:"
+                f" {','.join(classifier.category_names)}. But the uploaded file either"
+                " has some categories missing, or has categories in addition to the"
+                " ones indicated."
+            )
 
-        return None
+        categories_with_less_than_two_exs = [
+            category for category, count in category_names_counter.items() if count < 2
+        ]
+        if categories_with_less_than_two_exs:
+            raise UnprocessableEntity(
+                "There are less than two examples with the categories: "
+                f"{','.join(categories_with_less_than_two_exs)}."
+                " We need at least two examples per category."
+            )
+
+        # Save files
+        ss = model_selection.StratifiedShuffleSplit(n_splits=1, test_size=0.2)
+        train_indices, test_indices = next(ss.split(*zip(*table_data)))
+
+        train_data = [table_data[i] for i in train_indices]
+        test_data = [table_data[i] for i in test_indices]
+
+        train_file = utils.Files.classifier_train_set_file(classifier.classifier_id)
+        self._write_headers_and_data_to_csv(table_headers, train_data, train_file)
+        test_file = utils.Files.classifier_test_set_file(classifier.classifier_id)
+        self._write_headers_and_data_to_csv(table_headers, test_data, test_file)
+
+        clsf_dir = utils.Files.classifier_dir(classifier.classifier_id)
+
+        training_set = db.LabeledSet(file_path=train_file.relative_to(clsf_dir))
+        training_set.save()
+        classifier.training_set = training_set
+        classifier.save()
+
+        # Refresh classifier
+        classifier = db.Classifier.get(
+            db.Classifier.classifier_id == classifier.classifier_id
+        )
+        return self._classifier_status(classifier)
 
     def get(self) -> Json:
         """."""
