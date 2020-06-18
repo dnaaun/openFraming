@@ -1,6 +1,8 @@
 black
+bandit==1.6.2
 flake8
 flake8-black
 flake8-docstrings
-reorder-python-imports
 mypy
+pytest==5.4.3
+reorder-python-imports
