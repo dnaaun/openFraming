@@ -1,5 +1,4 @@
 """Classifier related backend functionality."""
-import torch  # type: ignore
 import typing as T
 
 import numpy as np
