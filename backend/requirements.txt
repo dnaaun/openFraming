@@ -2,4 +2,5 @@ scikit-learn=0.23.1
 coverage==5.1
 Flask==1.1.2
 Flask-RESTful==0.3.8
+transformers==2.11.0
 peewee

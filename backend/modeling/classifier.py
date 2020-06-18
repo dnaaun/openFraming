@@ -1,4 +1,5 @@
 """Classifier related backend functionality."""
+import torch  # type: ignore
 import typing as T
 
 import numpy as np
@@ -10,7 +11,7 @@ from transformers import (  # type: ignore
     AutoTokenizer,
     EvalPrediction,
 )
-from transformers import Trainer, TrainingArguments, InputFeatures  # type: ignore
+from transformers import Trainer, TrainingArguments, InputFeatures
 
 from lda import EXCEL_EXTENSIONS, CSV_EXTENSIONS, TSV_EXTENSIONS
 
@@ -43,9 +44,7 @@ class ClassificationDataset(Dataset):
             doc_reader = lambda b: pd.read_csv(b, sep="\t")
         else:
             raise ValueError(
-                "File types in directory {} are inconsistent or invalid!".format(
-                    dir_name
-                )
+                f"The file {dset_filename} doesn't have a recognized extension."
             )
 
         self.labels = labels
@@ -62,26 +61,28 @@ class ClassificationDataset(Dataset):
             feature = InputFeatures(**inputs, label=self.encoded_labels[i])
             self.features.append(feature)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.encoded_content)
 
     def __getitem__(self, i: int) -> InputFeatures:
         return self.features[i]
 
-    def get_labels(self):
+    def get_labels(self) -> T.List[str]:
         return self.labels
 
 
 class ClassifierModel(object):
-    """
-    Trainable BERT-based classifier given a training & eval set.
-    """
+    """Trainable BERT-based classifier given a training & eval set."""
 
-    def __init__(self, labels: list, model_path: str, data_dir: str, cache_dir: str):
-        """
+    def __init__(
+        self, labels: T.List[str], model_path: str, data_dir: str, cache_dir: str
+    ):
+        """.
+
         labels: list of valid labels used in the dataset
         model_path: name of model being used or filepath to where the model is stored
-        data_dir: directory where the training & eval sets are stored, as train.* and eval.*
+        data_dir: directory where the training & eval sets are stored, as train.* and
+            eval.*
         cache_dir: directory where cache & output are kept.
         """
         self.cache_dir = cache_dir
@@ -113,8 +114,7 @@ class ClassifierModel(object):
     def make_dataset(
         self, fname: str, content_column: str, label_column: str
     ) -> ClassificationDataset:
-        """
-        Creates a Torch dataset object from a file using the built-in tokenizer. 
+        """Create a Torch dataset object from a file using the built-in tokenizer.
 
         Inputs:
             fname: name of the file being used
@@ -132,27 +132,30 @@ class ClassifierModel(object):
             label_column,
         )
 
-    def train(self):
-        """
-        Train a BERT-based model, using the training set to train & the eval set as validation.
+    def train(self) -> None:
+        """Train a BERT-based model, using the training set to train & the eval set as
+        validation.
         """
 
-        def simple_accuracy(preds: list, labels: list):
+        def simple_accuracy(preds: np.ndarray, labels: np.ndarray) -> np.ndarray:
             """
             Checks how often preds == labels
             """
             return (preds == labels).mean()
 
-        def build_compute_metrics_fn() -> Callable[[EvalPrediction], Dict]:
+        def build_compute_metrics_fn() -> T.Callable[
+            [EvalPrediction], T.Dict[str, np.ndarray]
+        ]:
             """
             Get a metrics computation function
             """
 
-            def compute_metrics_fn(p: EvalPrediction):
+            def compute_metrics_fn(p: EvalPrediction) -> T.Dict[str, np.ndarray]:
                 """
                 Compute accuracy of predictions vs labels
                 """
                 preds = np.argmax(p.predictions, axis=1)
+                labels = p.label_ids
                 return {"acc": simple_accuracy(preds, labels)}
 
             return compute_metrics_fn
@@ -172,8 +175,9 @@ class ClassifierModel(object):
         self.trainer.train(model_path=self.model_path)
         self.trainer.save_model()
 
-    def eval_model(self):
+    def eval_model(self) -> T.Dict[str, float]:
         """
-        Wrapper on the trainer.evaluate method; evaluate model's performance on eval set provided by the user.
+        Wrapper on the trainer.evaluate method; evaluate model's performance on eval set
+        provided by the user.
         """
-        return self.trainer.evaluate(eval_dataset=self.eval_dataset)
+        return self.trainer.evaluate(eval_dataset=self.eval_dataset)  # type: ignore
