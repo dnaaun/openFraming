@@ -48,6 +48,38 @@ class EnumField(pw.CharField):
         return self._enum_class(value)
 
 
+class ListField(pw.TextField):
+    """A field to facilitate storing lists of strings as a textfield."""
+
+    def __init__(self, sep: str = ",", *args: T.Any, **kwargs: T.Any) -> None:
+        """init.
+
+        Args:
+            sep: What separator to use to separate fields.
+            *args: Passed to pw.CharField.
+            *kwargs: Passed to pw.CharField.
+        """
+        assert len(sep) == 1
+        self._sep = sep
+        super().__init__(*args, **kwargs)
+
+    def db_value(self, value: T.Any) -> str:
+        """Validate and convert to string."""
+        if not isinstance(value, list) or set(map(type, value)) != {str}:
+            raise ValueError("ListField stores lists of strings.")
+
+        if any(self._sep in item for item in value):
+            raise ValueError(
+                f"ListField has separator {self._sep}, so a list item"
+                " cannot have this character."
+            )
+        return self._sep.join(value)
+
+    def python_value(self, value: str) -> T.List[str]:
+        """Convert str to list."""
+        return value.split(self._sep)
+
+
 class ProgressEnum(str, enum.Enum):
     """Progress field for Classifier.
 
@@ -115,7 +147,7 @@ class Classifier(BaseModel):
 
     classifier_id = pw.AutoField(primary_key=True)
     name = pw.TextField()
-    category_names = pw.TextField()
+    category_names = ListField()
     dir_path = pw.CharField()
     trained_by_openFraming = pw.BooleanField(default=False)
     training_set = pw.ForeignKeyField(LabeledSet, null=True)

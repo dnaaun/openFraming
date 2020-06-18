@@ -1,6 +1,4 @@
 """All the flask api endpoints."""
-import csv
-import io
 import logging
 import os
 import typing as T
@@ -19,7 +17,7 @@ import utils
 
 API_URL_PREFIX = "/api"
 
-logger = logging.getLogger("__main__")
+logger = logging.getLogger(__name__)
 # mypy doesn't support recrsive types, so this is the best we can do
 Json = T.Optional[T.Union[T.List[T.Any], T.Dict[str, T.Any], int, str, bool]]
 
@@ -34,7 +32,42 @@ class BaseResource(Resource):
     url: str
 
 
-class Classifiers(BaseResource):
+class ClassifierRelatedResource(BaseResource):
+    """Base class to define utility functions related to classifiers."""
+
+    @staticmethod
+    def _classifier_status(clsf: db.Classifier) -> Json:
+        """Process a Classifier instance and format it into the API spec.
+
+        Returns:
+            {
+                "classifier_id": int,
+                "name": str,
+                "trained_by_openFraming": bool,
+                "category_names": T.List[str],
+                "training_status": T.Union["not_begun", "training", "completed"]
+          }
+        """
+        if clsf.training_set is None:
+            training_status = "not_begun"
+        else:
+            if clsf.training_set.training_or_inference_completed:
+                training_status = "completed"
+            else:
+                training_status = "training"
+
+        category_names = clsf.category_names
+
+        return {
+            "classifier_id": clsf.classifier_id,
+            "name": clsf.name,
+            "trained_by_openFraming": clsf.trained_by_openFraming,
+            "category_names": category_names,
+            "training_status": training_status,
+        }
+
+
+class Classifiers(ClassifierRelatedResource):
     """Create a classifer, get a list of classifiers."""
 
     url = "/classifiers"
@@ -59,37 +92,6 @@ class Classifiers(BaseResource):
             required=True,
             help="",
         )
-
-    @staticmethod
-    def _classifier_status(clsf: db.Classifier) -> Json:
-        """Process a Classifier instance and format it into the API spec.
-
-        Returns:
-            {
-                "classifier_id": int,
-                "name": str,
-                "trained_by_openFraming": bool,
-                "category_names": T.List[str],
-                "status": T.Union["not_begun", "training", "completed"]
-          }
-        """
-        if clsf.training_set is None:
-            status = "not_begun"
-        else:
-            if clsf.training_set.training_or_inference_completed:
-                status = "completed"
-            else:
-                status = "training"
-
-        category_names = clsf.category_names.split(",")
-
-        return {
-            "classifier_id": clsf.classifier_id,
-            "name": clsf.name,
-            "trained_by_openFraming": clsf.trained_by_openFraming,
-            "category_names": category_names,
-            "status": status,
-        }
 
     def post(self) -> Json:
         """Create a classifier.
@@ -117,7 +119,7 @@ class Classifiers(BaseResource):
             # RequestParser
             raise BadRequest("must be at least two categories.")
 
-        category_names = ",".join(args["category_names"])
+        category_names = args["category_names"]
         name = args["name"]
         # Use a placeholder for file_path to get the auto incremented id
         clsf = db.Classifier.create(
@@ -149,7 +151,7 @@ class Classifiers(BaseResource):
         return res
 
 
-class ClassifierTrainingFile(BaseResource):
+class ClassifiersTrainingFile(ClassifierRelatedResource):
     """Upload training data to the classifier."""
 
     url = "/classifiers/<int:classifier_id>/training/file"
@@ -173,30 +175,23 @@ class ClassifierTrainingFile(BaseResource):
     def post(self, classifier_id: int) -> Json:
         """."""
         try:
-            _ = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
+            classifier = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
         except db.Classifier.DoesNotExist:
             raise NotFound("classifier not found.")
 
         args = self.reqparse.parse_args()
-        file_ = args["file"]
-        try:
-            # TODO: Check if the file size is too large
-            # TODO: Maybe don't read all the file into memory even if it's small enough?
-            # Not sure though.
-            rows = list(csv.reader(io.TextIOWrapper(file_)))
-        except Exception as e:
-            logger.warning(f"Invalid CSV file: {e}")
-            raise BadRequest("Not a valid CSV file.")
+        file_: FileStorage = args["file"]
 
-        header, rows = rows[0], rows[1:]
+        table = utils.Validate.csv_and_get_table(file_.stream)  # type: ignore
 
-        if [h.lower() for h in header] != ["example", "category"]:
-            raise BadRequest("CSV file needs to have headers 'example' and 'category'")
+        utils.Validate.table_has_num_columns(table, 2)
+        utils.Validate.table_has_headers(table, ["example", "category"])
 
-        if [h.lower() for h in header] != ["example", "category"]:
-            raise BadRequest("CSV file needs to have headers 'example' and 'category'")
+        table_data = table[1:]
 
-        unique_categories = set([category for _, category in rows])
+        unique_category_names = set([category for _, category in table_data])
+
+        classifier.category_names
 
         return None
 
@@ -237,7 +232,11 @@ def create_app(project_data_dir: T.Optional[Path] = None) -> Flask:
             if not dir_.exists():
                 logger.warning(f"Creating {str(dir_)} because it doesn't exist.")
 
-    for resource_cls in BaseResource.__subclasses__():
+    lsresource_cls: T.Tuple[T.Type[BaseResource], ...] = (
+        Classifiers,
+        ClassifiersTrainingFile,
+    )
+    for resource_cls in lsresource_cls:
         assert (
             resource_cls.url[0] == "/"
         ), f"{resource_cls.__name__}.url must start with a /"

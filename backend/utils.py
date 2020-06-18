@@ -1,8 +1,15 @@
 """Everything that is not dealing with HTTP and that doesn't belong in modeling/."""
+import csv
+import io
+import logging
+import typing as T
 from functools import lru_cache
 from pathlib import Path
 
 from flask import current_app
+from werkzeug.exceptions import BadRequest
+
+logger = logging.getLogger(__name__)
 
 
 class Files:
@@ -43,3 +50,60 @@ class Files:
     def classifier_dev_set_file(cls, classifier_id: int) -> Path:
         """CSV training file for classifier."""
         return cls.classifier_dir(classifier_id) / "dev.csv"
+
+
+class Validate:
+    @classmethod
+    def csv_and_get_table(cls, file_: io.BytesIO) -> T.List[T.List[str]]:
+        """Check if file_ is a valid CSV file and returns the contents.
+
+        Args:
+            file_: A file object.
+
+        Returns:
+            table: A list of list of strings.
+
+        Raises:
+            BadRequest:
+        """
+        try:
+            # TODO: Check if the file size is too large
+            # TODO: Maybe don't read all the file into memory even if it's small enough?
+            # Not sure though.
+            table = list(csv.reader(io.TextIOWrapper(file_)))
+        except Exception as e:
+            logger.warning(f"Invalid CSV file: {e}")
+
+        return table
+
+    @classmethod
+    def table_has_headers(
+        cls, table: T.List[T.List[str]], headers: T.List[str]
+    ) -> None:
+        """Check if the "table"'s first row matches the headers provided, case insensitively.
+
+        Args:
+            table: A list of lists of strings.
+            headers: A list of strings.
+
+        Raises:
+            BadRequest:
+        """
+        if not [h.lower() for h in table[0]] == [h.lower() for h in headers]:
+            raise BadRequest(
+                f"table has headers {table[0]}, but needs to have headers" f"{headers}"
+            )
+
+    @classmethod
+    def table_has_num_columns(
+        cls, table: T.List[T.List[str]], num_columns: int
+    ) -> bool:
+        """Check if the "table"'s first row matches the headers provided, case insensitively.
+
+        Args:
+            table: A list of lists of strings.
+            num_columns: The number of columns expected.
+        Returns:
+            is_valid:
+        """
+        return len(table[0]) == num_columns
