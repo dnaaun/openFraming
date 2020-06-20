@@ -1,8 +1,8 @@
 import typing as T
-import redis
-from rq import Queue  # type: ignore
 
+import redis
 from classifier import ClassifierModel
+from rq import Queue  # type: ignore
 
 
 class ModelScheduler(object):
@@ -20,6 +20,10 @@ class ModelScheduler(object):
 
 def do_train(pickle_data: T.Dict[str, T.Any]) -> None:
     classifier_model = ClassifierModel(
-        pickle_data["labels"], pickle_data["model_path"], pickle_data["data_dir"], "./"
+        # TODO: Make the cache_dir argument (which is a "./" right now) a variable
+        pickle_data["labels"],
+        pickle_data["model_path"],
+        pickle_data["data_dir"],
+        "./",
     )
     classifier_model.train()

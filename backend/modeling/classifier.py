@@ -3,16 +3,17 @@ import typing as T
 
 import numpy as np
 import pandas as pd
+from lda import CSV_EXTENSIONS
+from lda import EXCEL_EXTENSIONS
+from lda import TSV_EXTENSIONS
 from torch.utils.data.dataset import Dataset  # type: ignore
-from transformers import (  # type: ignore
-    AutoConfig,
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-    EvalPrediction,
-)
-from transformers import Trainer, TrainingArguments, InputFeatures
-
-from lda import EXCEL_EXTENSIONS, CSV_EXTENSIONS, TSV_EXTENSIONS
+from transformers import AutoConfig  # type: ignore
+from transformers import AutoModelForSequenceClassification
+from transformers import AutoTokenizer
+from transformers import EvalPrediction
+from transformers import InputFeatures
+from transformers import Trainer
+from transformers import TrainingArguments
 
 
 class ClassificationDataset(Dataset):
