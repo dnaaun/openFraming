@@ -1,22 +1,23 @@
 """Classifier related backend functionality."""
-import torch  # type: ignore
 import typing as T
 
 import numpy as np
 import pandas as pd
-from torch.utils.data.dataset import Dataset  # type: ignore
-from transformers import (  # type: ignore
-    AutoConfig,
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-    EvalPrediction,
-)
-from transformers import Trainer, TrainingArguments, InputFeatures
+from torch.utils.data.dataset import Dataset
+from transformers import AutoConfig  # type: ignore
+from transformers import AutoModelForSequenceClassification
+from transformers import AutoTokenizer
+from transformers import EvalPrediction
+from transformers import InputFeatures
+from transformers import Trainer
+from transformers import TrainingArguments
 
-from lda import EXCEL_EXTENSIONS, CSV_EXTENSIONS, TSV_EXTENSIONS
+from flask_app.modeling.lda import CSV_EXTENSIONS
+from flask_app.modeling.lda import EXCEL_EXTENSIONS
+from flask_app.modeling.lda import TSV_EXTENSIONS
 
 
-class ClassificationDataset(Dataset):
+class ClassificationDataset(Dataset):  # type: ignore
     """Inherits from Torch dataset. Loads and holds tokenized data for a BERT model."""
 
     def __init__(

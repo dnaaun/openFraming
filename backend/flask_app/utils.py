@@ -44,7 +44,7 @@ class Files:
 
     @classmethod
     @lru_cache
-    def classifier_test_set_file(cls, classifier_id: int) -> Path:
+    def classifier_dev_set_file(cls, classifier_id: int) -> Path:
         """CSV training file for classifier."""
         return cls.classifier_dir(classifier_id) / "dev.csv"
 

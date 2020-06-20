@@ -1,18 +1,24 @@
+"""conftest.py
+
+Learn more about Pytest and confest.py at:
+https://docs.pytest.org/en/stable/fixture.html#conftest-py-sharing-fixture-functions
+"""
+import shutil
 import tempfile
 import typing as T
 from pathlib import Path
 
 import peewee as pw
-import pytest
+import pytest  # type: ignore
 from flask import Flask
 
-import db
-from app import create_app
+from flask_app import db
+from flask_app.app import create_app
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def app() -> T.Iterator[Flask]:
-    """Return a Flask() instance that uses a clean database, and a project directory."""
+    """Return a Flask() instance that uses a clean database, and a temp project dir."""
 
     temp_proj_dir = Path(tempfile.gettempdir())
     test_db = pw.SqliteDatabase(":memory:")
@@ -27,6 +33,6 @@ def app() -> T.Iterator[Flask]:
     create_app(project_data_dir=temp_proj_dir)
 
     # Tear down
-    test_db.drop_tables(db.MODELS) 
+    test_db.drop_tables(db.MODELS)
     test_db.close()
-    temp_proj_dir = 
+    shutil.rmtree(temp_proj_dir)
