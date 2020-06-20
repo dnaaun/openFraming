@@ -3,10 +3,7 @@ import typing as T
 
 import numpy as np
 import pandas as pd
-from lda import CSV_EXTENSIONS
-from lda import EXCEL_EXTENSIONS
-from lda import TSV_EXTENSIONS
-from torch.utils.data.dataset import Dataset  # type: ignore
+from torch.utils.data.dataset import Dataset
 from transformers import AutoConfig  # type: ignore
 from transformers import AutoModelForSequenceClassification
 from transformers import AutoTokenizer
@@ -15,8 +12,12 @@ from transformers import InputFeatures
 from transformers import Trainer
 from transformers import TrainingArguments
 
+from modeling.lda import CSV_EXTENSIONS
+from modeling.lda import EXCEL_EXTENSIONS
+from modeling.lda import TSV_EXTENSIONS
 
-class ClassificationDataset(Dataset):
+
+class ClassificationDataset(Dataset):  # type: ignore
     """Inherits from Torch dataset. Loads and holds tokenized data for a BERT model."""
 
     def __init__(

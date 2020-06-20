@@ -1,8 +1,9 @@
 import typing as T
 
 import redis
-from classifier import ClassifierModel
 from rq import Queue  # type: ignore
+
+from modeling.classifier import ClassifierModel
 
 
 class ModelScheduler(object):
