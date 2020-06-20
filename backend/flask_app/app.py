@@ -18,9 +18,9 @@ from werkzeug.exceptions import BadRequest
 from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import NotFound
 
-import db
-import utils
-from modeling.train_queue import ModelScheduler
+from flask_app import db
+from flask_app import utils
+from flask_app.modeling.train_queue import ModelScheduler
 
 API_URL_PREFIX = "/api"
 

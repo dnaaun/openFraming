@@ -12,9 +12,9 @@ from transformers import InputFeatures
 from transformers import Trainer
 from transformers import TrainingArguments
 
-from modeling.lda import CSV_EXTENSIONS
-from modeling.lda import EXCEL_EXTENSIONS
-from modeling.lda import TSV_EXTENSIONS
+from flask_app.modeling.lda import CSV_EXTENSIONS
+from flask_app.modeling.lda import EXCEL_EXTENSIONS
+from flask_app.modeling.lda import TSV_EXTENSIONS
 
 
 class ClassificationDataset(Dataset):  # type: ignore

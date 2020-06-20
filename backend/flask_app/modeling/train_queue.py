@@ -3,7 +3,7 @@ import typing as T
 import redis
 from rq import Queue  # type: ignore
 
-from modeling.classifier import ClassifierModel
+from flask_app.modeling.classifier import ClassifierModel
 
 
 class ModelScheduler(object):

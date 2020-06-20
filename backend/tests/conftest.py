@@ -10,10 +10,10 @@ from pathlib import Path
 
 import peewee as pw
 import pytest  # type: ignore
-from backend import db
 from flask import Flask
 
-from app import create_app
+from flask_app import db
+from flask_app.app import create_app
 
 
 @pytest.fixture(scope="session")
