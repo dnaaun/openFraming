@@ -197,15 +197,6 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
             name="file", type=FileStorage, required=True, location="files"
         )
 
-    @staticmethod
-    def _training_data_is_valid(clsf: db.Classifier, data: T.List[T.List[str]]) -> bool:
-        """Check if the data indicated is a valid training file for clsf.
-
-        Check that every "sentence" and "category" column is non empty, no category
-        contains a comma, and that the set of unique categories matches
-        clsf.category_names.
-        """
-
     def post(self, classifier_id: int) -> Json:
         """Upload a training set for classifier.
 
@@ -272,15 +263,15 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
 
         # Save files
         ss = model_selection.StratifiedShuffleSplit(n_splits=1, test_size=0.2)
-        train_indices, test_indices = next(ss.split(*zip(*table_data)))
+        train_indices, dev_indices = next(ss.split(*zip(*table_data)))
 
         train_data = [table_data[i] for i in train_indices]
-        test_data = [table_data[i] for i in test_indices]
+        dev_data = [table_data[i] for i in dev_indices]
 
         train_file = utils.Files.classifier_train_set_file(classifier.classifier_id)
         self._write_headers_and_data_to_csv(table_headers, train_data, train_file)
-        test_file = utils.Files.classifier_test_set_file(classifier.classifier_id)
-        self._write_headers_and_data_to_csv(table_headers, test_data, test_file)
+        dev_file = utils.Files.classifier_dev_set_file(classifier.classifier_id)
+        self._write_headers_and_data_to_csv(table_headers, dev_data, dev_file)
 
         clsf_dir = utils.Files.classifier_dir(classifier.classifier_id)
 
@@ -293,6 +284,7 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         classifier = db.Classifier.get(
             db.Classifier.classifier_id == classifier.classifier_id
         )
+
         return self._classifier_status(classifier)
 
     def get(self) -> Json:
