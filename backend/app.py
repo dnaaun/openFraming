@@ -1,5 +1,6 @@
 """All the flask api endpoints."""
 import csv
+import io
 import logging
 import os
 import shutil
@@ -19,6 +20,7 @@ from werkzeug.exceptions import NotFound
 
 import db
 import utils
+from modeling.train_queue import ModelScheduler
 
 API_URL_PREFIX = "/api"
 
@@ -77,10 +79,10 @@ class ClassifierRelatedResource(BaseResource):
                 "training_status": T.Union["not_begun", "training", "completed"]
           }
         """
-        if clsf.training_set is None:
+        if clsf.train_set is None:
             training_status = "not_begun"
         else:
-            if clsf.training_set.training_or_inference_completed:
+            if clsf.train_set.training_or_inference_completed:
                 training_status = "completed"
             else:
                 training_status = "training"
@@ -198,7 +200,7 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         )
 
     def post(self, classifier_id: int) -> Json:
-        """Upload a training set for classifier.
+        """Upload a training set for classifier, and start training.
 
         Body:
             FormData: with "file" item.
@@ -217,19 +219,62 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
             UnprocessableEntity
 
         """
-        # TODO: Write tests for all of these!
+        args = self.reqparse.parse_args()
+        file_: FileStorage = args["file"]
+
         try:
             classifier = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
         except db.Classifier.DoesNotExist:
             raise NotFound("classifier not found.")
 
-        if classifier.training_set is not None:
+        if classifier.train_set is not None:
             raise AlreadyExists("This classifier already has a training set.")
 
-        args = self.reqparse.parse_args()
-        file_: FileStorage = args["file"]
+        table_headers, table_data = self._validate_training_file_and_get_data(
+            classifier, file_
+        )
+        # SPlit into train and dev
+        ss = model_selection.StratifiedShuffleSplit(n_splits=1, test_size=0.2)
+        train_indices, dev_indices = next(ss.split(*zip(*table_data)))
 
-        table = utils.Validate.csv_and_get_table(file_)  # type: ignore
+        train_data = [table_data[i] for i in train_indices]
+        dev_data = [table_data[i] for i in dev_indices]
+
+        train_file = utils.Files.classifier_train_set_file(classifier_id)
+        self._write_headers_and_data_to_csv(table_headers, train_data, train_file)
+        dev_file = utils.Files.classifier_dev_set_file(classifier_id)
+        self._write_headers_and_data_to_csv(table_headers, dev_data, dev_file)
+
+        clsf_dir = utils.Files.classifier_dir(classifier_id)
+
+        classifier.train_set = db.LabeledSet(file_path=train_file.relative_to(clsf_dir))
+        classifier.dev_set = db.LabeledSet(file_path=dev_file.relative_to(clsf_dir))
+        classifier.train_set.save()
+        classifier.dev_set.save()
+        classifier.save()
+
+        # Refresh classifier
+        classifier = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
+
+        return self._classifier_status(classifier)
+
+    @staticmethod
+    def _validate_training_file_and_get_data(
+        classifier: db.Classifier, file_: FileStorage
+    ) -> T.Tuple[T.List[str], T.List[T.List[str]]]:
+        """Validate user input and return uploaded CSV data, without the headers.
+
+        Args:
+            classifier:
+            file_: uploaded file.
+
+        Returns:
+            table_headers: A list of length 2.
+            table_data: A list of lists of length 2.
+        """
+        # TODO: Write tests for all of these!
+
+        table = utils.Validate.csv_and_get_table(T.cast(io.BytesIO, file_))
 
         utils.Validate.table_has_num_columns(table, 2)
         utils.Validate.table_has_headers(table, ["example", "category"])
@@ -261,34 +306,7 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
                 " We need at least two examples per category."
             )
 
-        # Save files
-        ss = model_selection.StratifiedShuffleSplit(n_splits=1, test_size=0.2)
-        train_indices, dev_indices = next(ss.split(*zip(*table_data)))
-
-        train_data = [table_data[i] for i in train_indices]
-        dev_data = [table_data[i] for i in dev_indices]
-
-        train_file = utils.Files.classifier_train_set_file(classifier.classifier_id)
-        self._write_headers_and_data_to_csv(table_headers, train_data, train_file)
-        dev_file = utils.Files.classifier_dev_set_file(classifier.classifier_id)
-        self._write_headers_and_data_to_csv(table_headers, dev_data, dev_file)
-
-        clsf_dir = utils.Files.classifier_dir(classifier.classifier_id)
-
-        training_set = db.LabeledSet(file_path=train_file.relative_to(clsf_dir))
-        training_set.save()
-        classifier.training_set = training_set
-        classifier.save()
-
-        # Refresh classifier
-        classifier = db.Classifier.get(
-            db.Classifier.classifier_id == classifier.classifier_id
-        )
-
-        return self._classifier_status(classifier)
-
-    def get(self) -> Json:
-        """."""
+        return table_headers, table_data
 
 
 def create_app(project_data_dir: T.Optional[Path] = None) -> Flask:
@@ -300,18 +318,31 @@ def create_app(project_data_dir: T.Optional[Path] = None) -> Flask:
 
     Sets:
         app.config["PROJECT_DATA_DIR"]
+        app.config["MODEL_SCHEDULER"]
 
     Returns:
         app: Flask() object.
     """
     app = Flask(__name__, static_url_path="/", static_folder="../frontend")
 
+    @app.before_request
+    def _db_connect() -> None:
+        """Ensures that a connection is opened to handle queries by the request."""
+        db.DATABASE.connect()
+
+    @app.teardown_request
+    def _db_close(exc: T.Optional[Exception]) -> None:
+        """Close on tear down."""
+        if not db.DATABASE.is_closed():
+            db.DATABASE.close()
+
     if project_data_dir is None:
         project_data_dir = Path(os.environ.get("PROJECT_DATA_DIR", "./project_data"))
     app.config["PROJECT_DATA_DIR"] = project_data_dir or Path()
+    app.config["MODEL_SCHEDULER"] = ModelScheduler()
 
     api = Api(app)
-    # `Directories` uses flask.current_app. Since we're not
+    # `utils.Files` uses flask.current_app. Since we're not
     # handling a request just yet, we need this.
     with app.app_context():
         # Create the project data directory

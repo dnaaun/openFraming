@@ -5,10 +5,8 @@ import typing as T
 import peewee as pw  # type: ignore
 
 
-_DATABASE = pw.SqliteDatabase("sqlite.db")
-"""The database connection.
-
-"""
+DATABASE = pw.SqliteDatabase("sqlite.db")
+"""The database connection."""
 
 
 class BaseModel(pw.Model):
@@ -17,7 +15,7 @@ class BaseModel(pw.Model):
     class Meta:
         """meta class."""
 
-        database = _DATABASE
+        database = DATABASE
 
 
 # From: https://github.com/coleifer/peewee/issues/630
@@ -107,10 +105,10 @@ class Metrics(BaseModel):
 
 
 class LabeledSet(BaseModel):
-    """This is either a training set, or a test set.
+    """This is either a train set, or a dev set.
 
-    We don't need a "name" field for this because there will only be one training set
-    and one test set per classifier. For the same reason, we don't store a foreign key
+    We don't need a "name" field for this because there will only be one train set
+    and one dev set per classifier. For the same reason, we don't store a foreign key
     to the classifier here.
 
     Attributes:
@@ -118,7 +116,7 @@ class LabeledSet(BaseModel):
         file_path: file path relative to classifier file path.
         training_or_inference_completed: Whether the training or the inference has
             completed this set.
-        metrics: Metrics on set. Can be null in the case of a training set.
+        metrics: Metrics on set. Can be null in the case of a train set.
     """
 
     id = pw.AutoField(primary_key=True)
@@ -134,13 +132,12 @@ class Classifier(BaseModel):
         name: Name of classiifer.
         category_names: Comma separated names of categories. Means category names can't
             have commas.
-        dir_path: Path where classifier related files (models, training set, dev set,
+        dir_path: Path where classifier related files (models, train set, dev set,
             test sets) are stored.
         trained_by_openFraming: Whether this is a classifier that openFraming provides,
             or a user trained.
-        training_completed: Whether training was completed for classifer.
-        training_set: The training set for classififer.
-        test_set: The test set for classififer.
+        train_set: The train set for classififer.
+        dev_set: The dev set for classififer.
     """
 
     classifier_id = pw.AutoField(primary_key=True)
@@ -148,8 +145,8 @@ class Classifier(BaseModel):
     category_names = ListField()
     dir_path = pw.CharField()
     trained_by_openFraming = pw.BooleanField(default=False)
-    training_set = pw.ForeignKeyField(LabeledSet, null=True)
-    test_set = pw.ForeignKeyField(LabeledSet, null=True)
+    train_set = pw.ForeignKeyField(LabeledSet, null=True)
+    dev_set = pw.ForeignKeyField(LabeledSet, null=True)
 
 
 class UnlabelledSet(BaseModel):
@@ -174,7 +171,7 @@ class UnlabelledSet(BaseModel):
 MODELS = BaseModel.__subclasses__()
 
 
-def _create_tables(database: pw.Database = _DATABASE) -> None:
+def _create_tables(database: pw.Database = DATABASE) -> None:
     """Create the tables in the database."""
     with database:
         database.create_tables(MODELS)
