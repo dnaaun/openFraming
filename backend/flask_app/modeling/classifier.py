@@ -215,6 +215,16 @@ class ClassifierModel(object):
         return self.trainer.evaluate(eval_dataset=self.eval_dataset)  # type: ignore
 
     def _run_inference(self, inference_dset: ClassificationDataset) -> T.List[str]:
+        """
+        Given a dataset, return the labels 
+        (as drawn from the original set of labels given by the user) 
+        that the model predicts.
+
+        Inputs:
+            inference_dset: ClassificationDataset object. May or may not have labels.
+        Outputs: 
+            list of predicted labels (congruent with user input).
+        """
         preds = None
         with torch.no_grad():
             for inputs in inference_dset:
@@ -238,12 +248,36 @@ class ClassifierModel(object):
     def run_inference_no_eval(
         self, inference_dset_path: str, text_col: str
     ) -> T.List[str]:
+        """
+        Given a path to a dataset and the column containing text, 
+        provide the labels predicted by the model.
+
+        Inputs:
+            inference_dset_path: absolute filepath of inference dataset
+            text_col: column containing the text we'll analyze
+
+        Outputs:
+            list of predictions (as user-supplied labels)
+        """
         inference_dset = self.make_dataset(inference_dset_path, text_col, None)
         return self._run_inference(inference_dset)
 
     def run_inference_and_evaluate(
         self, inference_dset_path: str, text_col: str, label_col: str
     ) -> T.Dict[str, float]:
+        """
+        Given a path to a dataset and the columns containing text & labels,
+        provide the labels predicted by the model and some basic metrics.
+
+        Inputs:
+            inference_dset_path: absolute path to inference dataset
+            text_col: column containing the text we'll analyze
+            label_col: column containing the labels
+
+        Outputs:
+            list of predictions (as user-supplied labels)
+            a dict containing basic classification metrics
+        """
         inference_dset = self.make_dataset(inference_dset_path, text_col, label_col)
         labels = inference_dset.encoded_labels
         preds = self._run_inference(inference_dset)
