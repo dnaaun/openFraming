@@ -43,6 +43,17 @@ Calling `model_topics_to_spreadsheet` requires a bit more information; you'll ne
 - extra_df_columns_wanted (the list of column names besides the content column that you'd like included in the document topic probabilities spreadsheet)
 After you run it, you can use the output spreadsheets to learn more about the topics the LDA algorithm discovered.
 
+# Using the Automatic Dataset Generator:
+After you've run your LDA model, before discarding the object, collect a random sample from it (using the random_sample method in the Corpus object). Also be sure to download the `topic_probabilities_by_document.xlsx` spreadsheet. Label that random sample of data in the `EXPERT_LABEL` column. Then initialize the `SemiSupervisedDatasetCreator` object by giving it the filenames of the labeled sample and the topic probabilities by document:
+```
+s = SemiSupervisedDatasetCreator(
+    "./topic_probabilities_by_document.xlsx",
+    "../../../../Downloads/samples.xlsx",
+    [1, 2, 99],
+)
+```
+To get a labeled dataframe, run `s.get_labeled_df()`. This will return a dataframe with created labels. 
+
 # Using the Classifier module:
 You'll need a list of labels (all the valid labels used in your training & eval sets). The set of labels in the training set and the set of labels in the eval set should be the same. You'll also need a path to the train & eval sets, which should be in .csv, .tsv, .xlsx, or .xls format. We're assuming they're named train.[extension] and eval.[extension], respectively. We'll also be using the `bert-base-uncased` model; although it's possible to use other models we should stick to this one for the MVP. Our output directory (where logs and model checkpoints will be saved to) is also indicated here.
 
