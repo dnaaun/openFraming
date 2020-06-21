@@ -18,6 +18,10 @@ TSV_EXTENSIONS = {"tsv"}
 
 MALLET_PATH = "~/Downloads/mallet-2.0.8/bin/mallet"
 
+ID_COLUMN_NAME = "OBJECT_ID"
+EXPERT_LABEL_COLUMN_NAME = "EXPERT_LABEL"
+TOPIC_PROBA_PREFIX = "proba_topic_"
+
 
 class Corpus(object):
     """Creates a dataset suitable for LDA analysis; does text preprocessing."""
@@ -26,6 +30,7 @@ class Corpus(object):
         self,
         dir_name: str,
         content_column_name: str,
+        id_column_name: str,
         language: str = "english",
         min_word_length: int = 2,
         extra_punctuation: T.Set[str] = set(),
@@ -68,6 +73,8 @@ class Corpus(object):
 
         self.df_docs = pd.concat(dfs)
         self.content_column_name = content_column_name
+        self.df_docs["content_original"] = self.df_docs[self.content_column_name]
+        self.df_docs[ID_COLUMN_NAME] = self.df_docs[id_column_name]
 
         self.phrases_to_join = phrases_to_join
         self.language = language
@@ -210,6 +217,24 @@ class Corpus(object):
 
         return True
 
+    def random_sample(
+        self,
+        sample_size: int,
+        spreadsheet_path: str,
+        extra_df_columns_wanted: T.List = [],
+    ) -> bool:
+        sample_df = self.df_docs.sample(n=sample_size)
+        sample_df = sample_df[
+            [ID_COLUMN_NAME, "content_original"] + extra_df_columns_wanted
+        ]
+        sample_df[EXPERT_LABEL_COLUMN_NAME] = np.nan
+
+        sample_df_writer = pd.ExcelWriter(spreadsheet_path)
+        sample_df.to_excel(sample_df_writer)
+        sample_df_writer.save()
+
+        return True
+
 
 class LDAModeler(object):
     """Runs LDA modeling given a Corpus."""
@@ -293,10 +318,12 @@ class LDAModeler(object):
         )  # create document --> topic proba matrix
         doc_max = [np.argmax(r) for r in doc_topics]
         doc_topic_df = self.content.df_docs[
-            extra_df_columns_wanted + [self.content.content_column_name]
+            [ID_COLUMN_NAME]
+            + extra_df_columns_wanted
+            + [self.content.content_column_name]
         ]
         for c in range(self.num_topics):
-            doc_topic_df["proba_topic_{}".format(str(c))] = doc_topics[:, c]
+            doc_topic_df[TOPIC_PROBA_PREFIX + str(c)] = doc_topics[:, c]
         doc_topic_df["most_likely_topic"] = doc_max
         doc_topic_df.to_excel(doc_topic_writer)
 
@@ -306,8 +333,7 @@ class LDAModeler(object):
         return True
 
     def get_topic_proportions(self) -> np.ndarray:
-        """.
-
+        """
         Given a corpus and a model and a number of topics, get the topic probability
         distribution for each document in the corpus and use it to get the average
         topic proportions in that corpus for the model
