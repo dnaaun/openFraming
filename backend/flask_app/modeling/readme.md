@@ -52,7 +52,7 @@ s = SemiSupervisedDatasetCreator(
     [1, 2, 99],
 )
 ```
-To get a labeled dataframe, run `s.get_labeled_df()`. This will return a dataframe with created labels. 
+To get a labeled dataframe, run `s.get_labeled_df()`. This will return a dataframe with created labels. If you would like to have your labeled dataframe saved as a spreadsheet (ready to be uploaded to the Classifier module), run `s.get_labeled_df_to_spreadsheet(fname)`. 
 
 # Using the Classifier module:
 You'll need a list of labels (all the valid labels used in your training & eval sets). The set of labels in the training set and the set of labels in the eval set should be the same. You'll also need a path to the train & eval sets, which should be in .csv, .tsv, .xlsx, or .xls format. We're assuming they're named train.[extension] and eval.[extension], respectively. We'll also be using the `bert-base-uncased` model; although it's possible to use other models we should stick to this one for the MVP. Our output directory (where logs and model checkpoints will be saved to) is also indicated here.

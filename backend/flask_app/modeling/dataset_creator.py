@@ -99,6 +99,14 @@ class SemiSupervisedDatasetCreator(object):
 
         return self.df_topic_joint
 
+    def get_labeled_df_to_spreadsheet(self, fname):
+        df = self.get_labeled_df()
+        writer = pd.ExcelWriter(fname)
+        df.to_excel(writer)
+        writer.save()
+
+        return True
+
 
 # from lda import Corpus, LDAModeler
 
