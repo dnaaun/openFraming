@@ -3,8 +3,8 @@ import typing as T
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import classification_report
 import torch
+from sklearn.metrics import classification_report
 from torch.utils.data.dataset import Dataset
 from transformers import AutoConfig  # type: ignore
 from transformers import AutoModelForSequenceClassification
@@ -90,12 +90,7 @@ class ClassifierModel(object):
     """Trainable BERT-based classifier given a training & eval set."""
 
     def __init__(
-        self,
-        labels: T.List[str],
-        model_path: str,
-        model_path_tokenizer: str,
-        data_dir: str,
-        cache_dir: str,
+        self, labels: T.List[str], model_path: str, data_dir: str, cache_dir: str,
     ):
         """.
 
@@ -108,7 +103,6 @@ class ClassifierModel(object):
         """
         self.cache_dir = cache_dir
         self.model_path = model_path
-        self.model_path_tokenizer = model_path_tokenizer
         self.data_dir = data_dir
 
         self.labels = labels
@@ -125,7 +119,7 @@ class ClassifierModel(object):
             cache_dir=self.cache_dir,
         )
         self.tokenizer = AutoTokenizer.from_pretrained(
-            self.model_path_tokenizer, cache_dir=self.cache_dir,
+            self.model_path, cache_dir=self.cache_dir,
         )
         self.model = AutoModelForSequenceClassification.from_pretrained(
             self.model_path,
