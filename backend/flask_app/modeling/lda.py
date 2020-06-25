@@ -221,7 +221,7 @@ class Corpus(object):
         self,
         sample_size: int,
         spreadsheet_path: str,
-        extra_df_columns_wanted: T.List = [],
+        extra_df_columns_wanted: T.List[str] = [],
     ) -> bool:
         sample_df = self.df_docs.sample(n=sample_size)
         sample_df = sample_df[

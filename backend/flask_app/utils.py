@@ -8,45 +8,82 @@ from pathlib import Path
 from flask import current_app
 from werkzeug.exceptions import BadRequest
 
+LABELLED_CSV_CONTENT_COL = "example"
+LABELLED_CSV_LABEL_COL = "category"
+TRANSFORMERS_MODEL = "bert-base-uncased"
+TEST_SET_SPLIT = 0.2
+
 
 class Files:
     """A class for defining where files will be stored."""
 
     @classmethod
-    @lru_cache
-    def project_data_dir(cls) -> Path:
+    @lru_cache()
+    def project_data_dir(cls, ensure_exists: bool = True) -> Path:
         """Dir where all project related files will be stored."""
-        return current_app.config["PROJECT_DATA_DIR"]  # type: ignore
+        dir_: Path = current_app.config["PROJECT_DATA_DIR"]
+        if ensure_exists:
+            cls._create_dir_if_not_exists(dir_)
+        return dir_
 
     @classmethod
-    @lru_cache
-    def supervised_dir(cls) -> Path:
+    @lru_cache()
+    def supervised_dir(cls, ensure_exists: bool = True) -> Path:
         """Dir for classifier weights, training and inference data."""
-        return cls.project_data_dir() / "supervised"
+        dir_ = cls.project_data_dir() / "supervised"
+        if ensure_exists:
+            cls._create_dir_if_not_exists(dir_)
+        return dir_
 
     @classmethod
     @lru_cache
-    def unsupervised_dir(cls) -> Path:
+    def unsupervised_dir(cls, ensure_exists: bool = True) -> Path:
         """Dir for LDA results, training and inference data."""
-        return cls.project_data_dir() / "unsupervised"
+        dir_ = cls.project_data_dir() / "unsupervised"
+        if ensure_exists:
+            cls._create_dir_if_not_exists(dir_)
+        return dir_
 
     @classmethod
-    @lru_cache
-    def classifier_dir(cls, classifier_id: int) -> Path:
+    @lru_cache()
+    def classifier_dir(cls, classifier_id: int, ensure_exists: bool = False) -> Path:
         """Dir for files related to one classifier."""
-        return cls.supervised_dir() / f"classifier_{classifier_id}"
+        dir_ = cls.supervised_dir() / f"classifier_{classifier_id}"
+        if ensure_exists:
+            cls._create_dir_if_not_exists(dir_)
+        return dir_
 
     @classmethod
-    @lru_cache
+    @lru_cache()
     def classifier_train_set_file(cls, classifier_id: int) -> Path:
         """CSV training file for classifier."""
         return cls.classifier_dir(classifier_id) / "train.csv"
 
     @classmethod
-    @lru_cache
+    @lru_cache()
     def classifier_dev_set_file(cls, classifier_id: int) -> Path:
         """CSV training file for classifier."""
         return cls.classifier_dir(classifier_id) / "dev.csv"
+
+    @classmethod
+    @lru_cache()
+    def classifier_output_dir(
+        cls, classifier_id: int, ensure_exists: bool = True
+    ) -> Path:
+        """Trained model output dir"""
+        dir_ = cls.classifier_dir(classifier_id) / "trained_model/"
+        if ensure_exists:
+            cls._create_dir_if_not_exists(dir_)
+        return dir_
+
+    @classmethod
+    def _create_dir_if_not_exists(cls, path: Path) -> None:
+        """Creates directory indicated by `path` if it doesn't exist.
+
+        Does not create more than one directory (ie, nested directories).
+        """
+        if not path.exists():
+            path.mkdir()
 
 
 class Validate:

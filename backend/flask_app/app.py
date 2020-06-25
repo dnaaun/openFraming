@@ -2,12 +2,11 @@
 import csv
 import io
 import logging
-import os
-import shutil
 import typing as T
 from collections import Counter
 from pathlib import Path
 
+from flask import current_app
 from flask import Flask
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
@@ -156,14 +155,12 @@ class Classifiers(ClassifierRelatedResource):
         clsf = db.Classifier.create(
             name=name, category_names=category_names, dir_path="WILL_BE_REPLACED"
         )
-        dir_path = f"classifier_{clsf.classifier_id}"
-        clsf.dir_path = dir_path
         clsf.save()
 
-        dir_ = utils.Files.classifier_dir(classifier_id=clsf.classifier_id)
-        if dir_.exists():
-            shutil.rmtree(dir_)
-        dir_.mkdir()
+        dir_ = utils.Files.classifier_dir(
+            classifier_id=clsf.classifier_id, ensure_exists=True
+        )
+        clsf.dir_path = str(dir_.resolve())
         return self._classifier_status(clsf)
 
     def get(self) -> Json:
@@ -231,11 +228,12 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
             raise AlreadyExists("This classifier already has a training set.")
 
         table_headers, table_data = self._validate_training_file_and_get_data(
-            classifier, file_
+            classifier.category_names, file_
         )
-        # SPlit into train and dev
+        # Split into train and dev
         ss = model_selection.StratifiedShuffleSplit(n_splits=1, test_size=0.2)
-        train_indices, dev_indices = next(ss.split(*zip(*table_data)))
+        X, y = zip(*table_data)
+        train_indices, dev_indices = next(ss.split(X, y))
 
         train_data = [table_data[i] for i in train_indices]
         dev_data = [table_data[i] for i in dev_indices]
@@ -245,10 +243,8 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         dev_file = utils.Files.classifier_dev_set_file(classifier_id)
         self._write_headers_and_data_to_csv(table_headers, dev_data, dev_file)
 
-        clsf_dir = utils.Files.classifier_dir(classifier_id)
-
-        classifier.train_set = db.LabeledSet(file_path=train_file.relative_to(clsf_dir))
-        classifier.dev_set = db.LabeledSet(file_path=dev_file.relative_to(clsf_dir))
+        classifier.train_set = db.LabeledSet()
+        classifier.dev_set = db.LabeledSet()
         classifier.train_set.save()
         classifier.dev_set.save()
         classifier.save()
@@ -256,16 +252,30 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         # Refresh classifier
         classifier = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
 
+        model_scheduler: ModelScheduler = current_app.config["MODEL_SCHEDULER"]
+
+        # TODO: Add a check to make sure model training didn't start already and crashed
+
+        model_scheduler.add_training_process(
+            labels=classifier.category_names,
+            model_path=utils.TRANSFORMERS_MODEL,
+            data_dir=str(utils.Files.classifier_dir(classifier_id)),
+            cache_dir=current_app.config["TRANSFORMERS_CACHE_DIR"],
+            output_dir=str(
+                utils.Files.classifier_output_dir(classifier_id, ensure_exists=True)
+            ),
+        )
+
         return self._classifier_status(classifier)
 
     @staticmethod
     def _validate_training_file_and_get_data(
-        classifier: db.Classifier, file_: FileStorage
+        category_names: T.List[str], file_: FileStorage
     ) -> T.Tuple[T.List[str], T.List[T.List[str]]]:
         """Validate user input and return uploaded CSV data, without the headers.
 
         Args:
-            classifier:
+            category_names: The categories for the classifier.
             file_: uploaded file.
 
         Returns:
@@ -281,17 +291,23 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
 
         table_headers, table_data = table[0], table[1:]
 
+        min_num_examples = int(len(table_data) * utils.TEST_SET_SPLIT)
+        if len(table_data) < min_num_examples:
+            raise BadRequest(
+                f"We need at least {min_num_examples} labelled examples for this issue."
+            )
+
         # TODO: Low priority: Make this more efficient.
         category_names_counter = Counter(category for _, category in table_data)
 
         unique_category_names = category_names_counter.keys()
-        if set(classifier.category_names) != unique_category_names:
+        if set(category_names) != unique_category_names:
             # TODO: Lower case category names before checking.
             # TODO: More helpful error messages when there is an error with the
             # the categories in an uploaded training file.
             raise UnprocessableEntity(
-                f"The categories for '{classifier.name}' are:"
-                f" {','.join(classifier.category_names)}. But the uploaded file either"
+                "The categories for this classifier are"
+                f" {category_names}. But the uploaded file either"
                 " has some categories missing, or has categories in addition to the"
                 " ones indicated."
             )
@@ -309,7 +325,10 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         return table_headers, table_data
 
 
-def create_app(project_data_dir: T.Optional[Path] = None) -> Flask:
+def create_app(
+    project_data_dir: Path = Path("./project_data"),
+    transformers_cache_dir: Path = Path("./transformers_cache_dir"),
+) -> Flask:
     """App factory to for easier testing.
 
     Args:
@@ -318,6 +337,7 @@ def create_app(project_data_dir: T.Optional[Path] = None) -> Flask:
 
     Sets:
         app.config["PROJECT_DATA_DIR"]
+        app.config["TRANSFORMERS_CACHE_DIR"]
         app.config["MODEL_SCHEDULER"]
 
     Returns:
@@ -336,10 +356,9 @@ def create_app(project_data_dir: T.Optional[Path] = None) -> Flask:
         if not db.DATABASE.is_closed():
             db.DATABASE.close()
 
-    if project_data_dir is None:
-        project_data_dir = Path(os.environ.get("PROJECT_DATA_DIR", "./project_data"))
-    app.config["PROJECT_DATA_DIR"] = project_data_dir or Path()
+    app.config["PROJECT_DATA_DIR"] = project_data_dir
     app.config["MODEL_SCHEDULER"] = ModelScheduler()
+    app.config["TRANSFORMERS_CACHE_DIR"] = transformers_cache_dir
 
     api = Api(app)
     # `utils.Files` uses flask.current_app. Since we're not
@@ -347,13 +366,9 @@ def create_app(project_data_dir: T.Optional[Path] = None) -> Flask:
     with app.app_context():
         # Create the project data directory
         # In the future, this hould be disabled.
-        for dir_ in [
-            utils.Files.project_data_dir(),
-            utils.Files.supervised_dir(),
-            utils.Files.unsupervised_dir(),
-        ]:
-            if not dir_.exists():
-                logger.warning(f"Creating {str(dir_)} because it doesn't exist.")
+        utils.Files.project_data_dir(ensure_exists=True)
+        utils.Files.supervised_dir(ensure_exists=True)
+        utils.Files.unsupervised_dir(ensure_exists=True)
 
     lsresource_cls: T.Tuple[T.Type[BaseResource], ...] = (
         Classifiers,

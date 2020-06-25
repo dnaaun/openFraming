@@ -2,7 +2,7 @@
 import enum
 import typing as T
 
-import peewee as pw  # type: ignore
+import peewee as pw
 
 
 DATABASE = pw.SqliteDatabase("sqlite.db")
@@ -113,14 +113,12 @@ class LabeledSet(BaseModel):
 
     Attributes:
         id: set id.
-        file_path: file path relative to classifier file path.
         training_or_inference_completed: Whether the training or the inference has
             completed this set.
         metrics: Metrics on set. Can be null in the case of a train set.
     """
 
     id = pw.AutoField(primary_key=True)
-    file_path = pw.CharField(null=False)
     training_or_inference_completed = pw.BooleanField(default=False)
     metrics = pw.ForeignKeyField(Metrics, null=True)
 
@@ -132,21 +130,18 @@ class Classifier(BaseModel):
         name: Name of classiifer.
         category_names: Comma separated names of categories. Means category names can't
             have commas.
-        dir_path: Path where classifier related files (models, train set, dev set,
-            test sets) are stored.
         trained_by_openFraming: Whether this is a classifier that openFraming provides,
             or a user trained.
         train_set: The train set for classififer.
         dev_set: The dev set for classififer.
     """
 
-    classifier_id = pw.AutoField(primary_key=True)
+    classifier_id: int = pw.AutoField(primary_key=True)
     name = pw.TextField()
-    category_names = ListField()
-    dir_path = pw.CharField()
+    category_names: T.List[str] = ListField()  # type: ignore
     trained_by_openFraming = pw.BooleanField(default=False)
-    train_set = pw.ForeignKeyField(LabeledSet, null=True)
-    dev_set = pw.ForeignKeyField(LabeledSet, null=True)
+    train_set: T.Optional[LabeledSet] = pw.ForeignKeyField(LabeledSet, null=True)  # type: ignore
+    dev_set: T.Optional[LabeledSet] = pw.ForeignKeyField(LabeledSet, null=True)  # type: ignore
 
 
 class UnlabelledSet(BaseModel):
@@ -156,7 +151,6 @@ class UnlabelledSet(BaseModel):
         id: set id.
         classifier: The classifier this set is intended for.
         name: User given name of the set.
-        file_path: file path relative to classifier file path.
         inference_completed: Whether the training or the inference has
             completed this set.
     """
@@ -164,7 +158,6 @@ class UnlabelledSet(BaseModel):
     id = pw.AutoField(primary_key=True)
     classifier = pw.ForeignKeyField(Classifier)
     name = pw.CharField()
-    file_path = pw.CharField(null=False)
     inference_completed = pw.BooleanField()
 
 

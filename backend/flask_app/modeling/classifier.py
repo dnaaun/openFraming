@@ -14,6 +14,7 @@ from transformers import InputFeatures
 from transformers import Trainer
 from transformers import TrainingArguments
 
+from flask_app import utils
 from flask_app.modeling.lda import CSV_EXTENSIONS
 from flask_app.modeling.lda import EXCEL_EXTENSIONS
 from flask_app.modeling.lda import TSV_EXTENSIONS
@@ -29,7 +30,7 @@ class ClassificationDataset(Dataset):  # type: ignore
         label_map: T.Dict[str, int],
         dset_filename: str,
         content_column: str,
-        label_column: str,
+        label_column: T.Optional[str],
     ):
         """.
 
@@ -90,7 +91,12 @@ class ClassifierModel(object):
     """Trainable BERT-based classifier given a training & eval set."""
 
     def __init__(
-        self, labels: T.List[str], model_path: str, data_dir: str, cache_dir: str,
+        self,
+        labels: T.List[str],
+        model_path: str,
+        data_dir: str,
+        cache_dir: str,
+        output_dir: str,
     ):
         """.
 
@@ -104,6 +110,7 @@ class ClassifierModel(object):
         self.cache_dir = cache_dir
         self.model_path = model_path
         self.data_dir = data_dir
+        self.output_dir = output_dir
 
         self.labels = labels
         self.num_labels = len(labels)
@@ -129,10 +136,14 @@ class ClassifierModel(object):
         )
 
         self.train_dataset = self.make_dataset(
-            self.data_dir + "/train.csv", "tweet", "sentiment"
+            self.data_dir + "/train.csv",
+            utils.LABELLED_CSV_CONTENT_COL,
+            utils.LABELLED_CSV_LABEL_COL,
         )
         self.eval_dataset = self.make_dataset(
-            self.data_dir + "/dev.csv", "tweet", "sentiment"
+            self.data_dir + "/dev.csv",
+            utils.LABELLED_CSV_CONTENT_COL,
+            utils.LABELLED_CSV_LABEL_COL,
         )
 
     def make_dataset(
@@ -191,7 +202,7 @@ class ClassifierModel(object):
                 do_train=True,
                 do_eval=True,
                 evaluate_during_training=True,
-                output_dir="./output/",
+                output_dir=self.output_dir,
             ),
             train_dataset=self.train_dataset,
             eval_dataset=self.eval_dataset,
