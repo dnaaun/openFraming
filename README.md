@@ -3,13 +3,14 @@ This was made and tested on Python 3.7.3 and Anaconda Python 3.6.5. It should wo
 
 ## Quick setup to get the server going
 
-Clone this repo and `cd` into this directory.
 
-First, setup a virtual environment and install the required packages.
+Use the following commands to git clone this repo, and then change your directory to it. Then, setup a virtual environment and install the required packages.
 
+	$ git clone https://github.com/davidatbu/openFraming.git
+	$ cd openFraming
 	$ python -m venv openFraming
 	$ pip install -r requirements.txt
-    $ cd api
+	$ cd api
 	$ source openFraming/bin/activate
 
 You should be able to run the server using.
