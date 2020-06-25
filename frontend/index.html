@@ -44,7 +44,7 @@
         <br>
         <br>
         <br>
-        <p>Please select one of the following policy issues that corresponds to your document:</p>
+        <p>Please either select one of the following policy issues that corresponds to your document or write the name of your own policy issue in the input box that accompanies:</p>
         <form id="create_a_classifier_form">
             <div id="policyissueradiobutton">
                 <div class="form-check-inline">
@@ -94,18 +94,28 @@
                     </label>
                 </div>
 
-                <div class="form-check-inline">
-                    <label class="form-check-label">
+               <div>
+                   <label onClick="otherIssue()">
+                       <input type="radio" name="policyissue" id="other_fruit" value="other" >or other policy issue:</input>
+                       <input type ="text" name="otherpolicyname" id="other_text"/></label>
+
+
+               </div>
+
+                <!--
+                                <div class="form-check-inline">
+                                       <label class="form-check-label">
                         <input type="radio" class="form-check-input" id="otherradiobutton" name="policyissue" value="other">Other
                     </label>
                 </div>
+                -->
             </div>
 
 
             <br>
             <br>
 
-            <label for="category_names">Please enter the frames for issue framing classification with comma separated values like the example below</label>
+            <label for="category_names">If you chose 'Other' for policy issue, please enter the frames for issue framing classification with comma separated values. Here you see the frame name examples for <i>Gun Violence</i> issue.</label>
             <textarea class="form-control" id="category_names" rows="3" placeholder="gun rights,gun control,politics,mental health,school/public space safety,race/ethnicity,public opinion,society/culture,economic consequences"></textarea>
 
             <span style="color: red" id="commaerror">Please separate the frame names with a comma</span>

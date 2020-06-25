@@ -132,3 +132,13 @@ $(function(){
     });
 });
 
+
+function otherIssue(){
+	let a = document.getElementById('other_fruit');
+	a.checked=true;
+}
+function regularFruit(){
+	let a = document.getElementById('other_text');
+	a.value="";
+}
+
