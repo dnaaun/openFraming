@@ -132,12 +132,6 @@ $(function(){
     });
 });
 
-$("#signin").click(function() {
-	$("#signin").submit();
-	alert("go");
-	window.location.href = "/openFraming/frontend/create_a_classifier.html"
-});
-
 function otherIssue(){
 	let a = document.getElementById('other_fruit');
 	a.checked=true;
