@@ -1,4 +1,6 @@
 """Peewee database ORM."""
+from __future__ import annotations
+
 import enum
 import typing as T
 
@@ -71,9 +73,11 @@ class ListField(pw.TextField):
             )
         return self._sep.join(value)
 
-    def python_value(self, value: str) -> T.List[str]:
+    def python_value(self, value: T.Optional[str]) -> T.Optional[T.List[str]]:
         """Convert str to list."""
-        return value.split(self._sep)
+        if value is not None:
+            return value.split(self._sep)
+        return None
 
 
 class ProgressEnum(str, enum.Enum):
@@ -118,7 +122,7 @@ class LabeledSet(BaseModel):
         metrics: Metrics on set. Can be null in the case of a train set.
     """
 
-    id = pw.AutoField(primary_key=True)
+    id_ = pw.AutoField(primary_key=True)
     training_or_inference_completed = pw.BooleanField(default=False)
     metrics = pw.ForeignKeyField(Metrics, null=True)
 
@@ -144,7 +148,7 @@ class Classifier(BaseModel):
     dev_set: T.Optional[LabeledSet] = pw.ForeignKeyField(LabeledSet, null=True)  # type: ignore
 
 
-class UnlabelledSet(BaseModel):
+class PredictionSet(BaseModel):
     """This will be a prediction set.
 
     Attributes:
@@ -155,10 +159,38 @@ class UnlabelledSet(BaseModel):
             completed this set.
     """
 
-    id = pw.AutoField(primary_key=True)
-    classifier = pw.ForeignKeyField(Classifier)
+    id_ = pw.AutoField(primary_key=True)
     name = pw.CharField()
+    classifier = pw.ForeignKeyField(Classifier, backref="prediction_sets")
     inference_completed = pw.BooleanField()
+
+
+class LDASet(BaseModel):
+    id_ = pw.AutoField(primary_key=True)
+    lda_completed: bool = pw.BooleanField(default=False)  # type: ignore
+
+
+class TopicModel(BaseModel):
+    """."""
+
+    id_: int = pw.AutoField()
+    name: str = pw.CharField()
+    num_topics: int = pw.IntegerField()
+    topic_names: T.Optional[T.List[str]] = ListField(null=True)  # type: ignore
+    lda_set: T.Optional[LDASet] = pw.ForeignKeyField(LDASet, null=True)  # type: ignore
+
+    semi_supervised_sets: T.Type[SemiSupervisedSet]
+
+    @property
+    # https://github.com/coleifer/peewee/issues/1667#issuecomment-405095432
+    def semi_supervised_set(self) -> SemiSupervisedSet:
+        return self.semi_supervised_sets.get()
+
+
+class SemiSupervisedSet(BaseModel):
+    topic_model: TopicModel = pw.ForeignKeyField(TopicModel, backref="semi_supervised_sets")  # type: ignore
+    labeled_set: LabeledSet = pw.ForeignKeyField(LabeledSet)  # type: ignore
+    clustering_completed: bool = pw.BooleanField()  # type: ignore
 
 
 MODELS = BaseModel.__subclasses__()

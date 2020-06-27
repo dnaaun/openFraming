@@ -13,6 +13,9 @@ LABELLED_CSV_LABEL_COL = "category"
 TRANSFORMERS_MODEL = "bert-base-uncased"
 TEST_SET_SPLIT = 0.2
 
+# mypy doesn't support recrsive types, so this is the best we can do
+Json = T.Optional[T.Union[T.List[T.Any], T.Dict[str, T.Any], int, str, bool]]
+
 
 class Files:
     """A class for defining where files will be stored."""
@@ -85,6 +88,29 @@ class Files:
         if not path.exists():
             path.mkdir()
 
+    @classmethod
+    @lru_cache()
+    def topic_model_dir(cls, id_: int, ensure_exists: bool = False) -> Path:
+        dir_ = cls.unsupervised_dir() / f"topic_model_{id_}"
+        if ensure_exists:
+            cls._create_dir_if_not_exists(dir_)
+        return dir_
+
+    @classmethod
+    @lru_cache()
+    def topic_model_training_file(cls, id_: int) -> Path:
+        return cls.topic_model_dir(id_) / "train.csv"
+
+    @classmethod
+    @lru_cache()
+    def topic_model_keywords_file(cls, id_: int) -> Path:
+        return cls.topic_model_dir(id_) / "keywords_per_topic.csv"
+
+    @classmethod
+    @lru_cache()
+    def topic_model_probabilities_by_example_file(cls, id_: int) -> Path:
+        return cls.topic_model_dir(id_) / "probabilities_by_example.csv"
+
 
 class Validate:
     @classmethod
@@ -104,7 +130,9 @@ class Validate:
             # TODO: Check if the file size is too large
             # TODO: Maybe don't read all the file into memory even if it's small enough?
             # Not sure though.
-            table = list(csv.reader(io.TextIOWrapper(file_)))
+            text_stream = io.TextIOWrapper(file_)
+            table = list(csv.reader(text_stream))
+            text_stream.close()
             return table
         except Exception as e:
             current_app.logger.warning(f"Invalid CSV file: {e}")

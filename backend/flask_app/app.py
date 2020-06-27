@@ -12,6 +12,7 @@ from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
 from flask_restful import Resource
 from sklearn import model_selection
+from typing_extensions import TypedDict
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
 from werkzeug.exceptions import HTTPException
@@ -24,8 +25,6 @@ from flask_app.modeling.train_queue import ModelScheduler
 API_URL_PREFIX = "/api"
 
 logger = logging.getLogger(__name__)
-# mypy doesn't support recrsive types, so this is the best we can do
-Json = T.Optional[T.Union[T.List[T.Any], T.Dict[str, T.Any], int, str, bool]]
 
 
 class UnprocessableEntity(HTTPException):
@@ -66,7 +65,7 @@ class ClassifierRelatedResource(BaseResource):
     """Base class to define utility functions related to classifiers."""
 
     @staticmethod
-    def _classifier_status(clsf: db.Classifier) -> Json:
+    def _classifier_status(clsf: db.Classifier) -> utils.Json:
         """Process a Classifier instance and format it into the API spec.
 
         Returns:
@@ -100,7 +99,7 @@ class ClassifierRelatedResource(BaseResource):
 class Classifiers(ClassifierRelatedResource):
     """Create a classifer, get a list of classifiers."""
 
-    url = "/classifiers"
+    url = "/classifiers/"
 
     def __init__(self) -> None:
         """Set up request parser."""
@@ -123,7 +122,7 @@ class Classifiers(ClassifierRelatedResource):
             help="",
         )
 
-    def post(self) -> Json:
+    def post(self) -> utils.Json:
         """Create a classifier.
 
         req_body:
@@ -151,19 +150,12 @@ class Classifiers(ClassifierRelatedResource):
 
         category_names = args["category_names"]
         name = args["name"]
-        # Use a placeholder for file_path to get the auto incremented id
-        clsf = db.Classifier.create(
-            name=name, category_names=category_names, dir_path="WILL_BE_REPLACED"
-        )
+        clsf = db.Classifier.create(name=name, category_names=category_names)
         clsf.save()
-
-        dir_ = utils.Files.classifier_dir(
-            classifier_id=clsf.classifier_id, ensure_exists=True
-        )
-        clsf.dir_path = str(dir_.resolve())
+        utils.Files.classifier_dir(classifier_id=clsf.classifier_id, ensure_exists=True)
         return self._classifier_status(clsf)
 
-    def get(self) -> Json:
+    def get(self) -> utils.Json:
         """Get a list of classifiers.
 
         Returns:
@@ -178,7 +170,7 @@ class Classifiers(ClassifierRelatedResource):
               ...
             ]
         """
-        res: T.List[Json] = [
+        res: T.List[utils.Json] = [
             self._classifier_status(clsf) for clsf in db.Classifier.select()
         ]
         return res
@@ -196,7 +188,7 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
             name="file", type=FileStorage, required=True, location="files"
         )
 
-    def post(self, classifier_id: int) -> Json:
+    def post(self, classifier_id: int) -> utils.Json:
         """Upload a training set for classifier, and start training.
 
         Body:
@@ -230,6 +222,7 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         table_headers, table_data = self._validate_training_file_and_get_data(
             classifier.category_names, file_
         )
+        file_.close()
         # Split into train and dev
         ss = model_selection.StratifiedShuffleSplit(n_splits=1, test_size=0.2)
         X, y = zip(*table_data)
@@ -373,6 +366,7 @@ def create_app(
     lsresource_cls: T.Tuple[T.Type[BaseResource], ...] = (
         Classifiers,
         ClassifiersTrainingFile,
+        TopicModels,
     )
     for resource_cls in lsresource_cls:
         assert (
@@ -382,3 +376,90 @@ def create_app(
         api.add_resource(resource_cls, url)
 
     return app
+
+
+TopicModelStatus = TypedDict(
+    "TopicModelStatus",
+    {
+        "topic_model_id": int,
+        "topic_model_name": str,
+        "num_topics": int,
+        "topic_names": T.Optional[T.List[str]],
+        "status": T.Literal["not_begun", "training", "topics_to_be_named", "completed"],
+        # TODO: Update backend README to reflect API change for line above.
+    },
+)
+
+
+class TopicModelRelatedResource(BaseResource):
+    """Base class to define utility functions related to classifiers."""
+
+    @staticmethod
+    def _topic_model_status(topic_mdl: db.TopicModel) -> TopicModelStatus:
+        topic_names = topic_mdl.topic_names
+        status: T.Literal["not_begun", "training", "topics_to_be_named", "completed"]
+        if topic_mdl.lda_set is None:
+            status = "not_begun"
+        else:
+            if topic_mdl.lda_set.lda_completed:
+
+                if topic_names is None:
+                    status = "topics_to_be_named"
+                else:
+                    status = "completed"
+                status = "completed"
+            else:
+                status = "training"
+
+        return TopicModelStatus(
+            topic_model_name=topic_mdl.name,
+            topic_model_id=topic_mdl.id_,
+            num_topics=topic_mdl.num_topics,
+            topic_names=topic_names,
+            status=status,
+        )
+
+
+class TopicModels(TopicModelRelatedResource):
+
+    url = "/topic_models/"
+
+    def __init__(self) -> None:
+        """Set up request parser."""
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument(name="topic_model_name", type=str, required=True)
+
+        def greater_than_1(x: T.Any) -> int:
+            int_x = int(x)
+            if int_x < 1:
+                raise ValueError("must be greater than 1")
+            return int_x
+
+        self.reqparse.add_argument(
+            name="num_topics", type=greater_than_1, required=True
+        )
+
+    def post(self) -> TopicModelStatus:
+        """Create a classifier.
+
+        req_body:
+            json:
+                {
+                    "topic_model_name": str,
+                    "num_topics": int,
+                } 
+
+        """
+        args = self.reqparse.parse_args()
+        topic_mdl = db.TopicModel.create(
+            name=args["topic_model_name"], num_topics=args["num_topics"]
+        )
+        topic_mdl.save()
+        utils.Files.topic_model_dir(id_=topic_mdl.id_, ensure_exists=True)
+        return self._topic_model_status(topic_mdl)
+
+    def get(self) -> T.List[TopicModelStatus]:
+        res = [
+            self._topic_model_status(topic_mdl) for topic_mdl in db.TopicModel.select()
+        ]
+        return res
