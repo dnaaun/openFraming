@@ -7,6 +7,7 @@ import sys
 import tempfile
 import traceback
 import typing as T
+import unittest
 from pathlib import Path
 
 import peewee as pw
@@ -38,24 +39,9 @@ def debug_on(*exceptions: T.Type[Exception]) -> T.Callable[[F], F]:
     return decorator
 
 
-class TestMixin:
-    """A base class for all unittest mixins.
-
-    Allows having a bunch of mixins and calling super().setUp() once.
-
-    Actually, I'm not sure this is needed. # TODO:
-    """
-
+class AppMixin(unittest.TestCase):
     def setUp(self) -> None:
-        super().setUp()  # type: ignore
-
-    def tearDown(self) -> None:
-        super().tearDown()  # type: ignore
-
-
-class AppMixin(TestMixin):
-    def setUp(self) -> None:
-        self._temp_proj_dir = Path(tempfile.mkdtemp())
+        self._temp_proj_dir = Path(tempfile.mkdtemp(prefix="project_data_"))
         self._test_db = pw.SqliteDatabase(":memory:")
         self._app = create_app(project_data_dir=self._temp_proj_dir)
         self._app.config["TESTING"] = True
@@ -81,8 +67,8 @@ class AppMixin(TestMixin):
                 "\n".join(
                     [
                         "Request failed.",
-                        f"URL: {url}." if url is not None else "",
-                        f"Status code: {res.status_code}.",
+                        f"URL: '{url}'." if url is not None else "",
+                        f"Status code: '{res.status_code}'.",
                         f"Data: {res.data}",
                     ]
                     + ["Routes:"]

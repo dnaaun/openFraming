@@ -2,7 +2,6 @@
 import csv
 import io
 import typing as T
-from functools import lru_cache
 from pathlib import Path
 
 from flask import current_app
@@ -21,7 +20,6 @@ class Files:
     """A class for defining where files will be stored."""
 
     @classmethod
-    @lru_cache()
     def project_data_dir(cls, ensure_exists: bool = True) -> Path:
         """Dir where all project related files will be stored."""
         dir_: Path = current_app.config["PROJECT_DATA_DIR"]
@@ -30,7 +28,6 @@ class Files:
         return dir_
 
     @classmethod
-    @lru_cache()
     def supervised_dir(cls, ensure_exists: bool = True) -> Path:
         """Dir for classifier weights, training and inference data."""
         dir_ = cls.project_data_dir() / "supervised"
@@ -39,7 +36,6 @@ class Files:
         return dir_
 
     @classmethod
-    @lru_cache
     def unsupervised_dir(cls, ensure_exists: bool = True) -> Path:
         """Dir for LDA results, training and inference data."""
         dir_ = cls.project_data_dir() / "unsupervised"
@@ -48,7 +44,6 @@ class Files:
         return dir_
 
     @classmethod
-    @lru_cache()
     def classifier_dir(cls, classifier_id: int, ensure_exists: bool = False) -> Path:
         """Dir for files related to one classifier."""
         dir_ = cls.supervised_dir() / f"classifier_{classifier_id}"
@@ -57,19 +52,16 @@ class Files:
         return dir_
 
     @classmethod
-    @lru_cache()
     def classifier_train_set_file(cls, classifier_id: int) -> Path:
         """CSV training file for classifier."""
         return cls.classifier_dir(classifier_id) / "train.csv"
 
     @classmethod
-    @lru_cache()
     def classifier_dev_set_file(cls, classifier_id: int) -> Path:
         """CSV training file for classifier."""
         return cls.classifier_dir(classifier_id) / "dev.csv"
 
     @classmethod
-    @lru_cache()
     def classifier_output_dir(
         cls, classifier_id: int, ensure_exists: bool = True
     ) -> Path:
@@ -89,7 +81,6 @@ class Files:
             path.mkdir()
 
     @classmethod
-    @lru_cache()
     def topic_model_dir(cls, id_: int, ensure_exists: bool = False) -> Path:
         dir_ = cls.unsupervised_dir() / f"topic_model_{id_}"
         if ensure_exists:
@@ -97,17 +88,14 @@ class Files:
         return dir_
 
     @classmethod
-    @lru_cache()
     def topic_model_training_file(cls, id_: int) -> Path:
         return cls.topic_model_dir(id_) / "train.csv"
 
     @classmethod
-    @lru_cache()
     def topic_model_keywords_file(cls, id_: int) -> Path:
         return cls.topic_model_dir(id_) / "keywords_per_topic.csv"
 
     @classmethod
-    @lru_cache()
     def topic_model_probabilities_by_example_file(cls, id_: int) -> Path:
         return cls.topic_model_dir(id_) / "probabilities_by_example.csv"
 
@@ -132,6 +120,8 @@ class Validate:
             # Not sure though.
             text_stream = io.TextIOWrapper(file_)
             table = list(csv.reader(text_stream))
+            # strip blanks
+            table = [[cell.strip() for cell in row] for row in table]
             text_stream.close()
             return table
         except Exception as e:
@@ -157,9 +147,28 @@ class Validate:
             )
 
     @classmethod
+    def table_has_no_empty_cells(cls, table: T.List[T.List[str]]) -> None:
+        """
+
+        Does not strip off blanks.(That's done in Validate.csv_and_get_table
+
+        Raises:
+            BadRequest:
+        """
+        rows_with_empty_cells = []
+        for row_num, row in enumerate(table, start=1):
+            if any([cell == "" for cell in row]):
+                rows_with_empty_cells.append(row)
+        if rows_with_empty_cells:
+            raise BadRequest(
+                "The following row numbers have empty cells: "
+                + ", ".join(map(str, rows_with_empty_cells))
+            )
+
+    @classmethod
     def table_has_num_columns(
         cls, table: T.List[T.List[str]], num_columns: int
-    ) -> bool:
+    ) -> None:
         """Check if the "table"'s first row matches the headers provided, case insensitively.
 
         Args:
@@ -168,4 +177,5 @@ class Validate:
         Returns:
             is_valid:
         """
-        return len(table[0]) == num_columns
+        if not len(table[0]) == num_columns:
+            raise BadRequest(f"table must have {num_columns} columns.")

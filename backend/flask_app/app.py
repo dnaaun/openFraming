@@ -11,7 +11,7 @@ from flask import Flask
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
 from flask_restful import Resource
-from sklearn import model_selection
+from sklearn import model_selection  # type: ignore
 from typing_extensions import TypedDict
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
@@ -20,7 +20,7 @@ from werkzeug.exceptions import NotFound
 
 from flask_app import db
 from flask_app import utils
-from flask_app.modeling.train_queue import ModelScheduler
+from flask_app.modeling.train_queue import Scheduler
 
 API_URL_PREFIX = "/api"
 
@@ -245,7 +245,7 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         # Refresh classifier
         classifier = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
 
-        model_scheduler: ModelScheduler = current_app.config["MODEL_SCHEDULER"]
+        model_scheduler: Scheduler = current_app.config["SCHEDULER"]
 
         # TODO: Add a check to make sure model training didn't start already and crashed
 
@@ -279,8 +279,11 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
 
         table = utils.Validate.csv_and_get_table(T.cast(io.BytesIO, file_))
 
+        utils.Validate.table_has_no_empty_cells(table)
         utils.Validate.table_has_num_columns(table, 2)
-        utils.Validate.table_has_headers(table, ["example", "category"])
+        utils.Validate.table_has_headers(
+            table, [utils.LABELLED_CSV_CONTENT_COL, utils.LABELLED_CSV_LABEL_COL]
+        )
 
         table_headers, table_data = table[0], table[1:]
 
@@ -316,66 +319,6 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
             )
 
         return table_headers, table_data
-
-
-def create_app(
-    project_data_dir: Path = Path("./project_data"),
-    transformers_cache_dir: Path = Path("./transformers_cache_dir"),
-) -> Flask:
-    """App factory to for easier testing.
-
-    Args:
-        project_data_dir: If None, will be read from the PROJECT_DATA_DIR environment
-            variable, or will be set to ./project_data.
-
-    Sets:
-        app.config["PROJECT_DATA_DIR"]
-        app.config["TRANSFORMERS_CACHE_DIR"]
-        app.config["MODEL_SCHEDULER"]
-
-    Returns:
-        app: Flask() object.
-    """
-    app = Flask(__name__, static_url_path="/", static_folder="../frontend")
-
-    @app.before_request
-    def _db_connect() -> None:
-        """Ensures that a connection is opened to handle queries by the request."""
-        db.DATABASE.connect()
-
-    @app.teardown_request
-    def _db_close(exc: T.Optional[Exception]) -> None:
-        """Close on tear down."""
-        if not db.DATABASE.is_closed():
-            db.DATABASE.close()
-
-    app.config["PROJECT_DATA_DIR"] = project_data_dir
-    app.config["MODEL_SCHEDULER"] = ModelScheduler()
-    app.config["TRANSFORMERS_CACHE_DIR"] = transformers_cache_dir
-
-    api = Api(app)
-    # `utils.Files` uses flask.current_app. Since we're not
-    # handling a request just yet, we need this.
-    with app.app_context():
-        # Create the project data directory
-        # In the future, this hould be disabled.
-        utils.Files.project_data_dir(ensure_exists=True)
-        utils.Files.supervised_dir(ensure_exists=True)
-        utils.Files.unsupervised_dir(ensure_exists=True)
-
-    lsresource_cls: T.Tuple[T.Type[BaseResource], ...] = (
-        Classifiers,
-        ClassifiersTrainingFile,
-        TopicModels,
-    )
-    for resource_cls in lsresource_cls:
-        assert (
-            resource_cls.url[0] == "/"
-        ), f"{resource_cls.__name__}.url must start with a /"
-        url = API_URL_PREFIX + resource_cls.url
-        api.add_resource(resource_cls, url)
-
-    return app
 
 
 TopicModelStatus = TypedDict(
@@ -463,3 +406,134 @@ class TopicModels(TopicModelRelatedResource):
             self._topic_model_status(topic_mdl) for topic_mdl in db.TopicModel.select()
         ]
         return res
+
+
+class TopicModelsTrainingFile(TopicModelRelatedResource):
+
+    url = "/topic_models/<int:id_>/training/file"
+
+    def __init__(self) -> None:
+        """Set up request parser."""
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument(
+            name="file", type=FileStorage, required=True, location="files"
+        )
+
+    def post(self, id_: int) -> TopicModelStatus:
+        args = self.reqparse.parse_args()
+        file_: FileStorage = args["file"]
+
+        try:
+            topic_model = db.TopicModel.get(db.TopicModel.id_ == id_)
+        except db.Classifier.DoesNotExist:
+            raise NotFound("classifier not found.")
+
+        if topic_model.lda_set is not None:
+            raise AlreadyExists("This topic model already has a training set.")
+
+        table_headers, table_data = self._validate_and_get_training_file(file_)
+        file_.close()
+
+        train_file = utils.Files.topic_model_training_file(id_)
+        self._write_headers_and_data_to_csv(table_headers, table_data, train_file)
+
+        topic_model.lda_set = db.LDASet()
+        topic_model.lda_set.save()
+        topic_model.save()
+
+        # Refresh classifier
+        topic_model = db.TopicModel.get(db.TopicModel.id_ == id_)
+
+        # model_scheduler: ModelScheduler = current_app.config["SCHEDULER"]
+
+        return self._topic_model_status(topic_model)
+
+    @staticmethod
+    def _validate_and_get_training_file(
+        file_: FileStorage,
+    ) -> T.Tuple[T.List[str], T.List[T.List[str]]]:
+        """Validate user input and return uploaded CSV data.
+
+        Args:
+            file_: uploaded file.
+
+        Returns:
+            table_headers: A list of length 2.
+            table_data: A list of lists of length 2.
+        """
+        # TODO: Write tests for all of these!
+
+        table = utils.Validate.csv_and_get_table(T.cast(io.BytesIO, file_))
+
+        utils.Validate.table_has_num_columns(table, 1)
+        utils.Validate.table_has_headers(table, [utils.LABELLED_CSV_CONTENT_COL])
+        utils.Validate.table_has_no_empty_cells(table)
+        table_headers, table_data = table[0], table[1:]
+
+        if len(table_data) < utils.MINIMUM_LDA_EXAMPLES:
+            raise BadRequest(
+                f"We need at least {utils.MINIMUM_LDA_EXAMPLES} for a topic model."
+            )
+
+        return table_headers, table_data
+
+
+def create_app(
+    project_data_dir: Path = Path("./project_data"),
+    transformers_cache_dir: Path = Path("./transformers_cache_dir"),
+) -> Flask:
+    """App factory to for easier testing.
+
+    Args:
+        project_data_dir: If None, will be read from the PROJECT_DATA_DIR environment
+            variable, or will be set to ./project_data.
+
+    Sets:
+        app.config["PROJECT_DATA_DIR"]
+        app.config["TRANSFORMERS_CACHE_DIR"]
+        app.config["SCHEDULER"]
+
+    Returns:
+        app: Flask() object.
+    """
+    app = Flask(__name__, static_url_path="/", static_folder="../frontend")
+
+    @app.before_request
+    def _db_connect() -> None:
+        """Ensures that a connection is opened to handle queries by the request."""
+        db.DATABASE.connect()
+
+    @app.teardown_request
+    def _db_close(exc: T.Optional[Exception]) -> None:
+        """Close on tear down."""
+        if not db.DATABASE.is_closed():
+            db.DATABASE.close()
+
+    app.config["PROJECT_DATA_DIR"] = project_data_dir
+    app.config["SCHEDULER"] = Scheduler()
+    app.config["TRANSFORMERS_CACHE_DIR"] = transformers_cache_dir
+
+    api = Api(app)
+    # `utils.Files` uses flask.current_app. Since we're not
+    # handling a request just yet, we need this.
+    with app.app_context():
+        # Create the project data directory
+        # In the future, this hould be disabled.
+        utils.Files.project_data_dir(ensure_exists=True)
+        utils.Files.supervised_dir(ensure_exists=True)
+        utils.Files.unsupervised_dir(ensure_exists=True)
+
+    lsresource_cls: T.Tuple[T.Type[BaseResource], ...] = (
+        Classifiers,
+        ClassifiersTrainingFile,
+        TopicModels,
+        TopicModelsTrainingFile,
+    )
+    for resource_cls in lsresource_cls:
+        assert (
+            resource_cls.url[0] == "/"
+        ), f"{resource_cls.__name__}.url must start with a /"
+        url = API_URL_PREFIX + resource_cls.url
+        api.add_resource(resource_cls, url)
+
+    return app
