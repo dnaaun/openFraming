@@ -1,15 +1,17 @@
 """LDA processing."""
-import os
 import re
 import string
 import typing as T
+from pathlib import Path
 
-import numpy as np
-import pandas as pd
-from gensim import corpora
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
+from gensim import corpora  # type: ignore
 from gensim import models
-from nltk.corpus import stopwords
-from nltk.stem.wordnet import WordNetLemmatizer
+from nltk.corpus import stopwords  # type: ignore
+from nltk.stem.wordnet import WordNetLemmatizer  # type: ignore
+
+from flask_app import utils
 
 
 EXCEL_EXTENSIONS = {"xlsx", "xls"}
@@ -18,9 +20,12 @@ TSV_EXTENSIONS = {"tsv"}
 
 MALLET_PATH = "~/Downloads/mallet-2.0.8/bin/mallet"
 
-ID_COLUMN_NAME = "OBJECT_ID"
 EXPERT_LABEL_COLUMN_NAME = "EXPERT_LABEL"
 TOPIC_PROBA_PREFIX = "proba_topic_"
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Corpus(object):
@@ -28,7 +33,7 @@ class Corpus(object):
 
     def __init__(
         self,
-        dir_name: str,
+        file_name: str,
         content_column_name: str,
         id_column_name: str,
         language: str = "english",
@@ -41,22 +46,23 @@ class Corpus(object):
         header: bool = False,
         processing_to_do: T.Dict[str, bool] = {},
     ):
-        dir_contents = os.listdir(dir_name)
 
-        if len(dir_contents) < 1:
-            raise ValueError("Directory {} is empty!".format(dir_name))
+        file_path = Path(file_name)
 
-        suffixes = set([fname.split(".")[-1] for fname in dir_contents])
+        if not file_path.exists():
+            raise ValueError("File {} doesn't exist!".format(file_name))
 
-        if suffixes.issubset(EXCEL_EXTENSIONS):
+        suffix = file_path.suffix.strip(".")
+
+        if suffix in EXCEL_EXTENSIONS:
             doc_reader = pd.read_excel
-        elif suffixes.issubset(CSV_EXTENSIONS):
+        elif suffix in CSV_EXTENSIONS:
 
             def doc_reader(b: str) -> pd.DataFrame:
                 # dtype=object: Disable converting to non text column
                 return pd.read_csv(b, dtype=object, na_filter=False)
 
-        elif suffixes.issubset(TSV_EXTENSIONS):
+        elif suffix in CSV_EXTENSIONS:
 
             def doc_reader(b: str) -> pd.DataFrame:
                 # dtype=object: Disable converting to non text column
@@ -64,22 +70,13 @@ class Corpus(object):
 
         else:
             raise ValueError(
-                "File types in directory {} are inconsistent or invalid!".format(
-                    dir_name
-                )
+                "File type of {} are inconsistent or invalid!".format(file_name)
             )
 
-        dfs = []
-        for doc in dir_contents:
-            df = doc_reader(os.path.join(dir_name + doc))
-            if header:
-                df = df[1:]
-            dfs.append(df)
-
-        self.df_docs = pd.concat(dfs)
+        self.df_docs = doc_reader(file_name)
+        self.id_column_name = id_column_name
         self.content_column_name = content_column_name
         self.df_docs["content_original"] = self.df_docs[self.content_column_name]
-        self.df_docs[ID_COLUMN_NAME] = self.df_docs[id_column_name]
 
         self.phrases_to_join = phrases_to_join
         self.language = language
@@ -109,7 +106,11 @@ class Corpus(object):
         self.stopwords += extra_stopwords
 
         preprocessing_completed = []
-        if self.processing_to_do.get("remove_phrases", True):
+
+        # Figure out if the user meant to remove phrases by checking
+        # if they provided phrases to remove
+        remove_phrases_default = phrases_to_remove is not []
+        if self.processing_to_do.get("remove_phrases", remove_phrases_default):
             self.remove_phrases()
             preprocessing_completed.append("Removed phrases")
 
@@ -144,7 +145,8 @@ class Corpus(object):
 
     def remove_phrases(self) -> bool:
         if len(self.phrases_to_remove) == 0:
-            raise ValueError("No phrases given for removal!")
+            logger.warn("Asked to remove phrases, but self.phrases_to_remove is empty.")
+            return True
 
         def remove_phrases_from_content(content: str) -> str:
             for w in self.phrases_to_remove:
@@ -230,7 +232,7 @@ class Corpus(object):
     ) -> bool:
         sample_df = self.df_docs.sample(n=sample_size)
         sample_df = sample_df[
-            [ID_COLUMN_NAME, "content_original"] + extra_df_columns_wanted
+            [self.id_column_name, "content_original"] + extra_df_columns_wanted
         ]
         sample_df[EXPERT_LABEL_COLUMN_NAME] = np.nan
 
@@ -249,6 +251,7 @@ class LDAModeler(object):
         content: Corpus,
         low_bound_dict: float = 0.02,
         high_bound_dict: float = 0.5,
+        iterations: int = 1000,
     ):
         self.content = content
         self.my_corpus = list(self.content.df_docs[content.content_column_name])
@@ -261,9 +264,12 @@ class LDAModeler(object):
 
         self.lda_model: T.Optional[models.wrappers.LdaMallet] = None
         self.num_topics = 0
+        self.iterations = iterations
 
     def model_topics(
-        self, num_topics: int = 10, num_keywords: int = 20
+        self,
+        num_topics: int = 10,
+        num_keywords: int = utils.DEFAULT_NUM_KEYWORDS_TO_GENERATE,
     ) -> T.Tuple[T.List[T.List[str]], T.Any, T.Iterator[T.List[T.Tuple[int, float]]]]:
         self.num_topics = num_topics
         self.lda_model = models.wrappers.LdaMallet(
@@ -273,6 +279,7 @@ class LDAModeler(object):
             optimize_interval=10,
             id2word=self.dictionary,
             random_seed=1,
+            iterations=self.iterations,
         )
         topic_keywords: T.List[T.List[str]] = []
         for idx, topic in self.lda_model.show_topics(
@@ -328,7 +335,7 @@ class LDAModeler(object):
         )  # create document --> topic proba matrix
         doc_max = [np.argmax(r) for r in doc_topics]
         doc_topic_df = self.content.df_docs[
-            [ID_COLUMN_NAME]
+            [self.content.id_column_name]
             + extra_df_columns_wanted
             + [self.content.content_column_name]
         ]

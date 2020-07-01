@@ -43,7 +43,9 @@ class AppMixin(unittest.TestCase):
     def setUp(self) -> None:
         self._temp_proj_dir = Path(tempfile.mkdtemp(prefix="project_data_"))
         self._test_db = pw.SqliteDatabase(":memory:")
-        self._app = create_app(project_data_dir=self._temp_proj_dir)
+        self._app = create_app(
+            project_data_dir=self._temp_proj_dir, do_tasks_sychronously=True
+        )
         self._app.config["TESTING"] = True
 
         # Bind model to test db, since we have a complete list of all models, we do not need

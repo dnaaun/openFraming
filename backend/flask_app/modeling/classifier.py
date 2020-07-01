@@ -1,18 +1,18 @@
 """Classifier related backend functionality."""
 import typing as T
 
-import numpy as np
-import pandas as pd
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
 import torch
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report  # type: ignore
 from torch.utils.data.dataset import Dataset
 from transformers import AutoConfig  # type: ignore
-from transformers import AutoModelForSequenceClassification
-from transformers import AutoTokenizer
-from transformers import EvalPrediction
-from transformers import InputFeatures
-from transformers import Trainer
-from transformers import TrainingArguments
+from transformers import AutoModelForSequenceClassification  # type: ignore
+from transformers import AutoTokenizer  # type: ignore
+from transformers import EvalPrediction  # type: ignore
+from transformers import InputFeatures  # type: ignore
+from transformers import Trainer  # type: ignore
+from transformers import TrainingArguments  # type: ignore
 
 from flask_app import utils
 from flask_app.modeling.lda import CSV_EXTENSIONS
@@ -136,14 +136,10 @@ class ClassifierModel(object):
         )
 
         self.train_dataset = self.make_dataset(
-            self.data_dir + "/train.csv",
-            utils.LABELLED_CSV_CONTENT_COL,
-            utils.LABELLED_CSV_LABEL_COL,
+            self.data_dir + "/train.csv", utils.CONTENT_COL, utils.LABEL_COL,
         )
         self.eval_dataset = self.make_dataset(
-            self.data_dir + "/dev.csv",
-            utils.LABELLED_CSV_CONTENT_COL,
-            utils.LABELLED_CSV_LABEL_COL,
+            self.data_dir + "/dev.csv", utils.CONTENT_COL, utils.LABEL_COL,
         )
 
     def make_dataset(

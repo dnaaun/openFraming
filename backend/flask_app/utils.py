@@ -7,10 +7,13 @@ from pathlib import Path
 from flask import current_app
 from werkzeug.exceptions import BadRequest
 
-LABELLED_CSV_CONTENT_COL = "example"
-LABELLED_CSV_LABEL_COL = "category"
+ID_COL = "id"
+CONTENT_COL = "text"
+LABEL_COL = "category"
 TRANSFORMERS_MODEL = "bert-base-uncased"
 TEST_SET_SPLIT = 0.2
+MINIMUM_LDA_EXAMPLES = 20
+DEFAULT_NUM_KEYWORDS_TO_GENERATE = 20
 
 # mypy doesn't support recrsive types, so this is the best we can do
 Json = T.Optional[T.Union[T.List[T.Any], T.Dict[str, T.Any], int, str, bool]]
@@ -93,11 +96,11 @@ class Files:
 
     @classmethod
     def topic_model_keywords_file(cls, id_: int) -> Path:
-        return cls.topic_model_dir(id_) / "keywords_per_topic.csv"
+        return cls.topic_model_dir(id_) / "keywords_per_topic.xlsx"
 
     @classmethod
     def topic_model_probabilities_by_example_file(cls, id_: int) -> Path:
-        return cls.topic_model_dir(id_) / "probabilities_by_example.csv"
+        return cls.topic_model_dir(id_) / "probabilities_by_example.xlsx"
 
 
 class Validate:
@@ -120,6 +123,9 @@ class Validate:
             # Not sure though.
             text_stream = io.TextIOWrapper(file_)
             table = list(csv.reader(text_stream))
+
+            if table == []:
+                raise BadRequest("An empty file was uploaded.")
             # strip blanks
             table = [[cell.strip() for cell in row] for row in table]
             text_stream.close()

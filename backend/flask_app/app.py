@@ -249,7 +249,7 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
 
         # TODO: Add a check to make sure model training didn't start already and crashed
 
-        model_scheduler.add_training_process(
+        model_scheduler.add_classifier_training(
             labels=classifier.category_names,
             model_path=utils.TRANSFORMERS_MODEL,
             data_dir=str(utils.Files.classifier_dir(classifier_id)),
@@ -281,9 +281,7 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
 
         utils.Validate.table_has_no_empty_cells(table)
         utils.Validate.table_has_num_columns(table, 2)
-        utils.Validate.table_has_headers(
-            table, [utils.LABELLED_CSV_CONTENT_COL, utils.LABELLED_CSV_LABEL_COL]
-        )
+        utils.Validate.table_has_headers(table, [utils.CONTENT_COL, utils.LABEL_COL])
 
         table_headers, table_data = table[0], table[1:]
 
@@ -424,11 +422,11 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         file_: FileStorage = args["file"]
 
         try:
-            topic_model = db.TopicModel.get(db.TopicModel.id_ == id_)
+            topic_mdl = db.TopicModel.get(db.TopicModel.id_ == id_)
         except db.Classifier.DoesNotExist:
             raise NotFound("classifier not found.")
 
-        if topic_model.lda_set is not None:
+        if topic_mdl.lda_set is not None:
             raise AlreadyExists("This topic model already has a training set.")
 
         table_headers, table_data = self._validate_and_get_training_file(file_)
@@ -437,16 +435,26 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         train_file = utils.Files.topic_model_training_file(id_)
         self._write_headers_and_data_to_csv(table_headers, table_data, train_file)
 
-        topic_model.lda_set = db.LDASet()
-        topic_model.lda_set.save()
-        topic_model.save()
+        scheduler: Scheduler = current_app.config["SCHEDULER"]
+
+        scheduler.add_topic_model_training(
+            training_file=str(train_file),
+            num_topics=topic_mdl.num_topics,
+            fname_keywords=str(utils.Files.topic_model_keywords_file(id_)),
+            fname_topics_by_doc=str(
+                utils.Files.topic_model_probabilities_by_example_file(id_)
+            ),
+        )
+        topic_mdl.lda_set = db.LDASet()
+        topic_mdl.lda_set.save()
+        topic_mdl.save()
 
         # Refresh classifier
-        topic_model = db.TopicModel.get(db.TopicModel.id_ == id_)
+        topic_mdl = db.TopicModel.get(db.TopicModel.id_ == id_)
 
         # model_scheduler: ModelScheduler = current_app.config["SCHEDULER"]
 
-        return self._topic_model_status(topic_model)
+        return self._topic_model_status(topic_mdl)
 
     @staticmethod
     def _validate_and_get_training_file(
@@ -466,9 +474,16 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         table = utils.Validate.csv_and_get_table(T.cast(io.BytesIO, file_))
 
         utils.Validate.table_has_num_columns(table, 1)
-        utils.Validate.table_has_headers(table, [utils.LABELLED_CSV_CONTENT_COL])
+        utils.Validate.table_has_headers(table, [utils.CONTENT_COL])
         utils.Validate.table_has_no_empty_cells(table)
+
         table_headers, table_data = table[0], table[1:]
+        # add the ID column to the table, necessary because of how the
+        # flask_app.modeling.lda.LDAModeler is coded up right now.
+        table_headers = [utils.ID_COL] + table_headers
+        table_data = [
+            [str(row_num)] + row for row_num, row in enumerate(table_data, start=1)
+        ]
 
         if len(table_data) < utils.MINIMUM_LDA_EXAMPLES:
             raise BadRequest(
@@ -481,12 +496,15 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
 def create_app(
     project_data_dir: Path = Path("./project_data"),
     transformers_cache_dir: Path = Path("./transformers_cache_dir"),
+    do_tasks_sychronously: bool = False,
 ) -> Flask:
     """App factory to for easier testing.
 
     Args:
-        project_data_dir: If None, will be read from the PROJECT_DATA_DIR environment
-            variable, or will be set to ./project_data.
+        project_data_dir: 
+        transforemrs_cache_dir:
+        do_tasks_sychronously: Whether to do things like classifier training and LDA
+            topic modeling synchronously. This is used to support unit testing.
 
     Sets:
         app.config["PROJECT_DATA_DIR"]
@@ -510,7 +528,7 @@ def create_app(
             db.DATABASE.close()
 
     app.config["PROJECT_DATA_DIR"] = project_data_dir
-    app.config["SCHEDULER"] = Scheduler()
+    app.config["SCHEDULER"] = Scheduler(do_tasks_sychronously=do_tasks_sychronously)
     app.config["TRANSFORMERS_CACHE_DIR"] = transformers_cache_dir
 
     api = Api(app)

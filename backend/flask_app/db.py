@@ -61,9 +61,12 @@ class ListField(pw.TextField):
         self._sep = sep
         super().__init__(*args, **kwargs)
 
-    def db_value(self, value: T.Any) -> str:
+    def db_value(self, value: T.Optional[T.Any]) -> str:
         """Validate and convert to string."""
-        if not isinstance(value, list) or set(map(type, value)) != {str}:
+        # Allow a None for an empty list
+        if value is None:
+            return ""
+        elif not isinstance(value, list) or set(map(type, value)) != {str}:
             raise ValueError("ListField stores lists of strings.")
 
         if any(self._sep in item for item in value):
@@ -179,6 +182,8 @@ class TopicModel(BaseModel):
     topic_names: T.Optional[T.List[str]] = ListField(null=True)  # type: ignore
     lda_set: T.Optional[LDASet] = pw.ForeignKeyField(LDASet, null=True)  # type: ignore
 
+    # NOTE: The below is ONLY a type annotation.
+    # The actual attribute is made available using "backreferences" in peewee
     semi_supervised_sets: T.Type[SemiSupervisedSet]
 
     @property
