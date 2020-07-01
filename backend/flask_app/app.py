@@ -11,7 +11,8 @@ from flask import Flask
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
 from flask_restful import Resource
-from sklearn import model_selection
+from sklearn import model_selection  # type: ignore
+from typing_extensions import TypedDict
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
 from werkzeug.exceptions import HTTPException
@@ -19,13 +20,11 @@ from werkzeug.exceptions import NotFound
 
 from flask_app import db
 from flask_app import utils
-from flask_app.modeling.train_queue import ModelScheduler
+from flask_app.modeling.train_queue import Scheduler
 
 API_URL_PREFIX = "/api"
 
 logger = logging.getLogger(__name__)
-# mypy doesn't support recrsive types, so this is the best we can do
-Json = T.Optional[T.Union[T.List[T.Any], T.Dict[str, T.Any], int, str, bool]]
 
 
 class UnprocessableEntity(HTTPException):
@@ -66,7 +65,7 @@ class ClassifierRelatedResource(BaseResource):
     """Base class to define utility functions related to classifiers."""
 
     @staticmethod
-    def _classifier_status(clsf: db.Classifier) -> Json:
+    def _classifier_status(clsf: db.Classifier) -> utils.Json:
         """Process a Classifier instance and format it into the API spec.
 
         Returns:
@@ -100,7 +99,7 @@ class ClassifierRelatedResource(BaseResource):
 class Classifiers(ClassifierRelatedResource):
     """Create a classifer, get a list of classifiers."""
 
-    url = "/classifiers"
+    url = "/classifiers/"
 
     def __init__(self) -> None:
         """Set up request parser."""
@@ -123,7 +122,7 @@ class Classifiers(ClassifierRelatedResource):
             help="",
         )
 
-    def post(self) -> Json:
+    def post(self) -> utils.Json:
         """Create a classifier.
 
         req_body:
@@ -151,19 +150,12 @@ class Classifiers(ClassifierRelatedResource):
 
         category_names = args["category_names"]
         name = args["name"]
-        # Use a placeholder for file_path to get the auto incremented id
-        clsf = db.Classifier.create(
-            name=name, category_names=category_names, dir_path="WILL_BE_REPLACED"
-        )
+        clsf = db.Classifier.create(name=name, category_names=category_names)
         clsf.save()
-
-        dir_ = utils.Files.classifier_dir(
-            classifier_id=clsf.classifier_id, ensure_exists=True
-        )
-        clsf.dir_path = str(dir_.resolve())
+        utils.Files.classifier_dir(classifier_id=clsf.classifier_id, ensure_exists=True)
         return self._classifier_status(clsf)
 
-    def get(self) -> Json:
+    def get(self) -> utils.Json:
         """Get a list of classifiers.
 
         Returns:
@@ -178,7 +170,7 @@ class Classifiers(ClassifierRelatedResource):
               ...
             ]
         """
-        res: T.List[Json] = [
+        res: T.List[utils.Json] = [
             self._classifier_status(clsf) for clsf in db.Classifier.select()
         ]
         return res
@@ -196,7 +188,7 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
             name="file", type=FileStorage, required=True, location="files"
         )
 
-    def post(self, classifier_id: int) -> Json:
+    def post(self, classifier_id: int) -> utils.Json:
         """Upload a training set for classifier, and start training.
 
         Body:
@@ -230,6 +222,7 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         table_headers, table_data = self._validate_training_file_and_get_data(
             classifier.category_names, file_
         )
+        file_.close()
         # Split into train and dev
         ss = model_selection.StratifiedShuffleSplit(n_splits=1, test_size=0.2)
         X, y = zip(*table_data)
@@ -252,7 +245,7 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         # Refresh classifier
         classifier = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
 
-        model_scheduler: ModelScheduler = current_app.config["MODEL_SCHEDULER"]
+        model_scheduler: Scheduler = current_app.config["SCHEDULER"]
 
         # TODO: Add a check to make sure model training didn't start already and crashed
 
@@ -286,8 +279,11 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
 
         table = utils.Validate.csv_and_get_table(T.cast(io.BytesIO, file_))
 
+        utils.Validate.table_has_no_empty_cells(table)
         utils.Validate.table_has_num_columns(table, 2)
-        utils.Validate.table_has_headers(table, ["example", "category"])
+        utils.Validate.table_has_headers(
+            table, [utils.LABELLED_CSV_CONTENT_COL, utils.LABELLED_CSV_LABEL_COL]
+        )
 
         table_headers, table_data = table[0], table[1:]
 
@@ -325,6 +321,163 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         return table_headers, table_data
 
 
+TopicModelStatus = TypedDict(
+    "TopicModelStatus",
+    {
+        "topic_model_id": int,
+        "topic_model_name": str,
+        "num_topics": int,
+        "topic_names": T.Optional[T.List[str]],
+        "status": T.Literal["not_begun", "training", "topics_to_be_named", "completed"],
+        # TODO: Update backend README to reflect API change for line above.
+    },
+)
+
+
+class TopicModelRelatedResource(BaseResource):
+    """Base class to define utility functions related to classifiers."""
+
+    @staticmethod
+    def _topic_model_status(topic_mdl: db.TopicModel) -> TopicModelStatus:
+        topic_names = topic_mdl.topic_names
+        status: T.Literal["not_begun", "training", "topics_to_be_named", "completed"]
+        if topic_mdl.lda_set is None:
+            status = "not_begun"
+        else:
+            if topic_mdl.lda_set.lda_completed:
+
+                if topic_names is None:
+                    status = "topics_to_be_named"
+                else:
+                    status = "completed"
+                status = "completed"
+            else:
+                status = "training"
+
+        return TopicModelStatus(
+            topic_model_name=topic_mdl.name,
+            topic_model_id=topic_mdl.id_,
+            num_topics=topic_mdl.num_topics,
+            topic_names=topic_names,
+            status=status,
+        )
+
+
+class TopicModels(TopicModelRelatedResource):
+
+    url = "/topic_models/"
+
+    def __init__(self) -> None:
+        """Set up request parser."""
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument(name="topic_model_name", type=str, required=True)
+
+        def greater_than_1(x: T.Any) -> int:
+            int_x = int(x)
+            if int_x < 1:
+                raise ValueError("must be greater than 1")
+            return int_x
+
+        self.reqparse.add_argument(
+            name="num_topics", type=greater_than_1, required=True
+        )
+
+    def post(self) -> TopicModelStatus:
+        """Create a classifier.
+
+        req_body:
+            json:
+                {
+                    "topic_model_name": str,
+                    "num_topics": int,
+                } 
+
+        """
+        args = self.reqparse.parse_args()
+        topic_mdl = db.TopicModel.create(
+            name=args["topic_model_name"], num_topics=args["num_topics"]
+        )
+        topic_mdl.save()
+        utils.Files.topic_model_dir(id_=topic_mdl.id_, ensure_exists=True)
+        return self._topic_model_status(topic_mdl)
+
+    def get(self) -> T.List[TopicModelStatus]:
+        res = [
+            self._topic_model_status(topic_mdl) for topic_mdl in db.TopicModel.select()
+        ]
+        return res
+
+
+class TopicModelsTrainingFile(TopicModelRelatedResource):
+
+    url = "/topic_models/<int:id_>/training/file"
+
+    def __init__(self) -> None:
+        """Set up request parser."""
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument(
+            name="file", type=FileStorage, required=True, location="files"
+        )
+
+    def post(self, id_: int) -> TopicModelStatus:
+        args = self.reqparse.parse_args()
+        file_: FileStorage = args["file"]
+
+        try:
+            topic_model = db.TopicModel.get(db.TopicModel.id_ == id_)
+        except db.Classifier.DoesNotExist:
+            raise NotFound("classifier not found.")
+
+        if topic_model.lda_set is not None:
+            raise AlreadyExists("This topic model already has a training set.")
+
+        table_headers, table_data = self._validate_and_get_training_file(file_)
+        file_.close()
+
+        train_file = utils.Files.topic_model_training_file(id_)
+        self._write_headers_and_data_to_csv(table_headers, table_data, train_file)
+
+        topic_model.lda_set = db.LDASet()
+        topic_model.lda_set.save()
+        topic_model.save()
+
+        # Refresh classifier
+        topic_model = db.TopicModel.get(db.TopicModel.id_ == id_)
+
+        # model_scheduler: ModelScheduler = current_app.config["SCHEDULER"]
+
+        return self._topic_model_status(topic_model)
+
+    @staticmethod
+    def _validate_and_get_training_file(
+        file_: FileStorage,
+    ) -> T.Tuple[T.List[str], T.List[T.List[str]]]:
+        """Validate user input and return uploaded CSV data.
+
+        Args:
+            file_: uploaded file.
+
+        Returns:
+            table_headers: A list of length 2.
+            table_data: A list of lists of length 2.
+        """
+        # TODO: Write tests for all of these!
+
+        table = utils.Validate.csv_and_get_table(T.cast(io.BytesIO, file_))
+
+        utils.Validate.table_has_num_columns(table, 1)
+        utils.Validate.table_has_headers(table, [utils.LABELLED_CSV_CONTENT_COL])
+        utils.Validate.table_has_no_empty_cells(table)
+        table_headers, table_data = table[0], table[1:]
+
+        if len(table_data) < utils.MINIMUM_LDA_EXAMPLES:
+            raise BadRequest(
+                f"We need at least {utils.MINIMUM_LDA_EXAMPLES} for a topic model."
+            )
+
+        return table_headers, table_data
+
+
 def create_app(
     project_data_dir: Path = Path("./project_data"),
     transformers_cache_dir: Path = Path("./transformers_cache_dir"),
@@ -338,7 +491,7 @@ def create_app(
     Sets:
         app.config["PROJECT_DATA_DIR"]
         app.config["TRANSFORMERS_CACHE_DIR"]
-        app.config["MODEL_SCHEDULER"]
+        app.config["SCHEDULER"]
 
     Returns:
         app: Flask() object.
@@ -357,7 +510,7 @@ def create_app(
             db.DATABASE.close()
 
     app.config["PROJECT_DATA_DIR"] = project_data_dir
-    app.config["MODEL_SCHEDULER"] = ModelScheduler()
+    app.config["SCHEDULER"] = Scheduler()
     app.config["TRANSFORMERS_CACHE_DIR"] = transformers_cache_dir
 
     api = Api(app)
@@ -373,6 +526,8 @@ def create_app(
     lsresource_cls: T.Tuple[T.Type[BaseResource], ...] = (
         Classifiers,
         ClassifiersTrainingFile,
+        TopicModels,
+        TopicModelsTrainingFile,
     )
     for resource_cls in lsresource_cls:
         assert (

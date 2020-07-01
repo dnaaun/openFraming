@@ -38,7 +38,7 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 | Request body                          | FormData <br> "file": A CSV/Excel file.                                                                  |
 | Return body <br> (in case of success) | -                                                                                                        |
 | Remarks                               | This will start training the model. We will split this file into a training and test set in the backend. |
-| Status                                | Works but doesn't trigger the actual training yet.                                                       |
+| Status                                | Done |
 
 
 | <!-- -->                              | <!-- -->                                                                                                 |
@@ -104,7 +104,7 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 | Endpoint                               | /topic_models/                                                                                                                                                                                      |
 | Method                                 | GET                                                                                                                                                                                                 |
 | Request body                           | -                                                                                                                                                                                                   |
-| Return body <br> ( in case of success) | [<br>{<br>"topic_model_id": int,<br>"name": str,<br>"num_topics": int,<br>"topic_names": One_of(NULL, [str, ...])<br>"status": One_of("training", "topics_to_be_named", "completed")<br>}, ...<br>] |
+| Return body <br> ( in case of success) | [<br>{<br>"topic_model_id": int,<br>"topic_model_name": str,<br>"num_topics": int,<br>"topic_names": One_of(NULL, [str, ...])<br>"status": One_of("not_begun", "training", "topics_to_be_named", "completed")<br>}, ...<br>] |
 | Remarks                                | Lists all topic models currently created                                                                                                                                                            |
 | Status                                 |                                                                                                                                                                                                     |
 
@@ -122,11 +122,11 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 
 | <!-- -->                              | <!-- -->                                                                                                                                                                             |
 |---------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Endpoint                              | /topic_models/                                                                                                                                                                       |
+| Endpoint                              | /topic_models/<topic_model_id:int>                                                                                                                                                                       |
 | Method                                | GET                                                                                                                                                                                  |
-| Request body                          | {<br>"topic_model_name": str,<br>"num_topics": int<br>}                                                                                                                              |
-| Return body <br> (in case of success) | {<br>"topic_model_id": int,<br>"name": str,<br>"num_topics": int,<br>"topic_names": One_of(NULL, [str, ...])<br>"status": One_of("training", "topics_to_be_named", "completed")<br>} |
-| Remarks                               | Creates a topic classifier                                                                                                                                                           |
+| Request body                          | |
+| Return body <br> (in case of success) | {<br>"topic_model_id": int,<br>"name": str,<br>"num_topics": int,<br>"topic_names": One_of(NULL, [str, ...])<br>"status": One_of("not_begun", "training", "topics_to_be_named", "completed")<br>} |
+| Remarks                               | |
 | Status                                |                                                                                                                                                                                      |
 
 
@@ -168,13 +168,3 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 | Return body <br> (in case of success) | A CSV file that contains samples for each topic.                                                                                                         |
 | Remarks                               | One can upload this CSV file to the /classifiers/... endpoint to begin training.<br>Question: We're going to assign the primary topic for each document. |
 | Status                                |                                                                                                                                                          |
-
-
- 
-
-
-
-
-
-
-

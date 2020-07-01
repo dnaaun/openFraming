@@ -51,11 +51,16 @@ class Corpus(object):
         if suffixes.issubset(EXCEL_EXTENSIONS):
             doc_reader = pd.read_excel
         elif suffixes.issubset(CSV_EXTENSIONS):
-            doc_reader = pd.read_csv
+
+            def doc_reader(b: str) -> pd.DataFrame:
+                # dtype=object: Disable converting to non text column
+                return pd.read_csv(b, dtype=object, na_filter=False)
+
         elif suffixes.issubset(TSV_EXTENSIONS):
 
             def doc_reader(b: str) -> pd.DataFrame:
-                return pd.read_csv(b, sep="\t")
+                # dtype=object: Disable converting to non text column
+                return pd.read_csv(b, dtype=object, sep="\t", na_filter=False)
 
         else:
             raise ValueError(
@@ -290,6 +295,11 @@ class LDAModeler(object):
         fname_topics_by_doc: str = "topic_probabilities_by_document.xlsx",
         extra_df_columns_wanted: T.List[str] = [],
     ) -> bool:
+        """.
+        For each topic 20 keywords
+        For each document, the probability of each topic
+        """
+
         topic_keyword_writer = pd.ExcelWriter(fname_keywords)
         doc_topic_writer = pd.ExcelWriter(fname_topics_by_doc)
         self.num_topics = num_topics
@@ -305,9 +315,9 @@ class LDAModeler(object):
         topic_keywords_df["proportions"] = topic_proportions
 
         topic_dfs = []
-        n_articles = ["n = " + str(len(self.corpus_bow))]
-        topic_dfs.append(pd.Series(n_articles))  # number of articles
-        topic_dfs.append(pd.Series(["\n"]))
+        # n_articles = ["n = " + str(len(self.corpus_bow))]
+        # topic_dfs.append(pd.Series(n_articles))  # number of articles
+        # topic_dfs.append(pd.Series(["\n"]))
         topic_dfs.append(topic_keywords_df.T)
 
         full_topic_df = pd.concat(topic_dfs)
