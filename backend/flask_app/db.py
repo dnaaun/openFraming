@@ -99,13 +99,13 @@ class Metrics(BaseModel):
     """Metrics on a labeled set.
 
     Attributes:
-        macro_f1:
+        macro_f1_score:
         macro_precision:
         macro_recall:
         accuracy:
     """
 
-    macro_f1 = pw.FloatField()
+    macro_f1_score = pw.FloatField()
     macro_precision = pw.FloatField()
     macro_recall = pw.FloatField()
     accuracy = pw.FloatField()
@@ -127,7 +127,7 @@ class LabeledSet(BaseModel):
 
     id_ = pw.AutoField(primary_key=True)
     training_or_inference_completed: bool = pw.BooleanField(default=False)  # type: ignore
-    metrics = pw.ForeignKeyField(Metrics, null=True)
+    metrics: Metrics = pw.ForeignKeyField(Metrics, null=True)  # type: ignore
 
 
 class Classifier(BaseModel):
