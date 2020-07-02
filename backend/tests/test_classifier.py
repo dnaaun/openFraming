@@ -131,8 +131,9 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
             model_path=utils.TRANSFORMERS_MODEL,
             train_file=str(train_set_file),
             dev_file=str(dev_set_file),
-            cache_dir=self._app.config["TRANSFORMERS_CACHE_DIR"],
+            cache_dir=str(self._app.config["TRANSFORMERS_CACHE_DIR"]),
             output_dir=str(output_dir),
+            num_train_epochs=1.0,
         )
 
         expected_classifier_status = dict(

@@ -102,6 +102,7 @@ class ClassifierModel(object):
         model_path: str,
         cache_dir: str,
         output_dir: str,
+        num_train_epochs: T.Optional[float],
         train_file: T.Optional[str] = None,
         dev_file: T.Optional[str] = None,
     ):
@@ -112,6 +113,7 @@ class ClassifierModel(object):
             model_path: name of model being used or filepath to where the model is stored
             model_path_tokenizer: name or path of tokenizer being used.
             cache_dir: directory where cache & output are kept.
+            num_train_epochs: obvious. Why? To make unit testing faster.
             train_file: Required if we want to do .train()
             dev_file:: Required if we want to do .train_and_evaluate()
 
@@ -120,6 +122,7 @@ class ClassifierModel(object):
         self.cache_dir = cache_dir
         self.model_path = model_path
         self.output_dir = output_dir
+        self.num_train_epochs = num_train_epochs
 
         self.labels = labels
         self.num_labels = len(labels)
@@ -209,6 +212,7 @@ class ClassifierModel(object):
                 do_eval=True,
                 evaluate_during_training=True,
                 output_dir=self.output_dir,
+                num_train_epochs=self.num_train_epochs,
             ),
             train_dataset=self.train_dataset,
             eval_dataset=self.eval_dataset,

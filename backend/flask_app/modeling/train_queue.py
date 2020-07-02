@@ -45,11 +45,13 @@ class Scheduler(object):
         dev_file: str,
         cache_dir: str,
         output_dir: str,
+        num_train_epochs: float = 3.0,
     ) -> None:
         logger.info("Enqueued classifier training")
         self.classifiers_queue.enqueue(
             do_classifier_related_task,
             task_type="training",
+            num_train_epochs=num_train_epochs,
             classifier_id=classifier_id,
             labels=labels,
             model_path=model_path,
@@ -109,6 +111,7 @@ def do_classifier_related_task(
     labels: T.List[str],
     model_path: str,
     cache_dir: str,
+    num_train_epochs: T.Optional[float] = None,
     train_file: T.Optional[str] = None,
     test_file: T.Optional[str] = None,
     dev_file: T.Optional[str] = None,
@@ -121,12 +124,14 @@ def do_classifier_related_task(
         assert output_dir is None
         raise NotImplementedError()
     if task_type == "training":
+        assert num_train_epochs is not None
         assert train_file is not None
         assert dev_file is not None
         assert test_file is None
         assert output_dir is not None
         classifier_model = ClassifierModel(
             labels=labels,
+            num_train_epochs=num_train_epochs,
             model_path=model_path,
             train_file=train_file,
             dev_file=dev_file,
