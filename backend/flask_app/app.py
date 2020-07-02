@@ -71,39 +71,51 @@ class BaseResource(Resource):
         return val
 
 
+class ClassifierStatusJson(TypedDict):
+    classifier_id: int
+    classifier_name: str
+    category_names: T.List[str]
+    trained_by_openFraming: bool
+    status: T.Literal["not_begun", "training", "completed"]
+    metrics: T.Optional[utils.ClassifierMetrics]
+    # TODO: Update backend README to reflect API change for line above.
+
+
 class ClassifierRelatedResource(BaseResource):
     """Base class to define utility functions related to classifiers."""
 
     @staticmethod
-    def _classifier_status(clsf: db.Classifier) -> utils.Json:
-        """Process a Classifier instance and format it into the API spec.
-
-        Returns:
-            {
-                "classifier_id": int,
-                "name": str,
-                "trained_by_openFraming": bool,
-                "category_names": T.List[str],
-                "training_status": T.Union["not_begun", "training", "completed"]
-          }
-        """
-        if clsf.train_set is None:
-            training_status = "not_begun"
-        else:
+    def _classifier_status(clsf: db.Classifier) -> ClassifierStatusJson:
+        """Process a Classifier instance and format it into the API spec."""
+        metrics: T.Optional[utils.ClassifierMetrics] = None
+        status: T.Literal["not_begun", "completed", "training"] = "not_begun"
+        if clsf.train_set is not None:
+            assert clsf.dev_set is not None
             if clsf.train_set.training_or_inference_completed:
-                training_status = "completed"
+                assert clsf.dev_set.training_or_inference_completed
+                assert clsf.dev_set.metrics is not None
+                status = "completed"
+                metrics = utils.ClassifierMetrics(
+                    accuracy=clsf.dev_set.metrics.accuracy,
+                    macro_f1_score=clsf.dev_set.metrics.macro_f1_score,
+                    macro_precision=clsf.dev_set.metrics.macro_precision,
+                    macro_recall=clsf.dev_set.metrics.macro_recall,
+                )
             else:
-                training_status = "training"
+                status = "training"
 
         category_names = clsf.category_names
 
-        return {
-            "classifier_id": clsf.classifier_id,
-            "name": clsf.name,
-            "trained_by_openFraming": clsf.trained_by_openFraming,
-            "category_names": category_names,
-            "training_status": training_status,
-        }
+        return ClassifierStatusJson(
+            {
+                "classifier_id": clsf.classifier_id,
+                "classifier_name": clsf.name,
+                "trained_by_openFraming": clsf.trained_by_openFraming,
+                "category_names": category_names,
+                "status": status,
+                "metrics": metrics,
+            }
+        )
 
 
 class Classifiers(ClassifierRelatedResource):
@@ -124,7 +136,7 @@ class Classifiers(ClassifierRelatedResource):
             help="",
         )
 
-    def post(self) -> utils.Json:
+    def post(self) -> ClassifierStatusJson:
         """Create a classifier.
 
         req_body:
@@ -134,14 +146,6 @@ class Classifiers(ClassifierRelatedResource):
                     "category_names": T.List[str]
                 }
 
-        Returns:
-            {
-                "classifier_id": int,
-                "name": str,
-                "trained_by_openFraming": bool,
-                "status": "not_begun",
-                "category_names": T.List[str],
-            }
         """
         args = self.reqparse.parse_args()
         if (
@@ -157,24 +161,9 @@ class Classifiers(ClassifierRelatedResource):
         utils.Files.classifier_dir(classifier_id=clsf.classifier_id, ensure_exists=True)
         return self._classifier_status(clsf)
 
-    def get(self) -> utils.Json:
-        """Get a list of classifiers.
-
-        Returns:
-            [
-              {
-                "classifier_id": int,
-                "name": str,
-                "trained_by_openFraming": bool,
-                "status": T.Union["not_begun", "training", "completed"]
-                "category_names": T.List[str],
-              },
-              ...
-            ]
-        """
-        res: T.List[utils.Json] = [
-            self._classifier_status(clsf) for clsf in db.Classifier.select()
-        ]
+    def get(self) -> T.List[ClassifierStatusJson]:
+        """Get a list of classifiers."""
+        res = [self._classifier_status(clsf) for clsf in db.Classifier.select()]
         return res
 
 
@@ -190,20 +179,11 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
             name="file", type=FileStorage, required=True, location="files"
         )
 
-    def post(self, classifier_id: int) -> utils.Json:
+    def post(self, classifier_id: int) -> ClassifierStatusJson:
         """Upload a training set for classifier, and start training.
 
         Body:
-            FormData: with "file" item.
-
-        Returns:
-            {
-                "classifier_id": int,
-                "name": str,
-                "trained_by_openFraming": bool,
-                "category_names": T.List[str],
-                "training_status": "training"
-            }
+            FormData: with "file" item. 
 
         Raises:
             BadRequest
@@ -252,11 +232,12 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         # TODO: Add a check to make sure model training didn't start already and crashed
 
         model_scheduler.add_classifier_training(
+            classifier_id=classifier.classifier_id,
             labels=classifier.category_names,
             model_path=utils.TRANSFORMERS_MODEL,
             train_file=str(utils.Files.classifier_train_set_file(classifier_id)),
             dev_file=str(utils.Files.classifier_dev_set_file(classifier_id)),
-            cache_dir=current_app.config["TRANSFORMERS_CACHE_DIR"],
+            cache_dir=str(current_app.config["TRANSFORMERS_CACHE_DIR"]),
             output_dir=str(
                 utils.Files.classifier_output_dir(classifier_id, ensure_exists=True)
             ),
@@ -454,6 +435,7 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         scheduler: Scheduler = current_app.config["SCHEDULER"]
 
         scheduler.add_topic_model_training(
+            topic_model_id=topic_mdl.id_,
             training_file=str(train_file),
             num_topics=topic_mdl.num_topics,
             fname_keywords=str(utils.Files.topic_model_keywords_file(id_)),

@@ -3,7 +3,6 @@ import typing as T
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
-import typing_extensions as TT
 from sklearn.metrics import classification_report  # type: ignore
 from torch.utils.data.dataset import Dataset
 from transformers import AutoConfig  # type: ignore
@@ -94,17 +93,6 @@ class ClassificationDataset(Dataset):  # type: ignore
         return self.labels
 
 
-ClassificationMetrics = TT.TypedDict(
-    "ClassificationMetrics",
-    {
-        "accuracy": float,
-        "macro_f1_score": float,
-        "macro_recall": float,
-        "macro_precision": float,
-    },
-)
-
-
 class ClassifierModel(object):
     """Trainable BERT-based classifier given a training & eval set."""
 
@@ -112,22 +100,22 @@ class ClassifierModel(object):
         self,
         labels: T.List[str],
         model_path: str,
-        train_file: T.Optional[str],
-        dev_file: T.Optional[str],
         cache_dir: str,
         output_dir: str,
+        train_file: T.Optional[str] = None,
+        dev_file: T.Optional[str] = None,
     ):
         """.
 
         Args:
             labels: list of valid labels used in the dataset
             model_path: name of model being used or filepath to where the model is stored
-            train_file:
-            dev_file:
             model_path_tokenizer: name or path of tokenizer being used.
             cache_dir: directory where cache & output are kept.
+            train_file: Required if we want to do .train()
+            dev_file:: Required if we want to do .train_and_evaluate()
+
         """
-        assert train_file or dev_file, "Must provide a training or development set."
 
         self.cache_dir = cache_dir
         self.model_path = model_path
@@ -166,7 +154,7 @@ class ClassifierModel(object):
             )
 
     @staticmethod
-    def compute_metrics(p: EvalPrediction) -> ClassificationMetrics:
+    def compute_metrics(p: EvalPrediction) -> utils.ClassifierMetrics:
         """
         Compute accuracy of predictions vs labels. Piggy back on sklearn.
         """
@@ -176,7 +164,7 @@ class ClassifierModel(object):
         clsf_report_sklearn = classification_report(
             y_true=y_true, y_pred=y_pred, output_dict=True
         )
-        final = ClassificationMetrics(
+        final = utils.ClassifierMetrics(
             {
                 "accuracy": clsf_report_sklearn["accuracy"],
                 "macro_f1_score": clsf_report_sklearn["macro avg"]["f1-score"],
@@ -230,7 +218,7 @@ class ClassifierModel(object):
         self.trainer.save_model()
         self.tokenizer.save_pretrained(self.trainer.args.output_dir)
 
-    def train_and_evaluate(self) -> ClassificationMetrics:
+    def train_and_evaluate(self) -> utils.ClassifierMetrics:
         """
         Wrapper on the trainer.evaluate method; evaluate model's performance on eval set
         provided by the user.
@@ -239,7 +227,24 @@ class ClassifierModel(object):
         assert self.train_dataset is not None, "train_file was not provided!"
 
         self.train()
-        return self.trainer.evaluate(eval_dataset=self.eval_dataset)
+        metrics = self.trainer.evaluate(eval_dataset=self.eval_dataset)
+
+        new_metrics: T.Dict[str, float] = {}
+        for key, val in metrics.items():
+            if key == "eval_loss":
+                continue
+            if "eval_" in key:  # transformers library prepends this
+                new_key = key.replace("eval_", "")
+            new_metrics[new_key] = val  # type: ignore
+
+        return utils.ClassifierMetrics(
+            {
+                "accuracy": new_metrics["accuracy"],
+                "macro_f1_score": new_metrics["macro_f1_score"],
+                "macro_recall": new_metrics["macro_recall"],
+                "macro_precision": new_metrics["macro_precision"],
+            }
+        )
 
     def predict_and_save_predictions(
         self,

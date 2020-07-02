@@ -2,12 +2,11 @@ import csv
 import io
 import shutil
 import unittest
-from pathlib import Path
 from unittest import mock
 
 import pandas as pd  # type: ignore
 from tests.common import AppMixin
-from tests.common import debug_on
+from tests.common import debug_on  # noqa:
 from tests.common import TESTING_FILES_DIR
 
 from flask_app import db
@@ -175,6 +174,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
 
         # Asssert the scheduler was called with the right arguments
         scheduler.add_topic_model_training.assert_called_with(
+            topic_model_id=self._topic_mdl.id_,
             training_file=str(training_file_path),
             num_topics=self._num_topics,
             fname_keywords=str(fname_keywords),
@@ -207,6 +207,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
 
         # Start the training
         scheduler.add_topic_model_training(
+            topic_model_id=self._topic_mdl.id_,
             training_file=str(training_file_path),
             num_topics=self._num_topics,
             fname_keywords=str(fname_keywords),

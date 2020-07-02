@@ -4,6 +4,7 @@ import io
 import typing as T
 from pathlib import Path
 
+import typing_extensions as TT
 from flask import current_app
 from werkzeug.exceptions import BadRequest
 
@@ -27,6 +28,16 @@ MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW = 10
 
 # mypy doesn't support recrsive types, so this is the best we can do
 Json = T.Optional[T.Union[T.List[T.Any], T.Dict[str, T.Any], int, str, bool]]
+
+ClassifierMetrics = TT.TypedDict(
+    "ClassifierMetrics",
+    {
+        "accuracy": float,
+        "macro_f1_score": float,
+        "macro_recall": float,
+        "macro_precision": float,
+    },
+)
 
 
 class Files:
@@ -83,6 +94,26 @@ class Files:
         if ensure_exists:
             cls._create_dir_if_not_exists(dir_)
         return dir_
+
+    @classmethod
+    def classifier_prediction_set_dir(
+        cls, classifier_id: int, prediction_set_id: int, ensure_exists: bool = True
+    ) -> Path:
+        """Files related to one prediction set will be stored here"""
+        dir_ = cls.classifier_dir(classifier_id) / f"prediction_set_{prediction_set_id}"
+        if ensure_exists:
+            cls._create_dir_if_not_exists(dir_)
+        return dir_
+
+    @classmethod
+    def classifier_prediction_set_file(
+        cls, classifier_id: int, prediction_set_id: int
+    ) -> Path:
+        """CSV training file for classifier."""
+        return (
+            cls.classifier_prediction_set_dir(classifier_id, prediction_set_id)
+            / "test.csv"
+        )
 
     @classmethod
     def _create_dir_if_not_exists(cls, path: Path) -> None:
