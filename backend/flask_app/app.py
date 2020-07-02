@@ -2,17 +2,19 @@
 import csv
 import io
 import logging
-import os
-import shutil
 import typing as T
 from collections import Counter
 from pathlib import Path
 
+import pandas as pd  # type: ignore
+from flask import current_app
 from flask import Flask
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
 from flask_restful import Resource
-from sklearn import model_selection
+from playhouse.flask_utils import get_object_or_404
+from sklearn import model_selection  # type: ignore
+from typing_extensions import TypedDict
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
 from werkzeug.exceptions import HTTPException
@@ -20,13 +22,11 @@ from werkzeug.exceptions import NotFound
 
 from flask_app import db
 from flask_app import utils
-from flask_app.modeling.train_queue import ModelScheduler
+from flask_app.modeling.train_queue import Scheduler
 
 API_URL_PREFIX = "/api"
 
 logger = logging.getLogger(__name__)
-# mypy doesn't support recrsive types, so this is the best we can do
-Json = T.Optional[T.Union[T.List[T.Any], T.Dict[str, T.Any], int, str, bool]]
 
 
 class UnprocessableEntity(HTTPException):
@@ -62,69 +62,81 @@ class BaseResource(Resource):
             writer.writerow(headers)
             writer.writerows(data)
 
+    @staticmethod
+    def _validate_serializable_list_value(val: T.Any) -> str:
+        if not isinstance(val, str):
+            raise ValueError("must be str")
+        if "," in val:
+            raise ValueError("can't contain commas.")
+        return val
+
+
+class ClassifierStatusJson(TypedDict):
+    classifier_id: int
+    classifier_name: str
+    category_names: T.List[str]
+    trained_by_openFraming: bool
+    status: T.Literal["not_begun", "training", "completed"]
+    metrics: T.Optional[utils.ClassifierMetrics]
+    # TODO: Update backend README to reflect API change for line above.
+
 
 class ClassifierRelatedResource(BaseResource):
     """Base class to define utility functions related to classifiers."""
 
     @staticmethod
-    def _classifier_status(clsf: db.Classifier) -> Json:
-        """Process a Classifier instance and format it into the API spec.
-
-        Returns:
-            {
-                "classifier_id": int,
-                "name": str,
-                "trained_by_openFraming": bool,
-                "category_names": T.List[str],
-                "training_status": T.Union["not_begun", "training", "completed"]
-          }
-        """
-        if clsf.train_set is None:
-            training_status = "not_begun"
-        else:
+    def _classifier_status(clsf: db.Classifier) -> ClassifierStatusJson:
+        """Process a Classifier instance and format it into the API spec."""
+        metrics: T.Optional[utils.ClassifierMetrics] = None
+        status: T.Literal["not_begun", "completed", "training"] = "not_begun"
+        if clsf.train_set is not None:
+            assert clsf.dev_set is not None
             if clsf.train_set.training_or_inference_completed:
-                training_status = "completed"
+                assert clsf.dev_set.training_or_inference_completed
+                assert clsf.dev_set.metrics is not None
+                status = "completed"
+                metrics = utils.ClassifierMetrics(
+                    accuracy=clsf.dev_set.metrics.accuracy,
+                    macro_f1_score=clsf.dev_set.metrics.macro_f1_score,
+                    macro_precision=clsf.dev_set.metrics.macro_precision,
+                    macro_recall=clsf.dev_set.metrics.macro_recall,
+                )
             else:
-                training_status = "training"
+                status = "training"
 
         category_names = clsf.category_names
 
-        return {
-            "classifier_id": clsf.classifier_id,
-            "name": clsf.name,
-            "trained_by_openFraming": clsf.trained_by_openFraming,
-            "category_names": category_names,
-            "training_status": training_status,
-        }
+        return ClassifierStatusJson(
+            {
+                "classifier_id": clsf.classifier_id,
+                "classifier_name": clsf.name,
+                "trained_by_openFraming": clsf.trained_by_openFraming,
+                "category_names": category_names,
+                "status": status,
+                "metrics": metrics,
+            }
+        )
 
 
 class Classifiers(ClassifierRelatedResource):
     """Create a classifer, get a list of classifiers."""
 
-    url = "/classifiers"
+    url = "/classifiers/"
 
     def __init__(self) -> None:
         """Set up request parser."""
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument(name="name", type=str, required=True)
 
-        def category_names_type(val: T.Any) -> str:
-            if not isinstance(val, str):
-                raise ValueError("must be str")
-            if "," in val:
-                raise ValueError("can't contain commas.")
-
-            return val
-
         self.reqparse.add_argument(
             name="category_names",
-            type=category_names_type,
+            type=self._validate_serializable_list_value,
             action="append",
             required=True,
             help="",
         )
 
-    def post(self) -> Json:
+    def post(self) -> ClassifierStatusJson:
         """Create a classifier.
 
         req_body:
@@ -134,14 +146,6 @@ class Classifiers(ClassifierRelatedResource):
                     "category_names": T.List[str]
                 }
 
-        Returns:
-            {
-                "classifier_id": int,
-                "name": str,
-                "trained_by_openFraming": bool,
-                "status": "not_begun",
-                "category_names": T.List[str],
-            }
         """
         args = self.reqparse.parse_args()
         if (
@@ -152,38 +156,14 @@ class Classifiers(ClassifierRelatedResource):
 
         category_names = args["category_names"]
         name = args["name"]
-        # Use a placeholder for file_path to get the auto incremented id
-        clsf = db.Classifier.create(
-            name=name, category_names=category_names, dir_path="WILL_BE_REPLACED"
-        )
-        dir_path = f"classifier_{clsf.classifier_id}"
-        clsf.dir_path = dir_path
+        clsf = db.Classifier.create(name=name, category_names=category_names)
         clsf.save()
-
-        dir_ = utils.Files.classifier_dir(classifier_id=clsf.classifier_id)
-        if dir_.exists():
-            shutil.rmtree(dir_)
-        dir_.mkdir()
+        utils.Files.classifier_dir(classifier_id=clsf.classifier_id, ensure_exists=True)
         return self._classifier_status(clsf)
 
-    def get(self) -> Json:
-        """Get a list of classifiers.
-
-        Returns:
-            [
-              {
-                "classifier_id": int,
-                "name": str,
-                "trained_by_openFraming": bool,
-                "status": T.Union["not_begun", "training", "completed"]
-                "category_names": T.List[str],
-              },
-              ...
-            ]
-        """
-        res: T.List[Json] = [
-            self._classifier_status(clsf) for clsf in db.Classifier.select()
-        ]
+    def get(self) -> T.List[ClassifierStatusJson]:
+        """Get a list of classifiers."""
+        res = [self._classifier_status(clsf) for clsf in db.Classifier.select()]
         return res
 
 
@@ -199,20 +179,11 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
             name="file", type=FileStorage, required=True, location="files"
         )
 
-    def post(self, classifier_id: int) -> Json:
+    def post(self, classifier_id: int) -> ClassifierStatusJson:
         """Upload a training set for classifier, and start training.
 
         Body:
-            FormData: with "file" item.
-
-        Returns:
-            {
-                "classifier_id": int,
-                "name": str,
-                "trained_by_openFraming": bool,
-                "category_names": T.List[str],
-                "training_status": "training"
-            }
+            FormData: with "file" item. 
 
         Raises:
             BadRequest
@@ -231,11 +202,13 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
             raise AlreadyExists("This classifier already has a training set.")
 
         table_headers, table_data = self._validate_training_file_and_get_data(
-            classifier, file_
+            classifier.category_names, file_
         )
-        # SPlit into train and dev
+        file_.close()
+        # Split into train and dev
         ss = model_selection.StratifiedShuffleSplit(n_splits=1, test_size=0.2)
-        train_indices, dev_indices = next(ss.split(*zip(*table_data)))
+        X, y = zip(*table_data)
+        train_indices, dev_indices = next(ss.split(X, y))
 
         train_data = [table_data[i] for i in train_indices]
         dev_data = [table_data[i] for i in dev_indices]
@@ -245,10 +218,8 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         dev_file = utils.Files.classifier_dev_set_file(classifier_id)
         self._write_headers_and_data_to_csv(table_headers, dev_data, dev_file)
 
-        clsf_dir = utils.Files.classifier_dir(classifier_id)
-
-        classifier.train_set = db.LabeledSet(file_path=train_file.relative_to(clsf_dir))
-        classifier.dev_set = db.LabeledSet(file_path=dev_file.relative_to(clsf_dir))
+        classifier.train_set = db.LabeledSet()
+        classifier.dev_set = db.LabeledSet()
         classifier.train_set.save()
         classifier.dev_set.save()
         classifier.save()
@@ -256,16 +227,32 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         # Refresh classifier
         classifier = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
 
+        model_scheduler: Scheduler = current_app.config["SCHEDULER"]
+
+        # TODO: Add a check to make sure model training didn't start already and crashed
+
+        model_scheduler.add_classifier_training(
+            classifier_id=classifier.classifier_id,
+            labels=classifier.category_names,
+            model_path=utils.TRANSFORMERS_MODEL,
+            train_file=str(utils.Files.classifier_train_set_file(classifier_id)),
+            dev_file=str(utils.Files.classifier_dev_set_file(classifier_id)),
+            cache_dir=str(current_app.config["TRANSFORMERS_CACHE_DIR"]),
+            output_dir=str(
+                utils.Files.classifier_output_dir(classifier_id, ensure_exists=True)
+            ),
+        )
+
         return self._classifier_status(classifier)
 
     @staticmethod
     def _validate_training_file_and_get_data(
-        classifier: db.Classifier, file_: FileStorage
+        category_names: T.List[str], file_: FileStorage
     ) -> T.Tuple[T.List[str], T.List[T.List[str]]]:
         """Validate user input and return uploaded CSV data, without the headers.
 
         Args:
-            classifier:
+            category_names: The categories for the classifier.
             file_: uploaded file.
 
         Returns:
@@ -276,22 +263,29 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
 
         table = utils.Validate.csv_and_get_table(T.cast(io.BytesIO, file_))
 
+        utils.Validate.table_has_no_empty_cells(table)
         utils.Validate.table_has_num_columns(table, 2)
-        utils.Validate.table_has_headers(table, ["example", "category"])
+        utils.Validate.table_has_headers(table, [utils.CONTENT_COL, utils.LABEL_COL])
 
         table_headers, table_data = table[0], table[1:]
+
+        min_num_examples = int(len(table_data) * utils.TEST_SET_SPLIT)
+        if len(table_data) < min_num_examples:
+            raise BadRequest(
+                f"We need at least {min_num_examples} labelled examples for this issue."
+            )
 
         # TODO: Low priority: Make this more efficient.
         category_names_counter = Counter(category for _, category in table_data)
 
         unique_category_names = category_names_counter.keys()
-        if set(classifier.category_names) != unique_category_names:
+        if set(category_names) != unique_category_names:
             # TODO: Lower case category names before checking.
             # TODO: More helpful error messages when there is an error with the
             # the categories in an uploaded training file.
             raise UnprocessableEntity(
-                f"The categories for '{classifier.name}' are:"
-                f" {','.join(classifier.category_names)}. But the uploaded file either"
+                "The categories for this classifier are"
+                f" {category_names}. But the uploaded file either"
                 " has some categories missing, or has categories in addition to the"
                 " ones indicated."
             )
@@ -309,16 +303,322 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         return table_headers, table_data
 
 
-def create_app(project_data_dir: T.Optional[Path] = None) -> Flask:
+class TopicModelStatusJson(TypedDict):
+    topic_model_id: int
+    topic_model_name: str
+    num_topics: int
+    topic_names: T.Optional[T.List[str]]
+    status: T.Literal["not_begun", "training", "topics_to_be_named", "completed"]
+    # TODO: Update backend README to reflect API change for line above.
+
+
+class OneTopicPreviewJson(TypedDict):
+    keywords: T.List[str]
+    examples: T.List[str]
+
+
+class TopicModelPreviewJson(TopicModelStatusJson):
+    topic_previews: T.List[OneTopicPreviewJson]
+
+
+class TopicModelRelatedResource(BaseResource):
+    """Base class to define utility functions related to classifiers."""
+
+    @staticmethod
+    def _topic_model_status_json(topic_mdl: db.TopicModel) -> TopicModelStatusJson:
+        topic_names = topic_mdl.topic_names
+        status: T.Literal["not_begun", "training", "topics_to_be_named", "completed"]
+        if topic_mdl.lda_set is None:
+            status = "not_begun"
+        else:
+            if topic_mdl.lda_set.lda_completed:
+
+                if topic_names is None:
+                    status = "topics_to_be_named"
+                else:
+                    status = "completed"
+                status = "completed"
+            else:
+                status = "training"
+
+        return TopicModelStatusJson(
+            topic_model_name=topic_mdl.name,
+            topic_model_id=topic_mdl.id_,
+            num_topics=topic_mdl.num_topics,
+            topic_names=topic_names,
+            status=status,
+        )
+
+    @staticmethod
+    def _validate_topic_model_finished_training(topic_mdl: db.TopicModel) -> None:
+        if topic_mdl.lda_set is None:
+            raise BadRequest("Topic model has not started training yet.")
+        elif not topic_mdl.lda_set.lda_completed:
+            raise BadRequest("Topic model has not finished trianing yet.")
+
+
+class TopicModels(TopicModelRelatedResource):
+
+    url = "/topic_models/"
+
+    def __init__(self) -> None:
+        """Set up request parser."""
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument(name="topic_model_name", type=str, required=True)
+
+        def greater_than_1(x: T.Any) -> int:
+            int_x = int(x)
+            if int_x < 1:
+                raise ValueError("must be greater than 1")
+            return int_x
+
+        self.reqparse.add_argument(
+            name="num_topics", type=greater_than_1, required=True
+        )
+
+    def post(self) -> TopicModelStatusJson:
+        """Create a classifier.
+
+        req_body:
+            json:
+                {
+                    "topic_model_name": str,
+                    "num_topics": int,
+                } 
+
+        """
+        args = self.reqparse.parse_args()
+        topic_mdl = db.TopicModel.create(
+            name=args["topic_model_name"], num_topics=args["num_topics"]
+        )
+        topic_mdl.save()
+        utils.Files.topic_model_dir(id_=topic_mdl.id_, ensure_exists=True)
+        return self._topic_model_status_json(topic_mdl)
+
+    def get(self) -> T.List[TopicModelStatusJson]:
+        res = [
+            self._topic_model_status_json(topic_mdl)
+            for topic_mdl in db.TopicModel.select()
+        ]
+        return res
+
+
+class TopicModelsTrainingFile(TopicModelRelatedResource):
+
+    url = "/topic_models/<int:id_>/training/file"
+
+    def __init__(self) -> None:
+        """Set up request parser."""
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument(
+            name="file", type=FileStorage, required=True, location="files"
+        )
+
+    def post(self, id_: int) -> TopicModelStatusJson:
+        args = self.reqparse.parse_args()
+        file_: FileStorage = args["file"]
+
+        try:
+            topic_mdl = db.TopicModel.get(db.TopicModel.id_ == id_)
+        except db.Classifier.DoesNotExist:
+            raise NotFound("classifier not found.")
+
+        if topic_mdl.lda_set is not None:
+            raise AlreadyExists("This topic model already has a training set.")
+
+        table_headers, table_data = self._validate_and_get_training_file(file_)
+        file_.close()
+
+        train_file = utils.Files.topic_model_training_file(id_)
+        self._write_headers_and_data_to_csv(table_headers, table_data, train_file)
+
+        scheduler: Scheduler = current_app.config["SCHEDULER"]
+
+        scheduler.add_topic_model_training(
+            topic_model_id=topic_mdl.id_,
+            training_file=str(train_file),
+            num_topics=topic_mdl.num_topics,
+            fname_keywords=str(utils.Files.topic_model_keywords_file(id_)),
+            fname_topics_by_doc=str(utils.Files.topic_model_topics_by_doc_file(id_)),
+        )
+        topic_mdl.lda_set = db.LDASet()
+        topic_mdl.lda_set.save()
+        topic_mdl.save()
+
+        # Refresh classifier
+        topic_mdl = db.TopicModel.get(db.TopicModel.id_ == id_)
+
+        # model_scheduler: ModelScheduler = current_app.config["SCHEDULER"]
+
+        return self._topic_model_status_json(topic_mdl)
+
+    @staticmethod
+    def _validate_and_get_training_file(
+        file_: FileStorage,
+    ) -> T.Tuple[T.List[str], T.List[T.List[str]]]:
+        """Validate user input and return uploaded CSV data.
+
+        Args:
+            file_: uploaded file.
+
+        Returns:
+            table_headers: A list of length 2.
+            table_data: A list of lists of length 2.
+        """
+        # TODO: Write tests for all of these!
+
+        table = utils.Validate.csv_and_get_table(T.cast(io.BytesIO, file_))
+
+        utils.Validate.table_has_num_columns(table, 1)
+        utils.Validate.table_has_headers(table, [utils.CONTENT_COL])
+        utils.Validate.table_has_no_empty_cells(table)
+
+        table_headers, table_data = table[0], table[1:]
+        # add the ID column to the table, necessary because of how the
+        # flask_app.modeling.lda.LDAModeler is coded up right now.
+        table_headers = [utils.ID_COL] + table_headers
+        table_data = [
+            [str(row_num)] + row for row_num, row in enumerate(table_data, start=1)
+        ]
+
+        if len(table_data) < utils.MINIMUM_LDA_EXAMPLES:
+            raise BadRequest(
+                f"We need at least {utils.MINIMUM_LDA_EXAMPLES} for a topic model."
+            )
+
+        return table_headers, table_data
+
+
+class TopicModelsTopicsNames(TopicModelRelatedResource):
+
+    url = "/topic_models/<int:id_>/topics/names"
+
+    def __init__(self) -> None:
+        self.reqparse = reqparse.RequestParser()
+
+        self.reqparse.add_argument(
+            name="topic_names",
+            type=self._validate_serializable_list_value,
+            action="append",
+            required=True,
+            help="",
+        )
+
+    def post(self, id_: int) -> TopicModelStatusJson:
+        args = self.reqparse.parse_args()
+        topic_names: T.List[str] = args["topic_names"]
+        topic_mdl = get_object_or_404(db.TopicModel, db.TopicModel.id_ == id_)
+
+        self._validate_topic_model_finished_training(topic_mdl)
+        if len(topic_names) != topic_mdl.num_topics:
+            raise BadRequest(
+                f"Topic model has {topic_mdl.num_topics} topics, but {len(topic_names)} topics were provided."
+            )
+
+        topic_mdl.topic_names = topic_names
+        topic_mdl.save()
+        return self._topic_model_status_json(topic_mdl)
+
+
+class TopicModelsTopicsPreview(TopicModelRelatedResource):
+
+    url = "/topic_models/<int:id_>/topics/preview"
+
+    def get(self, id_: int) -> TopicModelPreviewJson:
+        topic_mdl = get_object_or_404(db.TopicModel, db.TopicModel.id_ == id_)
+        self._validate_topic_model_finished_training(topic_mdl)
+
+        keywords_per_topic = self._get_keywords_per_topic(topic_mdl)
+        examples_per_topic = self._get_examples_per_topic(topic_mdl)
+
+        assert len(keywords_per_topic) == len(examples_per_topic)
+
+        topic_mdl_status_json = self._topic_model_status_json(topic_mdl)
+        topic_preview_json = TopicModelPreviewJson(
+            {
+                "topic_model_id": topic_mdl_status_json["topic_model_id"],
+                "topic_model_name": topic_mdl_status_json["topic_model_name"],
+                "num_topics": topic_mdl_status_json["num_topics"],
+                "topic_names": topic_mdl_status_json["topic_names"],
+                "status": topic_mdl_status_json["status"],
+                "topic_previews": [
+                    OneTopicPreviewJson({"examples": examples, "keywords": keywords})
+                    for examples, keywords in zip(
+                        examples_per_topic, keywords_per_topic
+                    )
+                ],
+            }
+        )
+        return topic_preview_json
+
+    @staticmethod
+    def _get_keywords_per_topic(topic_mdl: db.TopicModel) -> T.List[T.List[str]]:
+        """
+
+        Returns:
+            keywords_per_topic: A list of lists of strings.
+                List i contains keywords that have highest emission probability.
+                under topic i.
+        """
+
+        # Look at the documentation at utils.Files.topic_model_keywords_file() for
+        # what the file is supposed to look like.
+        keywords_file_path = utils.Files.topic_model_keywords_file(topic_mdl.id_)
+
+        keywords_df = pd.read_excel(keywords_file_path, index_col=0, header=0)
+        keywords_df = keywords_df.iloc[:-1]  # Remove the "probabilities" row
+        return keywords_df.T.values.tolist()  # type: ignore[no-any-return]
+
+    @staticmethod
+    def _get_examples_per_topic(topic_mdl: db.TopicModel) -> T.List[T.List[str]]:
+        """
+
+        Returns;
+            topic_most_likely_examples: A list of list of strings.
+                List i within this list contains examples whose most likely topic was
+                determined to be topic i.
+
+                i starts counting from zero. The maximum number of examples is determined
+                by utils.MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW
+        """
+
+        # Look at the documentation at utils.Files.topic_model_topics_by_doc_file() for
+        # what the file is supposed to look like.
+        topics_by_doc_path = utils.Files.topic_model_topics_by_doc_file(topic_mdl.id_)
+        topics_by_doc_df = pd.read_excel(topics_by_doc_path, index_col=0, header=0)
+        bool_mask_topic_most_likely_examples: T.List[pd.Series] = [
+            topics_by_doc_df[utils.MOST_LIKELY_TOPIC_COL] == topic_num
+            for topic_num in range(topic_mdl.num_topics)
+        ]
+        examples_per_topic: T.List[T.List[str]] = [
+            topics_by_doc_df.loc[bool_mask, utils.CONTENT_COL][
+                : utils.MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW
+            ]
+            .to_numpy()
+            .tolist()
+            for bool_mask in bool_mask_topic_most_likely_examples
+        ]
+
+        return examples_per_topic
+
+
+def create_app(
+    project_data_dir: Path = Path("./project_data"),
+    transformers_cache_dir: Path = Path("./transformers_cache_dir"),
+    do_tasks_sychronously: bool = False,
+) -> Flask:
     """App factory to for easier testing.
 
     Args:
-        project_data_dir: If None, will be read from the PROJECT_DATA_DIR environment
-            variable, or will be set to ./project_data.
+        project_data_dir: 
+        transforemrs_cache_dir:
+        do_tasks_sychronously: Whether to do things like classifier training and LDA
+            topic modeling synchronously. This is used to support unit testing.
 
     Sets:
         app.config["PROJECT_DATA_DIR"]
-        app.config["MODEL_SCHEDULER"]
+        app.config["TRANSFORMERS_CACHE_DIR"]
+        app.config["SCHEDULER"]
 
     Returns:
         app: Flask() object.
@@ -336,10 +636,9 @@ def create_app(project_data_dir: T.Optional[Path] = None) -> Flask:
         if not db.DATABASE.is_closed():
             db.DATABASE.close()
 
-    if project_data_dir is None:
-        project_data_dir = Path(os.environ.get("PROJECT_DATA_DIR", "./project_data"))
-    app.config["PROJECT_DATA_DIR"] = project_data_dir or Path()
-    app.config["MODEL_SCHEDULER"] = ModelScheduler()
+    app.config["PROJECT_DATA_DIR"] = project_data_dir
+    app.config["SCHEDULER"] = Scheduler(do_tasks_sychronously=do_tasks_sychronously)
+    app.config["TRANSFORMERS_CACHE_DIR"] = transformers_cache_dir
 
     api = Api(app)
     # `utils.Files` uses flask.current_app. Since we're not
@@ -347,17 +646,17 @@ def create_app(project_data_dir: T.Optional[Path] = None) -> Flask:
     with app.app_context():
         # Create the project data directory
         # In the future, this hould be disabled.
-        for dir_ in [
-            utils.Files.project_data_dir(),
-            utils.Files.supervised_dir(),
-            utils.Files.unsupervised_dir(),
-        ]:
-            if not dir_.exists():
-                logger.warning(f"Creating {str(dir_)} because it doesn't exist.")
+        utils.Files.project_data_dir(ensure_exists=True)
+        utils.Files.supervised_dir(ensure_exists=True)
+        utils.Files.unsupervised_dir(ensure_exists=True)
 
     lsresource_cls: T.Tuple[T.Type[BaseResource], ...] = (
         Classifiers,
         ClassifiersTrainingFile,
+        TopicModels,
+        TopicModelsTrainingFile,
+        TopicModelsTopicsNames,
+        TopicModelsTopicsPreview,
     )
     for resource_cls in lsresource_cls:
         assert (

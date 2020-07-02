@@ -1,8 +1,10 @@
 """Peewee database ORM."""
+from __future__ import annotations
+
 import enum
 import typing as T
 
-import peewee as pw  # type: ignore
+import peewee as pw
 
 
 DATABASE = pw.SqliteDatabase("sqlite.db")
@@ -59,9 +61,12 @@ class ListField(pw.TextField):
         self._sep = sep
         super().__init__(*args, **kwargs)
 
-    def db_value(self, value: T.Any) -> str:
+    def db_value(self, value: T.Optional[T.Any]) -> str:
         """Validate and convert to string."""
-        if not isinstance(value, list) or set(map(type, value)) != {str}:
+        # Allow a None for an empty list
+        if value is None:
+            return ""
+        elif not isinstance(value, list) or set(map(type, value)) != {str}:
             raise ValueError("ListField stores lists of strings.")
 
         if any(self._sep in item for item in value):
@@ -71,9 +76,11 @@ class ListField(pw.TextField):
             )
         return self._sep.join(value)
 
-    def python_value(self, value: str) -> T.List[str]:
+    def python_value(self, value: T.Optional[str]) -> T.Optional[T.List[str]]:
         """Convert str to list."""
-        return value.split(self._sep)
+        if value is not None:
+            return value.split(self._sep)
+        return None
 
 
 class ProgressEnum(str, enum.Enum):
@@ -92,13 +99,13 @@ class Metrics(BaseModel):
     """Metrics on a labeled set.
 
     Attributes:
-        macro_f1:
+        macro_f1_score:
         macro_precision:
         macro_recall:
         accuracy:
     """
 
-    macro_f1 = pw.FloatField()
+    macro_f1_score = pw.FloatField()
     macro_precision = pw.FloatField()
     macro_recall = pw.FloatField()
     accuracy = pw.FloatField()
@@ -113,16 +120,14 @@ class LabeledSet(BaseModel):
 
     Attributes:
         id: set id.
-        file_path: file path relative to classifier file path.
         training_or_inference_completed: Whether the training or the inference has
             completed this set.
         metrics: Metrics on set. Can be null in the case of a train set.
     """
 
-    id = pw.AutoField(primary_key=True)
-    file_path = pw.CharField(null=False)
-    training_or_inference_completed = pw.BooleanField(default=False)
-    metrics = pw.ForeignKeyField(Metrics, null=True)
+    id_ = pw.AutoField(primary_key=True)
+    training_or_inference_completed: bool = pw.BooleanField(default=False)  # type: ignore
+    metrics: Metrics = pw.ForeignKeyField(Metrics, null=True)  # type: ignore
 
 
 class Classifier(BaseModel):
@@ -132,40 +137,65 @@ class Classifier(BaseModel):
         name: Name of classiifer.
         category_names: Comma separated names of categories. Means category names can't
             have commas.
-        dir_path: Path where classifier related files (models, train set, dev set,
-            test sets) are stored.
         trained_by_openFraming: Whether this is a classifier that openFraming provides,
             or a user trained.
         train_set: The train set for classififer.
         dev_set: The dev set for classififer.
     """
 
-    classifier_id = pw.AutoField(primary_key=True)
+    classifier_id: int = pw.AutoField(primary_key=True)
     name = pw.TextField()
-    category_names = ListField()
-    dir_path = pw.CharField()
-    trained_by_openFraming = pw.BooleanField(default=False)
-    train_set = pw.ForeignKeyField(LabeledSet, null=True)
-    dev_set = pw.ForeignKeyField(LabeledSet, null=True)
+    category_names: T.List[str] = ListField()  # type: ignore
+    trained_by_openFraming: bool = pw.BooleanField(default=False)  # type: ignore
+    train_set: T.Optional[LabeledSet] = pw.ForeignKeyField(LabeledSet, null=True)  # type: ignore
+    dev_set: T.Optional[LabeledSet] = pw.ForeignKeyField(LabeledSet, null=True)  # type: ignore
 
 
-class UnlabelledSet(BaseModel):
+class PredictionSet(BaseModel):
     """This will be a prediction set.
 
     Attributes:
         id: set id.
         classifier: The classifier this set is intended for.
         name: User given name of the set.
-        file_path: file path relative to classifier file path.
         inference_completed: Whether the training or the inference has
             completed this set.
     """
 
-    id = pw.AutoField(primary_key=True)
-    classifier = pw.ForeignKeyField(Classifier)
+    id_ = pw.AutoField(primary_key=True)
     name = pw.CharField()
-    file_path = pw.CharField(null=False)
+    classifier = pw.ForeignKeyField(Classifier, backref="prediction_sets")
     inference_completed = pw.BooleanField()
+
+
+class LDASet(BaseModel):
+    id_ = pw.AutoField(primary_key=True)
+    lda_completed: bool = pw.BooleanField(default=False)  # type: ignore
+
+
+class TopicModel(BaseModel):
+    """."""
+
+    id_: int = pw.AutoField()
+    name: str = pw.CharField()
+    num_topics: int = pw.IntegerField()
+    topic_names: T.List[str] = ListField(null=True)  # type: ignore
+    lda_set: T.Optional[LDASet] = pw.ForeignKeyField(LDASet, null=True)  # type: ignore
+
+    # NOTE: The below is ONLY a type annotation.
+    # The actual attribute is made available using "backreferences" in peewee
+    semi_supervised_sets: T.Type[SemiSupervisedSet]
+
+    @property
+    # https://github.com/coleifer/peewee/issues/1667#issuecomment-405095432
+    def semi_supervised_set(self) -> SemiSupervisedSet:
+        return self.semi_supervised_sets.get()  # type: ignore
+
+
+class SemiSupervisedSet(BaseModel):
+    topic_model: TopicModel = pw.ForeignKeyField(TopicModel, backref="semi_supervised_sets")  # type: ignore
+    labeled_set: LabeledSet = pw.ForeignKeyField(LabeledSet)  # type: ignore
+    clustering_completed: bool = pw.BooleanField()  # type: ignore
 
 
 MODELS = BaseModel.__subclasses__()

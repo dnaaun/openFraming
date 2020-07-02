@@ -1,15 +1,17 @@
 """LDA processing."""
-import os
 import re
 import string
 import typing as T
+from pathlib import Path
 
-import numpy as np
-import pandas as pd
-from gensim import corpora
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
+from gensim import corpora  # type: ignore
 from gensim import models
-from nltk.corpus import stopwords
-from nltk.stem.wordnet import WordNetLemmatizer
+from nltk.corpus import stopwords  # type: ignore
+from nltk.stem.wordnet import WordNetLemmatizer  # type: ignore
+
+from flask_app import utils
 
 
 EXCEL_EXTENSIONS = {"xlsx", "xls"}
@@ -18,9 +20,12 @@ TSV_EXTENSIONS = {"tsv"}
 
 MALLET_PATH = "~/Downloads/mallet-2.0.8/bin/mallet"
 
-ID_COLUMN_NAME = "OBJECT_ID"
 EXPERT_LABEL_COLUMN_NAME = "EXPERT_LABEL"
 TOPIC_PROBA_PREFIX = "proba_topic_"
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Corpus(object):
@@ -28,7 +33,7 @@ class Corpus(object):
 
     def __init__(
         self,
-        dir_name: str,
+        file_name: str,
         content_column_name: str,
         id_column_name: str,
         language: str = "english",
@@ -41,40 +46,36 @@ class Corpus(object):
         header: bool = False,
         processing_to_do: T.Dict[str, bool] = {},
     ):
-        dir_contents = os.listdir(dir_name)
 
-        if len(dir_contents) < 1:
-            raise ValueError("Directory {} is empty!".format(dir_name))
+        file_path = Path(file_name)
 
-        suffixes = set([fname.split(".")[-1] for fname in dir_contents])
+        if not file_path.exists():
+            raise ValueError("File {} doesn't exist!".format(file_name))
 
-        if suffixes.issubset(EXCEL_EXTENSIONS):
+        suffix = file_path.suffix.strip(".")
+
+        if suffix in EXCEL_EXTENSIONS:
             doc_reader = pd.read_excel
-        elif suffixes.issubset(CSV_EXTENSIONS):
-            doc_reader = pd.read_csv
-        elif suffixes.issubset(TSV_EXTENSIONS):
+        elif suffix in CSV_EXTENSIONS:
 
             def doc_reader(b: str) -> pd.DataFrame:
-                return pd.read_csv(b, sep="\t")
+                # dtype=object: Disable converting to non text column
+                return pd.read_csv(b, dtype=object, na_filter=False)
+
+        elif suffix in CSV_EXTENSIONS:
+
+            def doc_reader(b: str) -> pd.DataFrame:
+                # dtype=object: Disable converting to non text column
+                return pd.read_csv(b, dtype=object, sep="\t", na_filter=False)
 
         else:
             raise ValueError(
-                "File types in directory {} are inconsistent or invalid!".format(
-                    dir_name
-                )
+                "File type of {} are inconsistent or invalid!".format(file_name)
             )
 
-        dfs = []
-        for doc in dir_contents:
-            df = doc_reader(os.path.join(dir_name + doc))
-            if header:
-                df = df[1:]
-            dfs.append(df)
-
-        self.df_docs = pd.concat(dfs)
+        self.df_docs = doc_reader(file_name)
+        self.id_column_name = id_column_name
         self.content_column_name = content_column_name
-        self.df_docs["content_original"] = self.df_docs[self.content_column_name]
-        self.df_docs[ID_COLUMN_NAME] = self.df_docs[id_column_name]
 
         self.phrases_to_join = phrases_to_join
         self.language = language
@@ -90,7 +91,7 @@ class Corpus(object):
         punctuation_no_underscore.remove("_")
         self.punctuation = punctuation_no_underscore | extra_punctuation
 
-        self.df_docs[self.content_column_name] = self.df_docs[
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
             self.content_column_name
         ].apply(lambda b: b.lower())
 
@@ -104,7 +105,11 @@ class Corpus(object):
         self.stopwords += extra_stopwords
 
         preprocessing_completed = []
-        if self.processing_to_do.get("remove_phrases", True):
+
+        # Figure out if the user meant to remove phrases by checking
+        # if they provided phrases to remove
+        remove_phrases_default = phrases_to_remove != []
+        if self.processing_to_do.get("remove_phrases", remove_phrases_default):
             self.remove_phrases()
             preprocessing_completed.append("Removed phrases")
 
@@ -139,7 +144,8 @@ class Corpus(object):
 
     def remove_phrases(self) -> bool:
         if len(self.phrases_to_remove) == 0:
-            raise ValueError("No phrases given for removal!")
+            logger.warn("Asked to remove phrases, but self.phrases_to_remove is empty.")
+            return True
 
         def remove_phrases_from_content(content: str) -> str:
             for w in self.phrases_to_remove:
@@ -148,8 +154,8 @@ class Corpus(object):
 
             return content
 
-        self.df_docs[self.content_column_name] = self.df_docs[
-            self.content_column_name
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
+            utils.STEMMED_CONTENT_COL
         ].apply(remove_phrases_from_content)
 
         return True
@@ -161,8 +167,8 @@ class Corpus(object):
                     content = re.sub(w, "_".join(w.split()), content)
             return content
 
-        self.df_docs[self.content_column_name] = self.df_docs[
-            self.content_column_name
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
+            utils.STEMMED_CONTENT_COL
         ].apply(join_phrases_in_content)
 
         return True
@@ -179,29 +185,29 @@ class Corpus(object):
             ]
             return content_ls
 
-        self.df_docs[self.content_column_name] = self.df_docs[
-            self.content_column_name
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
+            utils.STEMMED_CONTENT_COL
         ].apply(remove_punctuation_and_digits_from_content_and_tokenize)
 
         return True
 
     def tokenize_content(self) -> bool:
-        self.df_docs[self.content_column_name] = self.df_docs[
-            self.content_column_name
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
+            utils.STEMMED_CONTENT_COL
         ].apply(lambda b: [w for w in b.split()])
 
         return True
 
     def remove_stopwords(self) -> bool:
-        self.df_docs[self.content_column_name] = self.df_docs[
-            self.content_column_name
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
+            utils.STEMMED_CONTENT_COL
         ].apply(lambda content: [c for c in content if c not in self.stopwords])
 
         return True
 
     def lemmatize_content(self, lemmatizer: WordNetLemmatizer) -> bool:
-        self.df_docs[self.content_column_name] = self.df_docs[
-            self.content_column_name
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
+            utils.STEMMED_CONTENT_COL
         ].apply(
             lambda content: [
                 lemmatizer.lemmatize(c) for c in content if c not in self.dont_stem
@@ -211,8 +217,8 @@ class Corpus(object):
         return True
 
     def remove_short_words(self, min_length: int) -> bool:
-        self.df_docs[self.content_column_name] = self.df_docs[
-            self.content_column_name
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
+            utils.STEMMED_CONTENT_COL
         ].apply(lambda content: [c for c in content if len(c) > 2])
 
         return True
@@ -221,11 +227,11 @@ class Corpus(object):
         self,
         sample_size: int,
         spreadsheet_path: str,
-        extra_df_columns_wanted: T.List = [],
+        extra_df_columns_wanted: T.List[str] = [],
     ) -> bool:
         sample_df = self.df_docs.sample(n=sample_size)
         sample_df = sample_df[
-            [ID_COLUMN_NAME, "content_original"] + extra_df_columns_wanted
+            [self.id_column_name, "content_original"] + extra_df_columns_wanted
         ]
         sample_df[EXPERT_LABEL_COLUMN_NAME] = np.nan
 
@@ -244,9 +250,10 @@ class LDAModeler(object):
         content: Corpus,
         low_bound_dict: float = 0.02,
         high_bound_dict: float = 0.5,
+        iterations: int = 1000,
     ):
         self.content = content
-        self.my_corpus = list(self.content.df_docs[content.content_column_name])
+        self.my_corpus = list(self.content.df_docs[utils.STEMMED_CONTENT_COL])
 
         self.dictionary = corpora.Dictionary(self.my_corpus)
         self.dictionary.filter_extremes(
@@ -256,9 +263,12 @@ class LDAModeler(object):
 
         self.lda_model: T.Optional[models.wrappers.LdaMallet] = None
         self.num_topics = 0
+        self.iterations = iterations
 
     def model_topics(
-        self, num_topics: int = 10, num_keywords: int = 20
+        self,
+        num_topics: int = 10,
+        num_keywords: int = utils.DEFAULT_NUM_KEYWORDS_TO_GENERATE,
     ) -> T.Tuple[T.List[T.List[str]], T.Any, T.Iterator[T.List[T.Tuple[int, float]]]]:
         self.num_topics = num_topics
         self.lda_model = models.wrappers.LdaMallet(
@@ -268,6 +278,7 @@ class LDAModeler(object):
             optimize_interval=10,
             id2word=self.dictionary,
             random_seed=1,
+            iterations=self.iterations,
         )
         topic_keywords: T.List[T.List[str]] = []
         for idx, topic in self.lda_model.show_topics(
@@ -290,6 +301,7 @@ class LDAModeler(object):
         fname_topics_by_doc: str = "topic_probabilities_by_document.xlsx",
         extra_df_columns_wanted: T.List[str] = [],
     ) -> bool:
+
         topic_keyword_writer = pd.ExcelWriter(fname_keywords)
         doc_topic_writer = pd.ExcelWriter(fname_topics_by_doc)
         self.num_topics = num_topics
@@ -302,12 +314,12 @@ class LDAModeler(object):
             topic_keywords_df["word_{}".format(str(w_idx))] = [
                 topic_keywords[i][w_idx] for i in range(len(topic_keywords))
             ]
-        topic_keywords_df["proportions"] = topic_proportions
+        topic_keywords_df[utils.TOPIC_PROPORTIONS_ROW] = topic_proportions
 
         topic_dfs = []
-        n_articles = ["n = " + str(len(self.corpus_bow))]
-        topic_dfs.append(pd.Series(n_articles))  # number of articles
-        topic_dfs.append(pd.Series(["\n"]))
+        # n_articles = ["n = " + str(len(self.corpus_bow))]
+        # topic_dfs.append(pd.Series(n_articles))  # number of articles
+        # topic_dfs.append(pd.Series(["\n"]))
         topic_dfs.append(topic_keywords_df.T)
 
         full_topic_df = pd.concat(topic_dfs)
@@ -318,13 +330,14 @@ class LDAModeler(object):
         )  # create document --> topic proba matrix
         doc_max = [np.argmax(r) for r in doc_topics]
         doc_topic_df = self.content.df_docs[
-            [ID_COLUMN_NAME]
+            [self.content.id_column_name]
             + extra_df_columns_wanted
             + [self.content.content_column_name]
+            + [utils.STEMMED_CONTENT_COL]
         ]
         for c in range(self.num_topics):
             doc_topic_df[TOPIC_PROBA_PREFIX + str(c)] = doc_topics[:, c]
-        doc_topic_df["most_likely_topic"] = doc_max
+        doc_topic_df[utils.MOST_LIKELY_TOPIC_COL] = doc_max
         doc_topic_df.to_excel(doc_topic_writer)
 
         topic_keyword_writer.save()
