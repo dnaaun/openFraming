@@ -8,15 +8,13 @@ from unittest import mock
 import pandas as pd  # type: ignore
 from tests.common import AppMixin
 from tests.common import debug_on
+from tests.common import TESTING_FILES_DIR
 
 from flask_app import db
 from flask_app import utils
 from flask_app.app import API_URL_PREFIX
 from flask_app.modeling.train_queue import Scheduler
 from flask_app.utils import Json
-
-
-TESTING_FILES_DIR = Path(__file__).parent / "testing_files"
 
 
 class TopicModelMixin(AppMixin):
