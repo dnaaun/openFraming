@@ -6,11 +6,13 @@ import typing as T
 from collections import Counter
 from pathlib import Path
 
+import pandas as pd  # type: ignore
 from flask import current_app
 from flask import Flask
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
 from flask_restful import Resource
+from playhouse.flask_utils import get_object_or_404
 from sklearn import model_selection  # type: ignore
 from typing_extensions import TypedDict
 from werkzeug.datastructures import FileStorage
@@ -60,6 +62,14 @@ class BaseResource(Resource):
             writer.writerow(headers)
             writer.writerows(data)
 
+    @staticmethod
+    def _validate_serializable_list_value(val: T.Any) -> str:
+        if not isinstance(val, str):
+            raise ValueError("must be str")
+        if "," in val:
+            raise ValueError("can't contain commas.")
+        return val
+
 
 class ClassifierRelatedResource(BaseResource):
     """Base class to define utility functions related to classifiers."""
@@ -106,17 +116,9 @@ class Classifiers(ClassifierRelatedResource):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument(name="name", type=str, required=True)
 
-        def category_names_type(val: T.Any) -> str:
-            if not isinstance(val, str):
-                raise ValueError("must be str")
-            if "," in val:
-                raise ValueError("can't contain commas.")
-
-            return val
-
         self.reqparse.add_argument(
             name="category_names",
-            type=category_names_type,
+            type=self._validate_serializable_list_value,
             action="append",
             required=True,
             help="",
@@ -249,7 +251,7 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
 
         # TODO: Add a check to make sure model training didn't start already and crashed
 
-        model_scheduler.add_training_process(
+        model_scheduler.add_classifier_training(
             labels=classifier.category_names,
             model_path=utils.TRANSFORMERS_MODEL,
             data_dir=str(utils.Files.classifier_dir(classifier_id)),
@@ -281,9 +283,7 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
 
         utils.Validate.table_has_no_empty_cells(table)
         utils.Validate.table_has_num_columns(table, 2)
-        utils.Validate.table_has_headers(
-            table, [utils.LABELLED_CSV_CONTENT_COL, utils.LABELLED_CSV_LABEL_COL]
-        )
+        utils.Validate.table_has_headers(table, [utils.CONTENT_COL, utils.LABEL_COL])
 
         table_headers, table_data = table[0], table[1:]
 
@@ -321,24 +321,29 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         return table_headers, table_data
 
 
-TopicModelStatus = TypedDict(
-    "TopicModelStatus",
-    {
-        "topic_model_id": int,
-        "topic_model_name": str,
-        "num_topics": int,
-        "topic_names": T.Optional[T.List[str]],
-        "status": T.Literal["not_begun", "training", "topics_to_be_named", "completed"],
-        # TODO: Update backend README to reflect API change for line above.
-    },
-)
+class TopicModelStatusJson(TypedDict):
+    topic_model_id: int
+    topic_model_name: str
+    num_topics: int
+    topic_names: T.Optional[T.List[str]]
+    status: T.Literal["not_begun", "training", "topics_to_be_named", "completed"]
+    # TODO: Update backend README to reflect API change for line above.
+
+
+class OneTopicPreviewJson(TypedDict):
+    keywords: T.List[str]
+    examples: T.List[str]
+
+
+class TopicModelPreviewJson(TopicModelStatusJson):
+    topic_previews: T.List[OneTopicPreviewJson]
 
 
 class TopicModelRelatedResource(BaseResource):
     """Base class to define utility functions related to classifiers."""
 
     @staticmethod
-    def _topic_model_status(topic_mdl: db.TopicModel) -> TopicModelStatus:
+    def _topic_model_status_json(topic_mdl: db.TopicModel) -> TopicModelStatusJson:
         topic_names = topic_mdl.topic_names
         status: T.Literal["not_begun", "training", "topics_to_be_named", "completed"]
         if topic_mdl.lda_set is None:
@@ -354,13 +359,20 @@ class TopicModelRelatedResource(BaseResource):
             else:
                 status = "training"
 
-        return TopicModelStatus(
+        return TopicModelStatusJson(
             topic_model_name=topic_mdl.name,
             topic_model_id=topic_mdl.id_,
             num_topics=topic_mdl.num_topics,
             topic_names=topic_names,
             status=status,
         )
+
+    @staticmethod
+    def _validate_topic_model_finished_training(topic_mdl: db.TopicModel) -> None:
+        if topic_mdl.lda_set is None:
+            raise BadRequest("Topic model has not started training yet.")
+        elif not topic_mdl.lda_set.lda_completed:
+            raise BadRequest("Topic model has not finished trianing yet.")
 
 
 class TopicModels(TopicModelRelatedResource):
@@ -382,7 +394,7 @@ class TopicModels(TopicModelRelatedResource):
             name="num_topics", type=greater_than_1, required=True
         )
 
-    def post(self) -> TopicModelStatus:
+    def post(self) -> TopicModelStatusJson:
         """Create a classifier.
 
         req_body:
@@ -399,11 +411,12 @@ class TopicModels(TopicModelRelatedResource):
         )
         topic_mdl.save()
         utils.Files.topic_model_dir(id_=topic_mdl.id_, ensure_exists=True)
-        return self._topic_model_status(topic_mdl)
+        return self._topic_model_status_json(topic_mdl)
 
-    def get(self) -> T.List[TopicModelStatus]:
+    def get(self) -> T.List[TopicModelStatusJson]:
         res = [
-            self._topic_model_status(topic_mdl) for topic_mdl in db.TopicModel.select()
+            self._topic_model_status_json(topic_mdl)
+            for topic_mdl in db.TopicModel.select()
         ]
         return res
 
@@ -419,16 +432,16 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
             name="file", type=FileStorage, required=True, location="files"
         )
 
-    def post(self, id_: int) -> TopicModelStatus:
+    def post(self, id_: int) -> TopicModelStatusJson:
         args = self.reqparse.parse_args()
         file_: FileStorage = args["file"]
 
         try:
-            topic_model = db.TopicModel.get(db.TopicModel.id_ == id_)
+            topic_mdl = db.TopicModel.get(db.TopicModel.id_ == id_)
         except db.Classifier.DoesNotExist:
             raise NotFound("classifier not found.")
 
-        if topic_model.lda_set is not None:
+        if topic_mdl.lda_set is not None:
             raise AlreadyExists("This topic model already has a training set.")
 
         table_headers, table_data = self._validate_and_get_training_file(file_)
@@ -437,16 +450,24 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         train_file = utils.Files.topic_model_training_file(id_)
         self._write_headers_and_data_to_csv(table_headers, table_data, train_file)
 
-        topic_model.lda_set = db.LDASet()
-        topic_model.lda_set.save()
-        topic_model.save()
+        scheduler: Scheduler = current_app.config["SCHEDULER"]
+
+        scheduler.add_topic_model_training(
+            training_file=str(train_file),
+            num_topics=topic_mdl.num_topics,
+            fname_keywords=str(utils.Files.topic_model_keywords_file(id_)),
+            fname_topics_by_doc=str(utils.Files.topic_model_topics_by_doc_file(id_)),
+        )
+        topic_mdl.lda_set = db.LDASet()
+        topic_mdl.lda_set.save()
+        topic_mdl.save()
 
         # Refresh classifier
-        topic_model = db.TopicModel.get(db.TopicModel.id_ == id_)
+        topic_mdl = db.TopicModel.get(db.TopicModel.id_ == id_)
 
         # model_scheduler: ModelScheduler = current_app.config["SCHEDULER"]
 
-        return self._topic_model_status(topic_model)
+        return self._topic_model_status_json(topic_mdl)
 
     @staticmethod
     def _validate_and_get_training_file(
@@ -466,9 +487,16 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         table = utils.Validate.csv_and_get_table(T.cast(io.BytesIO, file_))
 
         utils.Validate.table_has_num_columns(table, 1)
-        utils.Validate.table_has_headers(table, [utils.LABELLED_CSV_CONTENT_COL])
+        utils.Validate.table_has_headers(table, [utils.CONTENT_COL])
         utils.Validate.table_has_no_empty_cells(table)
+
         table_headers, table_data = table[0], table[1:]
+        # add the ID column to the table, necessary because of how the
+        # flask_app.modeling.lda.LDAModeler is coded up right now.
+        table_headers = [utils.ID_COL] + table_headers
+        table_data = [
+            [str(row_num)] + row for row_num, row in enumerate(table_data, start=1)
+        ]
 
         if len(table_data) < utils.MINIMUM_LDA_EXAMPLES:
             raise BadRequest(
@@ -478,15 +506,131 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         return table_headers, table_data
 
 
+class TopicModelsTopicsNames(TopicModelRelatedResource):
+
+    url = "/topic_models/<int:id_>/topics/names"
+
+    def __init__(self) -> None:
+        self.reqparse = reqparse.RequestParser()
+
+        self.reqparse.add_argument(
+            name="topic_names",
+            type=self._validate_serializable_list_value,
+            action="append",
+            required=True,
+            help="",
+        )
+
+    def post(self, id_: int) -> TopicModelStatusJson:
+        args = self.reqparse.parse_args()
+        topic_names: T.List[str] = args["topic_names"]
+        topic_mdl = get_object_or_404(db.TopicModel, db.TopicModel.id_ == id_)
+
+        self._validate_topic_model_finished_training(topic_mdl)
+        if len(topic_names) != topic_mdl.num_topics:
+            raise BadRequest(
+                f"Topic model has {topic_mdl.num_topics} topics, but {len(topic_names)} topics were provided."
+            )
+
+        topic_mdl.topic_names = topic_names
+        topic_mdl.save()
+        return self._topic_model_status_json(topic_mdl)
+
+
+class TopicModelsTopicsPreview(TopicModelRelatedResource):
+
+    url = "/topic_models/<int:id_>/topics/preview"
+
+    def get(self, id_: int) -> TopicModelPreviewJson:
+        topic_mdl = get_object_or_404(db.TopicModel, db.TopicModel.id_ == id_)
+        self._validate_topic_model_finished_training(topic_mdl)
+
+        keywords_per_topic = self._get_keywords_per_topic(topic_mdl)
+        examples_per_topic = self._get_examples_per_topic(topic_mdl)
+
+        assert len(keywords_per_topic) == len(examples_per_topic)
+
+        topic_mdl_status_json = self._topic_model_status_json(topic_mdl)
+        topic_preview_json = TopicModelPreviewJson(
+            {
+                "topic_model_id": topic_mdl_status_json["topic_model_id"],
+                "topic_model_name": topic_mdl_status_json["topic_model_name"],
+                "num_topics": topic_mdl_status_json["num_topics"],
+                "topic_names": topic_mdl_status_json["topic_names"],
+                "status": topic_mdl_status_json["status"],
+                "topic_previews": [
+                    OneTopicPreviewJson({"examples": examples, "keywords": keywords})
+                    for examples, keywords in zip(
+                        examples_per_topic, keywords_per_topic
+                    )
+                ],
+            }
+        )
+        return topic_preview_json
+
+    @staticmethod
+    def _get_keywords_per_topic(topic_mdl: db.TopicModel) -> T.List[T.List[str]]:
+        """
+
+        Returns:
+            keywords_per_topic: A list of lists of strings.
+                List i contains keywords that have highest emission probability.
+                under topic i.
+        """
+
+        # Look at the documentation at utils.Files.topic_model_keywords_file() for
+        # what the file is supposed to look like.
+        keywords_file_path = utils.Files.topic_model_keywords_file(topic_mdl.id_)
+
+        keywords_df = pd.read_excel(keywords_file_path, index_col=0, header=0)
+        keywords_df = keywords_df.iloc[:-1]  # Remove the "probabilities" row
+        return keywords_df.T.values.tolist()  # type: ignore[no-any-return]
+
+    @staticmethod
+    def _get_examples_per_topic(topic_mdl: db.TopicModel) -> T.List[T.List[str]]:
+        """
+
+        Returns;
+            topic_most_likely_examples: A list of list of strings.
+                List i within this list contains examples whose most likely topic was
+                determined to be topic i.
+
+                i starts counting from zero. The maximum number of examples is determined
+                by utils.MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW
+        """
+
+        # Look at the documentation at utils.Files.topic_model_topics_by_doc_file() for
+        # what the file is supposed to look like.
+        topics_by_doc_path = utils.Files.topic_model_topics_by_doc_file(topic_mdl.id_)
+        topics_by_doc_df = pd.read_excel(topics_by_doc_path, index_col=0, header=0)
+        bool_mask_topic_most_likely_examples: T.List[pd.Series] = [
+            topics_by_doc_df[utils.MOST_LIKELY_TOPIC_COL] == topic_num
+            for topic_num in range(topic_mdl.num_topics)
+        ]
+        examples_per_topic: T.List[T.List[str]] = [
+            topics_by_doc_df.loc[bool_mask, utils.CONTENT_COL][
+                : utils.MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW
+            ]
+            .to_numpy()
+            .tolist()
+            for bool_mask in bool_mask_topic_most_likely_examples
+        ]
+
+        return examples_per_topic
+
+
 def create_app(
     project_data_dir: Path = Path("./project_data"),
     transformers_cache_dir: Path = Path("./transformers_cache_dir"),
+    do_tasks_sychronously: bool = False,
 ) -> Flask:
     """App factory to for easier testing.
 
     Args:
-        project_data_dir: If None, will be read from the PROJECT_DATA_DIR environment
-            variable, or will be set to ./project_data.
+        project_data_dir: 
+        transforemrs_cache_dir:
+        do_tasks_sychronously: Whether to do things like classifier training and LDA
+            topic modeling synchronously. This is used to support unit testing.
 
     Sets:
         app.config["PROJECT_DATA_DIR"]
@@ -510,7 +654,7 @@ def create_app(
             db.DATABASE.close()
 
     app.config["PROJECT_DATA_DIR"] = project_data_dir
-    app.config["SCHEDULER"] = Scheduler()
+    app.config["SCHEDULER"] = Scheduler(do_tasks_sychronously=do_tasks_sychronously)
     app.config["TRANSFORMERS_CACHE_DIR"] = transformers_cache_dir
 
     api = Api(app)
@@ -528,6 +672,8 @@ def create_app(
         ClassifiersTrainingFile,
         TopicModels,
         TopicModelsTrainingFile,
+        TopicModelsTopicsNames,
+        TopicModelsTopicsPreview,
     )
     for resource_cls in lsresource_cls:
         assert (

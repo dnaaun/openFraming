@@ -15,7 +15,7 @@ class TestClassifiers(AppMixin, unittest.TestCase):
         # Mock the scheduler
         with self._app.app_context():
             scheduler: Scheduler = self._app.config["SCHEDULER"]
-            scheduler.add_training_process: mock.MagicMock = mock.MagicMock(return_value=None)  # type: ignore
+            scheduler.add_classifier_training: mock.MagicMock = mock.MagicMock(return_value=None)  # type: ignore
 
             # Create a classifer in the database
             clsf = db.Classifier.create(
@@ -25,7 +25,7 @@ class TestClassifiers(AppMixin, unittest.TestCase):
 
         valid_training_contents = "\n".join(
             [
-                f"{utils.LABELLED_CSV_CONTENT_COL},{utils.LABELLED_CSV_LABEL_COL}",
+                f"{utils.CONTENT_COL},{utils.LABEL_COL}",
                 "sky,up",
                 "earth,down",
                 "dimonds,down",
@@ -39,7 +39,7 @@ class TestClassifiers(AppMixin, unittest.TestCase):
         with self._app.test_client() as client, self._app.app_context():
             res = client.post(test_url, data={"file": (file_, "labeled.csv")},)
             self._assert_response_success(res)
-            scheduler.add_training_process.assert_called_with(
+            scheduler.add_classifier_training.assert_called_with(
                 labels=clsf.category_names,
                 model_path=utils.TRANSFORMERS_MODEL,
                 data_dir=str(utils.Files.classifier_dir(clsf.classifier_id)),
