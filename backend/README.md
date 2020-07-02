@@ -1,4 +1,4 @@
-NOTE: You will have to prefix every endpoint with "/api/".  If the server is running on http://localhost:5000, the first endpoint below can be accessed by doing http://localhost:5000/api/classifiers
+NOTE: You will have to prefix every endpoint with `/api/`.  If the server is running on `http://localhost:5000`, the first endpoint below can be accessed by doing `http://localhost:5000/api/classifiers`,
 
 
 | <!-- -->                             | <!-- -->                                                                                                                                                                                                               |
@@ -6,7 +6,7 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 | Endpoint                             | /classifiers/                                                                                                                                                                                                          |
 | Method                               | GET                                                                                                                                                                                                                    |
 | Request body                         |                                                                                                                                                                                                                        |
-| Return body <br>(in case of success) | [<br>{ <br> "classifier_id": int, <br>"policy_issue_name": str,<br>"provided_by_openFraming": bool,<br>"frame_names": [str, ...],<br>"training_status": One_of("not_begun", "training", "completed")<br>},<br>...<br>]
+| Return body <br>(in case of success) | [<br>{ <br> "classifier_id": int, <br>"name": str,<br>"provided_by_openFraming": bool,<br>"frame_names": [str, ...],<br>"training_status": One_of("not_begun", "training", "completed")<br>},<br>...<br>]
 | Remarks                              | Lists all classifiers.                                                                                                                                                                                                 |
 | Status                               | Done                                                                                                                                                                                                                   |
 
@@ -16,20 +16,21 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 |--------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Endpoint                             | /classifiers/                                                                                                                                                    |
 | Method                               | POST                                                                                                                                                             |
-| Request body                         | {<br>"policy_issue_name": str,<br>"frame_names": [str, ...]<br>}                                                                                                 |
+| Request body                         | {<br>"name": str,<br>"category_names": [str, ...]<br>}                                                                                                 |
 | Return body <br>(in case of success) | {<br>"classifier_id": int,<br>"policy_issue_name": str,<br>"provided_by_openFraming": bool,<br>"frame_names": [str, ...],<br>"training_status": "not_begun"<br>} |
 | Remarks                              | Creates a frame classifier                                                                                                                                       |
 | Status                               | Done                                                                                                                                                             |
 
+| <!-- -->                             | <!-- -->                                                                                                                                                                                                               |
+|--------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Endpoint                             | `/classifiers/<classifier_id:int>`                                                                                                                                                                                                          |
+| Method                               | GET                                                                                                                                                                                                                    |
+| Request body                         |                                                                                                                                                                                                                        |
+| Return body <br>(in case of success) | <pre>{ <br> "classifier_id": int, <br>"name": str,<br>"provided_by_openFraming": bool,<br>"frame_names": [str, ...],<br>"training_status": One_of("not_begun", "training", "completed")<br>}</pre>
+| Remarks                              | Get details about one classifier.                                                                                                                                                                                                 |
+| Status                               | Done                                                                                                                                                                                                                   |
 
-| <!-- -->                              | <!-- -->                                                                                                                                               |
-|---------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Endpoint                              | /classifiers/<int:classifier_id>                                                                                                                       |
-| Method                                | GET                                                                                                                                                    |
-| Request body                          |                                                                                                                                                        |
-| Return body <br> (in case of success) | {<br>"classifier_id": int,<br>"name": str,<br>"trained_by_openFraming": false,<br>"training_status": One_of("not_begun", "training", "completed")<br>} |
-| Remarks                               | Gets details about a classifier                                                                                                                        |
-| Status                                | In progress                                                                                                                                            |
+
 
 | <!-- -->                              | <!-- -->                                                                                                 |
 |---------------------------------------|----------------------------------------------------------------------------------------------------------|
@@ -43,7 +44,7 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 
 | <!-- -->                              | <!-- -->                                                                                                 |
 |---------------------------------------|----------------------------------------------------------------------------------------------------------|
-| Endpoint                              | /classifiers/<int:classifier_id>/training/metrics                                                        |
+| Endpoint                              | /classifiers/<classifier_id:int>/training/metrics                                                        |
 | Method                                | GET                                                                                                      |
 | Request body                          | -                                                                                                        |
 | Return body <br> (in case of success) | {<br>"macro_f1": float,<br>"macro_precision": float,<br>"macro_recall": float,<br>"accuracy": float<br>} |
@@ -73,7 +74,7 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 
 | <!-- -->                              | <!-- -->                                                                                                                                             |
 |---------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Endpoint                              | /classifiers/<classifier_id:int>/prediction_sets/<int:prediction_set_id>                                                                             |
+| Endpoint                              | /classifiers/<classifier_id:int>/prediction_sets/<prediction_set_id:int>                                                                             |
 | Method                                | GET                                                                                                                                                  |
 | Request body                          | -                                                                                                                                                    |
 | Return body <br> (in case of success) | {<br>"classifier_id": int,<br>"prediction_set_id": int<br>"prediction_set_name": str,<br>"inference_status": One_of("predicting", ""completed")<br>} |
@@ -82,7 +83,7 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 
 | <!-- -->                              | <!-- -->                                                                      |
 |---------------------------------------|-------------------------------------------------------------------------------|
-| Endpoint                              | /classifiers/<classifier_id:int>/prediction_sets/<int:prediction_set_id>/file |
+| Endpoint                              | /classifiers/<classifier_id:int>/prediction_sets/<prediction_set_id:int>/file |
 | Method                                | POST                                                                          |
 | Request body                          | FormData<br>1. "file"                                                         |
 | Return body <br> (in case of success) | -                                                                             |
@@ -91,7 +92,7 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 
 | <!-- -->                              | <!-- -->                                                                            |
 |---------------------------------------|-------------------------------------------------------------------------------------|
-| Endpoint                              | /classifiers/<classifier_id:int>/prediction_sets/<int:prediction_set_id>/prediction |
+| Endpoint                              | /classifiers/<classifier_id:int>/prediction_sets/<prediction_set_id:int>/prediction |
 | Method                                | GET                                                                                 |
 | Request body                          | -                                                                                   |
 | Return body <br> (in case of success) | A CSV file with the predictions                                                     |
@@ -106,7 +107,7 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 | Request body                           | -                                                                                                                                                                                                   |
 | Return body <br> ( in case of success) | [<br>{<br>"topic_model_id": int,<br>"topic_model_name": str,<br>"num_topics": int,<br>"topic_names": One_of(NULL, [str, ...])<br>"status": One_of("not_begun", "training", "topics_to_be_named", "completed")<br>}, ...<br>] |
 | Remarks                                | Lists all topic models currently created                                                                                                                                                            |
-| Status                                 |                                                                                                                                                                                                     |
+| Status                                 |  Done                                                                                                                                                                                                   |
 
 
 | <!-- -->                              | <!-- -->                                                                                                                                                            |
@@ -116,7 +117,7 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 | Request body                          | {<br>"topic_model_name": str,<br>"num_topics": int # The desired number of topics<br>}                                                                              |
 | Return body <br> (in case of success) | {<br>"topic_model_id": int # The id of the topic detector just created<br>"topic_model_name": str,<br>"num_topics": int,<br>"topic_names": NULL, <br>"status": "training"<br> } |
 | Remarks                               | Creates a topic classifier                                                                                                                                          |
-| Status                                |                                                                                                                                                                     |
+| Status                                |  Done                                                                                                                                                                   |
 
 
 
@@ -126,7 +127,7 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 | Method                                | GET                                                                                                                                                                                  |
 | Request body                          | |
 | Return body <br> (in case of success) | {<br>"topic_model_id": int,<br>"topic_model_name": str,<br>"num_topics": int,<br>"topic_names": One_of(NULL, [str, ...])<br>"status": One_of("not_begun", "training", "topics_to_be_named", "completed")<br>} |
-| Remarks                               | |
+| Remarks                               | Done|
 | Status                                |                                                                                                                                                                                      |
 
 
@@ -136,7 +137,8 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 | Method                                | POST                                             |
 | Request body                          | FormData<br>1. "file"                            |
 | Return body <br> (in case of success) |                                                  |
-| Remarks                               | Begins <b>training</b> the topic detector        |
+| Remarks                               | Begins training the topic detector        |
+| Status                                |  Done                                                                                                                                                                                    |
 
 
 | <!-- -->                                  | <!-- -->                                                                                                                                                                                                                                                                                                                         |
@@ -146,7 +148,7 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 | Request body                              | -                                                                                                                                                                                                                                                                                                                                |
 | Return body <br>     (in case of success) | <pre>  {<br>  "topic_model_id": int <br>  "topic_model_name": str,<br>  "num_topics": int,<br>  "topic_names": [str, ...],<br>  "topic_previews": [<br>    {<br>      "important_words": [ str, ... ],<br>      "examples": [str, ... ]<br>    } ...<br>    # The length of this list is equal to "num_topics"<br>  ]<br>}</pre> |
 | Remarks                                   | Gets a preview of each topic                                                                                                                                                                                                                                                                                                     |
-| Status                                    |                                                                                                                                                                                                                                                                                                                                  |
+| Status                                    |  Done                                                                                                                                                                                                                                                                                                                                |
 
 
 
@@ -157,7 +159,7 @@ NOTE: You will have to prefix every endpoint with "/api/".  If the server is run
 | Request body                          | <pre>{ <br>    "topic_names": [str, ...] # Length must be equal to "num_topics" <br>} </pre>                                                                             |
 | Return body <br> (in case of success) | <pre>{<br>     "topic_model_id": int, <br>     "topic_model_name": str,<br>     "num_topics": int,<br>     "topic_names": [str, ...],<br>     "status": "completed"<br>} |
 | Remarks                               | Names the topics                                                                                                                                                         |
-| Status                                |                                                                                                                                                                          |
+| Status                                | Done                                                                                                                                                                         |
 
 
 
