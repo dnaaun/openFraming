@@ -1,10 +1,11 @@
 import csv
 import io
+import shutil
 import unittest
+from pathlib import Path
 from unittest import mock
 
 import pandas as pd  # type: ignore
-from playhouse.shortcuts import model_to_dict
 from tests.common import AppMixin
 from tests.common import debug_on
 
@@ -15,10 +16,12 @@ from flask_app.modeling.train_queue import Scheduler
 from flask_app.utils import Json
 
 
-class TestTopicModels(AppMixin, unittest.TestCase):
+TESTING_FILES_DIR = Path(__file__).parent / "testing_files"
+
+
+class TopicModelMixin(AppMixin):
     def setUp(self) -> None:
         super().setUp()
-        # Create a topic model in the database
         with self._app.app_context():
             self._num_topics = 10
             self._topic_mdl = db.TopicModel.create(
@@ -70,7 +73,29 @@ class TestTopicModels(AppMixin, unittest.TestCase):
             for row_num, (cell,) in enumerate(self._valid_training_table[1:], start=1)
         ]
 
-    def test_list(self) -> None:
+
+class TrainedTopicModelMixin(TopicModelMixin):
+    def setUp(self) -> None:
+        super().setUp()
+        # Pretend like we trained a topic model
+        # Copy files
+        with self._app.app_context():
+            shutil.copy(
+                TESTING_FILES_DIR / "keywords.xlsx",
+                utils.Files.topic_model_keywords_file(self._topic_mdl.id_),
+            )
+            shutil.copy(
+                TESTING_FILES_DIR / "topics_by_doc.xlsx",
+                utils.Files.topic_model_topics_by_doc_file(self._topic_mdl.id_),
+            )
+        self._topic_mdl.lda_set = db.LDASet()
+        self._topic_mdl.lda_set.lda_completed = True
+        self._topic_mdl.lda_set.save()
+        self._topic_mdl.save()
+
+
+class TestTopicModels(TopicModelMixin, unittest.TestCase):
+    def test_get(self) -> None:
         url = API_URL_PREFIX + "/topic_models/"
         expected_topic_model_json = {
             "topic_model_id": self._topic_mdl.id_,
@@ -83,11 +108,11 @@ class TestTopicModels(AppMixin, unittest.TestCase):
             resp = client.get(url)
             self._assert_response_success(resp, url)
             resp_json = resp.get_json()
-            assert isinstance(resp_json, list)
+            self.assertIsInstance(resp_json, list)
             expected_topic_model_list_json = [expected_topic_model_json]
             self.assertListEqual(resp_json, expected_topic_model_list_json)
 
-    def test_create(self) -> None:
+    def test_post(self) -> None:
         url = API_URL_PREFIX + "/topic_models/"
 
         with self._app.test_client() as client, self._app.app_context():
@@ -98,7 +123,7 @@ class TestTopicModels(AppMixin, unittest.TestCase):
                 self._assert_response_success(resp, url)
                 resp_json: Json = resp.get_json()
 
-                assert isinstance(resp_json, dict)
+                self.assertIsInstance(resp_json, dict)
                 expected_topic_model_json = {
                     "topic_model_name": "test_topic_model",
                     "num_topics": 2,
@@ -106,13 +131,16 @@ class TestTopicModels(AppMixin, unittest.TestCase):
                     "status": "not_begun",
                 }
 
+                assert isinstance(resp_json, dict)
                 resp_json.pop("topic_model_id")
                 self.assertDictEqual(
                     resp_json, expected_topic_model_json,
                 )
 
+
+class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
     @debug_on()
-    def test_trigger_training(self) -> None:
+    def test_post(self) -> None:
         # Mock the scheduler
         with self._app.app_context():
             scheduler: Scheduler = self._app.config["SCHEDULER"]
@@ -157,7 +185,7 @@ class TestTopicModels(AppMixin, unittest.TestCase):
         )
 
     @debug_on()
-    def test_actual_training(self) -> None:
+    def test_training(self) -> None:
 
         with self._app.app_context():
             # Get some variables
@@ -225,21 +253,37 @@ class TestTopicModels(AppMixin, unittest.TestCase):
             fname_topics_by_doc_df.columns, expected_fname_topics_by_doc_columns,
         )
 
+
+class TestTopicModelsTopicsNames(TrainedTopicModelMixin, unittest.TestCase):
     def test_naming_topics(self) -> None:
-        url = API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}/topics/name"
+        naming_url = (
+            API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}/topics/names"
+        )
 
         topic_names = [f"fancy_topic_name_{i}" for i in range(1, self._num_topics + 1)]
         post_json = {"topic_names": topic_names}
         with self._app.test_client() as client, self._app.app_context():
-            res = client.post(url, json=post_json)
-            self._assert_response_success(res, url=url)
+            res = client.post(naming_url, json=post_json)
+            self._assert_response_success(res, url=naming_url)
 
         with self._app.app_context():
             reloaded_topic_mdl = db.TopicModel.get(
                 db.TopicModel.id_ == self._topic_mdl.id_
             )
 
-        self.assertListEqual(reloaded_topic_mdl.topic_names, topic_names)
+        with self.subTest("topic naming db change"):
+            self.assertListEqual(reloaded_topic_mdl.topic_names, topic_names)
+        with self.subTest("get request after naming topic"):
+            get_url = API_URL_PREFIX + "/topic_models/"
+            with self._app.test_client() as client, self._app.app_context():
+                resp = client.get(get_url)
+            self._assert_response_success(resp)
+
+            resp_json: Json = resp.get_json()
+            assert isinstance(resp_json, list)
+            dict_ = resp_json[0]
+            self.assertListEqual(dict_["topic_names"], topic_names)
+            self.assertEqual(dict_["status"], "completed")
 
 
 if __name__ == "__main__":

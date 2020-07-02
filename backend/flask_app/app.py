@@ -494,7 +494,7 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
 
 class TopicModelsTopicsName(TopicModelRelatedResource):
 
-    url = "/topic_models/<int:id_>/topics/name"
+    url = "/topic_models/<int:id_>/topics/names"
 
     def __init__(self) -> None:
         self.reqparse = reqparse.RequestParser()
@@ -512,9 +512,13 @@ class TopicModelsTopicsName(TopicModelRelatedResource):
         topic_names: T.List[str] = args["topic_names"]
         topic_mdl = get_object_or_404(db.TopicModel, db.TopicModel.id_ == id_)
 
+        if topic_mdl.lda_set is None:
+            raise BadRequest("Topic model has not started training yet.")
+        elif not topic_mdl.lda_set.lda_completed:
+            raise BadRequest("Topic model has not finished trianing yet.")
         if len(topic_names) != topic_mdl.num_topics:
             raise BadRequest(
-                f"topic model has {topic_mdl.num_topics} topics, but {len(topic_names)} topics were provided."
+                f"Topic model has {topic_mdl.num_topics} topics, but {len(topic_names)} topics were provided."
             )
 
         topic_mdl.topic_names = topic_names
