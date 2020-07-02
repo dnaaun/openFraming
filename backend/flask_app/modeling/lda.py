@@ -76,7 +76,6 @@ class Corpus(object):
         self.df_docs = doc_reader(file_name)
         self.id_column_name = id_column_name
         self.content_column_name = content_column_name
-        self.df_docs["content_original"] = self.df_docs[self.content_column_name]
 
         self.phrases_to_join = phrases_to_join
         self.language = language
@@ -92,7 +91,7 @@ class Corpus(object):
         punctuation_no_underscore.remove("_")
         self.punctuation = punctuation_no_underscore | extra_punctuation
 
-        self.df_docs[self.content_column_name] = self.df_docs[
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
             self.content_column_name
         ].apply(lambda b: b.lower())
 
@@ -155,8 +154,8 @@ class Corpus(object):
 
             return content
 
-        self.df_docs[self.content_column_name] = self.df_docs[
-            self.content_column_name
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
+            utils.STEMMED_CONTENT_COL
         ].apply(remove_phrases_from_content)
 
         return True
@@ -168,8 +167,8 @@ class Corpus(object):
                     content = re.sub(w, "_".join(w.split()), content)
             return content
 
-        self.df_docs[self.content_column_name] = self.df_docs[
-            self.content_column_name
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
+            utils.STEMMED_CONTENT_COL
         ].apply(join_phrases_in_content)
 
         return True
@@ -186,29 +185,29 @@ class Corpus(object):
             ]
             return content_ls
 
-        self.df_docs[self.content_column_name] = self.df_docs[
-            self.content_column_name
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
+            utils.STEMMED_CONTENT_COL
         ].apply(remove_punctuation_and_digits_from_content_and_tokenize)
 
         return True
 
     def tokenize_content(self) -> bool:
-        self.df_docs[self.content_column_name] = self.df_docs[
-            self.content_column_name
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
+            utils.STEMMED_CONTENT_COL
         ].apply(lambda b: [w for w in b.split()])
 
         return True
 
     def remove_stopwords(self) -> bool:
-        self.df_docs[self.content_column_name] = self.df_docs[
-            self.content_column_name
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
+            utils.STEMMED_CONTENT_COL
         ].apply(lambda content: [c for c in content if c not in self.stopwords])
 
         return True
 
     def lemmatize_content(self, lemmatizer: WordNetLemmatizer) -> bool:
-        self.df_docs[self.content_column_name] = self.df_docs[
-            self.content_column_name
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
+            utils.STEMMED_CONTENT_COL
         ].apply(
             lambda content: [
                 lemmatizer.lemmatize(c) for c in content if c not in self.dont_stem
@@ -218,8 +217,8 @@ class Corpus(object):
         return True
 
     def remove_short_words(self, min_length: int) -> bool:
-        self.df_docs[self.content_column_name] = self.df_docs[
-            self.content_column_name
+        self.df_docs[utils.STEMMED_CONTENT_COL] = self.df_docs[
+            utils.STEMMED_CONTENT_COL
         ].apply(lambda content: [c for c in content if len(c) > 2])
 
         return True
@@ -254,7 +253,7 @@ class LDAModeler(object):
         iterations: int = 1000,
     ):
         self.content = content
-        self.my_corpus = list(self.content.df_docs[content.content_column_name])
+        self.my_corpus = list(self.content.df_docs[utils.STEMMED_CONTENT_COL])
 
         self.dictionary = corpora.Dictionary(self.my_corpus)
         self.dictionary.filter_extremes(
@@ -302,10 +301,6 @@ class LDAModeler(object):
         fname_topics_by_doc: str = "topic_probabilities_by_document.xlsx",
         extra_df_columns_wanted: T.List[str] = [],
     ) -> bool:
-        """.
-        For each topic 20 keywords
-        For each document, the probability of each topic
-        """
 
         topic_keyword_writer = pd.ExcelWriter(fname_keywords)
         doc_topic_writer = pd.ExcelWriter(fname_topics_by_doc)
@@ -319,7 +314,7 @@ class LDAModeler(object):
             topic_keywords_df["word_{}".format(str(w_idx))] = [
                 topic_keywords[i][w_idx] for i in range(len(topic_keywords))
             ]
-        topic_keywords_df["proportions"] = topic_proportions
+        topic_keywords_df[utils.TOPIC_PROPORTIONS_ROW] = topic_proportions
 
         topic_dfs = []
         # n_articles = ["n = " + str(len(self.corpus_bow))]
@@ -338,10 +333,11 @@ class LDAModeler(object):
             [self.content.id_column_name]
             + extra_df_columns_wanted
             + [self.content.content_column_name]
+            + [utils.STEMMED_CONTENT_COL]
         ]
         for c in range(self.num_topics):
             doc_topic_df[TOPIC_PROBA_PREFIX + str(c)] = doc_topics[:, c]
-        doc_topic_df["most_likely_topic"] = doc_max
+        doc_topic_df[utils.MOST_LIKELY_TOPIC_COL] = doc_max
         doc_topic_df.to_excel(doc_topic_writer)
 
         topic_keyword_writer.save()

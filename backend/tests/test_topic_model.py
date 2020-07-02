@@ -221,6 +221,8 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
         self.assertTrue(fname_keywords.exists())
         self.assertTrue(fname_topics_by_doc.exists())
 
+        breakpoint()
+
         # Inspect the content of the keywords file
         fname_keywords_df = pd.read_excel(fname_keywords, index_col=0, header=0)
         expected_fname_keywords_index = pd.Index(
@@ -280,10 +282,51 @@ class TestTopicModelsTopicsNames(TrainedTopicModelMixin, unittest.TestCase):
             self._assert_response_success(resp)
 
             resp_json: Json = resp.get_json()
+
             assert isinstance(resp_json, list)
             dict_ = resp_json[0]
             self.assertListEqual(dict_["topic_names"], topic_names)
             self.assertEqual(dict_["status"], "completed")
+
+
+class TestTopicModelsTopicsPreview(TrainedTopicModelMixin, unittest.TestCase):
+    def test_topic_preview(self) -> None:
+        url = API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}/topics/preview"
+
+        with self._app.test_client() as client, self._app.app_context():
+            resp = client.get(url)
+        self._assert_response_success(resp)
+
+        resp_json: Json = resp.get_json()
+
+        assert isinstance(resp_json, dict)
+        self.assertTrue(
+            {
+                "topic_model_id",
+                "topic_model_name",
+                "num_topics",
+                "topic_names",
+                "status",
+                "topic_previews",
+            }
+            == set(resp_json.keys())
+        )
+
+        self.assertEqual(len(resp_json["topic_previews"]), self._num_topics)
+
+        at_least_one_topic_has_examples = False
+        for preview in resp_json["topic_previews"]:
+            self.assertTrue("examples" in preview)
+            self.assertTrue("keywords" in preview)
+            self.assertEqual(
+                len(preview["keywords"]), utils.DEFAULT_NUM_KEYWORDS_TO_GENERATE
+            )
+            # Check that the examples are longer than the keywords
+            # doesnt NEED to be true, but should prbobably be true
+
+            if len(preview["examples"]) > 0:
+                at_least_one_topic_has_examples = True
+        self.assertTrue(at_least_one_topic_has_examples)
 
 
 if __name__ == "__main__":
