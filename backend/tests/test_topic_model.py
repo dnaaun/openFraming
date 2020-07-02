@@ -4,6 +4,7 @@ import unittest
 from unittest import mock
 
 import pandas as pd  # type: ignore
+from playhouse.shortcuts import model_to_dict
 from tests.common import AppMixin
 from tests.common import debug_on
 
@@ -117,7 +118,7 @@ class TestTopicModels(AppMixin, unittest.TestCase):
             scheduler: Scheduler = self._app.config["SCHEDULER"]
             scheduler.add_topic_model_training: mock.MagicMock = mock.MagicMock(return_value=None)  # type: ignore
             fname_keywords = utils.Files.topic_model_keywords_file(self._topic_mdl.id_)
-            fname_topics_by_doc = utils.Files.topic_model_probabilities_by_example_file(
+            fname_topics_by_doc = utils.Files.topic_model_topics_by_doc_file(
                 self._topic_mdl.id_
             )
             training_file_path = utils.Files.topic_model_training_file(
@@ -165,7 +166,7 @@ class TestTopicModels(AppMixin, unittest.TestCase):
                 self._topic_mdl.id_
             )
             fname_keywords = utils.Files.topic_model_keywords_file(self._topic_mdl.id_)
-            fname_topics_by_doc = utils.Files.topic_model_probabilities_by_example_file(
+            fname_topics_by_doc = utils.Files.topic_model_topics_by_doc_file(
                 self._topic_mdl.id_
             )
 
@@ -224,11 +225,21 @@ class TestTopicModels(AppMixin, unittest.TestCase):
             fname_topics_by_doc_df.columns, expected_fname_topics_by_doc_columns,
         )
 
-    def naming_topic(self) -> None:
-        topic_mdl = db.TopicModel.create(name="test_topic_model", num_topics=10)
-        utils.Files.topic_model_dir(topic_mdl.id_, ensure_exists=True)
-        _ = API_URL_PREFIX + f"/topic_models/{topic_mdl.id_}/training/file"
-        pass
+    def test_naming_topics(self) -> None:
+        url = API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}/topics/name"
+
+        topic_names = [f"fancy_topic_name_{i}" for i in range(1, self._num_topics + 1)]
+        post_json = {"topic_names": topic_names}
+        with self._app.test_client() as client, self._app.app_context():
+            res = client.post(url, json=post_json)
+            self._assert_response_success(res, url=url)
+
+        with self._app.app_context():
+            reloaded_topic_mdl = db.TopicModel.get(
+                db.TopicModel.id_ == self._topic_mdl.id_
+            )
+
+        self.assertListEqual(reloaded_topic_mdl.topic_names, topic_names)
 
 
 if __name__ == "__main__":

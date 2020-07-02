@@ -11,6 +11,7 @@ from flask import Flask
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
 from flask_restful import Resource
+from playhouse.flask_utils import get_object_or_404
 from sklearn import model_selection  # type: ignore
 from typing_extensions import TypedDict
 from werkzeug.datastructures import FileStorage
@@ -60,6 +61,14 @@ class BaseResource(Resource):
             writer.writerow(headers)
             writer.writerows(data)
 
+    @staticmethod
+    def _validate_serializable_list_value(val: T.Any) -> str:
+        if not isinstance(val, str):
+            raise ValueError("must be str")
+        if "," in val:
+            raise ValueError("can't contain commas.")
+        return val
+
 
 class ClassifierRelatedResource(BaseResource):
     """Base class to define utility functions related to classifiers."""
@@ -106,17 +115,9 @@ class Classifiers(ClassifierRelatedResource):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument(name="name", type=str, required=True)
 
-        def category_names_type(val: T.Any) -> str:
-            if not isinstance(val, str):
-                raise ValueError("must be str")
-            if "," in val:
-                raise ValueError("can't contain commas.")
-
-            return val
-
         self.reqparse.add_argument(
             name="category_names",
-            type=category_names_type,
+            type=self._validate_serializable_list_value,
             action="append",
             required=True,
             help="",
@@ -441,9 +442,7 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
             training_file=str(train_file),
             num_topics=topic_mdl.num_topics,
             fname_keywords=str(utils.Files.topic_model_keywords_file(id_)),
-            fname_topics_by_doc=str(
-                utils.Files.topic_model_probabilities_by_example_file(id_)
-            ),
+            fname_topics_by_doc=str(utils.Files.topic_model_topics_by_doc_file(id_)),
         )
         topic_mdl.lda_set = db.LDASet()
         topic_mdl.lda_set.save()
@@ -491,6 +490,36 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
             )
 
         return table_headers, table_data
+
+
+class TopicModelsTopicsName(TopicModelRelatedResource):
+
+    url = "/topic_models/<int:id_>/topics/name"
+
+    def __init__(self) -> None:
+        self.reqparse = reqparse.RequestParser()
+
+        self.reqparse.add_argument(
+            name="topic_names",
+            type=self._validate_serializable_list_value,
+            action="append",
+            required=True,
+            help="",
+        )
+
+    def post(self, id_: int) -> TopicModelStatus:
+        args = self.reqparse.parse_args()
+        topic_names: T.List[str] = args["topic_names"]
+        topic_mdl = get_object_or_404(db.TopicModel, db.TopicModel.id_ == id_)
+
+        if len(topic_names) != topic_mdl.num_topics:
+            raise BadRequest(
+                f"topic model has {topic_mdl.num_topics} topics, but {len(topic_names)} topics were provided."
+            )
+
+        topic_mdl.topic_names = topic_names
+        topic_mdl.save()
+        return self._topic_model_status(topic_mdl)
 
 
 def create_app(
@@ -546,6 +575,7 @@ def create_app(
         ClassifiersTrainingFile,
         TopicModels,
         TopicModelsTrainingFile,
+        TopicModelsTopicsName,
     )
     for resource_cls in lsresource_cls:
         assert (

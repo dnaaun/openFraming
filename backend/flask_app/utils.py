@@ -96,11 +96,11 @@ class Files:
 
     @classmethod
     def topic_model_keywords_file(cls, id_: int) -> Path:
-        return cls.topic_model_dir(id_) / "keywords_per_topic.xlsx"
+        return cls.topic_model_dir(id_) / "keywords.xlsx"
 
     @classmethod
-    def topic_model_probabilities_by_example_file(cls, id_: int) -> Path:
-        return cls.topic_model_dir(id_) / "probabilities_by_example.xlsx"
+    def topic_model_topics_by_doc_file(cls, id_: int) -> Path:
+        return cls.topic_model_dir(id_) / "topics_by_doc.xlsx"
 
 
 class Validate:

@@ -179,7 +179,7 @@ class TopicModel(BaseModel):
     id_: int = pw.AutoField()
     name: str = pw.CharField()
     num_topics: int = pw.IntegerField()
-    topic_names: T.Optional[T.List[str]] = ListField(null=True)  # type: ignore
+    topic_names: T.List[str] = ListField(null=True)  # type: ignore
     lda_set: T.Optional[LDASet] = pw.ForeignKeyField(LDASet, null=True)  # type: ignore
 
     # NOTE: The below is ONLY a type annotation.
