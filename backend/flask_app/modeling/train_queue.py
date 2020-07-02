@@ -38,7 +38,8 @@ class Scheduler(object):
         self,
         labels: T.List[str],
         model_path: str,
-        data_dir: str,
+        train_file: str,
+        dev_file: str,
         cache_dir: str,
         output_dir: str,
     ) -> None:
@@ -47,7 +48,8 @@ class Scheduler(object):
             do_classifier_training,
             labels=labels,
             model_path=model_path,
-            data_dir=data_dir,
+            train_file=train_file,
+            dev_file=dev_file,
             cache_dir=cache_dir,
             output_dir=output_dir,
         )
@@ -74,12 +76,13 @@ class Scheduler(object):
 def do_classifier_training(
     labels: T.List[str],
     model_path: str,
-    data_dir: str,
+    train_file: str,
+    dev_file: str,
     cache_dir: str,
     output_dir: str,
 ) -> None:
     classifier_model = ClassifierModel(
-        labels, model_path, data_dir, cache_dir, output_dir,
+        labels, model_path, train_file, dev_file, cache_dir, output_dir,
     )
     classifier_model.train()
 

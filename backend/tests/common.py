@@ -19,6 +19,9 @@ from flask_app.app import create_app
 F = T.TypeVar("F", bound=T.Callable[[T.Any], T.Any])
 
 
+TESTING_FILES_DIR = Path(__file__).parent / "testing_files"
+
+
 def debug_on(*exceptions: T.Type[Exception]) -> T.Callable[[F], F]:
     # From stackoverflow.
     if not exceptions:

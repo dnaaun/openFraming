@@ -108,7 +108,7 @@ class Corpus(object):
 
         # Figure out if the user meant to remove phrases by checking
         # if they provided phrases to remove
-        remove_phrases_default = phrases_to_remove is not []
+        remove_phrases_default = phrases_to_remove != []
         if self.processing_to_do.get("remove_phrases", remove_phrases_default):
             self.remove_phrases()
             preprocessing_completed.append("Removed phrases")

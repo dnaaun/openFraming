@@ -126,7 +126,7 @@ class LabeledSet(BaseModel):
     """
 
     id_ = pw.AutoField(primary_key=True)
-    training_or_inference_completed = pw.BooleanField(default=False)
+    training_or_inference_completed: bool = pw.BooleanField(default=False)  # type: ignore
     metrics = pw.ForeignKeyField(Metrics, null=True)
 
 
@@ -146,7 +146,7 @@ class Classifier(BaseModel):
     classifier_id: int = pw.AutoField(primary_key=True)
     name = pw.TextField()
     category_names: T.List[str] = ListField()  # type: ignore
-    trained_by_openFraming = pw.BooleanField(default=False)
+    trained_by_openFraming: bool = pw.BooleanField(default=False)  # type: ignore
     train_set: T.Optional[LabeledSet] = pw.ForeignKeyField(LabeledSet, null=True)  # type: ignore
     dev_set: T.Optional[LabeledSet] = pw.ForeignKeyField(LabeledSet, null=True)  # type: ignore
 
@@ -189,7 +189,7 @@ class TopicModel(BaseModel):
     @property
     # https://github.com/coleifer/peewee/issues/1667#issuecomment-405095432
     def semi_supervised_set(self) -> SemiSupervisedSet:
-        return self.semi_supervised_sets.get()
+        return self.semi_supervised_sets.get()  # type: ignore
 
 
 class SemiSupervisedSet(BaseModel):

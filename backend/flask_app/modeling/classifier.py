@@ -3,16 +3,18 @@ import typing as T
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
-import torch
+import typing_extensions as TT
 from sklearn.metrics import classification_report  # type: ignore
 from torch.utils.data.dataset import Dataset
 from transformers import AutoConfig  # type: ignore
 from transformers import AutoModelForSequenceClassification  # type: ignore
-from transformers import AutoTokenizer  # type: ignore
+from transformers import AutoTokenizer
 from transformers import EvalPrediction  # type: ignore
 from transformers import InputFeatures  # type: ignore
-from transformers import Trainer  # type: ignore
+from transformers import Trainer
 from transformers import TrainingArguments  # type: ignore
+from transformers.tokenization_utils import PreTrainedTokenizer
+from transformers.trainer_utils import PredictionOutput
 
 from flask_app import utils
 from flask_app.modeling.lda import CSV_EXTENSIONS
@@ -26,7 +28,7 @@ class ClassificationDataset(Dataset):  # type: ignore
     def __init__(
         self,
         labels: T.List[str],
-        tokenizer: AutoTokenizer,
+        tokenizer: PreTrainedTokenizer,
         label_map: T.Dict[str, int],
         dset_filename: str,
         content_column: str,
@@ -59,15 +61,20 @@ class ClassificationDataset(Dataset):  # type: ignore
         df = doc_reader(dset_filename)
         self.len_dset = len(df)
 
+        self.content_series = df[
+            content_column
+        ]  # For later, if we need to output predictions
         self.encoded_content = self.tokenizer.batch_encode_plus(
             df[content_column], max_length=None, pad_to_max_length=True,
         )
         if label_column is not None:
-            self.encoded_labels = [self.label_map[label] for label in df[label_column]]
+            self.encoded_labels: T.Optional[T.List[int]] = [
+                self.label_map[label] for label in df[label_column]
+            ]
         else:
             self.encoded_labels = None
         self.features = []
-        for i in range(len(self.encoded_content["token_type_ids"])):
+        for i in range(len(self.encoded_content["input_ids"])):
             inputs = {
                 k: self.encoded_content[k][i] for k in self.encoded_content.keys()
             }
@@ -87,6 +94,17 @@ class ClassificationDataset(Dataset):  # type: ignore
         return self.labels
 
 
+ClassificationMetrics = TT.TypedDict(
+    "ClassificationMetrics",
+    {
+        "accuracy": float,
+        "macro_f1_score": float,
+        "macro_recall": float,
+        "macro_precision": float,
+    },
+)
+
+
 class ClassifierModel(object):
     """Trainable BERT-based classifier given a training & eval set."""
 
@@ -94,22 +112,25 @@ class ClassifierModel(object):
         self,
         labels: T.List[str],
         model_path: str,
-        data_dir: str,
+        train_file: T.Optional[str],
+        dev_file: T.Optional[str],
         cache_dir: str,
         output_dir: str,
     ):
         """.
 
-        labels: list of valid labels used in the dataset
-        model_path: name of model being used or filepath to where the model is stored
-        model_path_tokenizer: name or path of tokenizer being used.
-        data_dir: directory where the training & eval sets are stored, as train.* and
-            eval.*
-        cache_dir: directory where cache & output are kept.
+        Args:
+            labels: list of valid labels used in the dataset
+            model_path: name of model being used or filepath to where the model is stored
+            train_file:
+            dev_file:
+            model_path_tokenizer: name or path of tokenizer being used.
+            cache_dir: directory where cache & output are kept.
         """
+        assert train_file or dev_file, "Must provide a training or development set."
+
         self.cache_dir = cache_dir
         self.model_path = model_path
-        self.data_dir = data_dir
         self.output_dir = output_dir
 
         self.labels = labels
@@ -135,15 +156,38 @@ class ClassifierModel(object):
             cache_dir=self.cache_dir,
         )
 
-        self.train_dataset = self.make_dataset(
-            self.data_dir + "/train.csv", utils.CONTENT_COL, utils.LABEL_COL,
+        if train_file is not None:
+            self.train_dataset = self.make_dataset(
+                train_file, utils.CONTENT_COL, utils.LABEL_COL,
+            )
+        if dev_file is not None:
+            self.eval_dataset = self.make_dataset(
+                dev_file, utils.CONTENT_COL, utils.LABEL_COL,
+            )
+
+    @staticmethod
+    def compute_metrics(p: EvalPrediction) -> ClassificationMetrics:
+        """
+        Compute accuracy of predictions vs labels. Piggy back on sklearn.
+        """
+        y_true = np.argmax(p.predictions, axis=1)
+        y_pred = p.label_ids
+
+        clsf_report_sklearn = classification_report(
+            y_true=y_true, y_pred=y_pred, output_dict=True
         )
-        self.eval_dataset = self.make_dataset(
-            self.data_dir + "/dev.csv", utils.CONTENT_COL, utils.LABEL_COL,
+        final = ClassificationMetrics(
+            {
+                "accuracy": clsf_report_sklearn["accuracy"],
+                "macro_f1_score": clsf_report_sklearn["macro avg"]["f1-score"],
+                "macro_recall": clsf_report_sklearn["macro avg"]["recall"],
+                "macro_precision": clsf_report_sklearn["macro avg"]["precision"],
+            }
         )
+        return final
 
     def make_dataset(
-        self, fname: str, content_column: str, label_column: str
+        self, fname: str, content_column: str, label_column: T.Optional[str]
     ) -> ClassificationDataset:
         """Create a Torch dataset object from a file using the built-in tokenizer.
 
@@ -168,29 +212,7 @@ class ClassifierModel(object):
         """Train a BERT-based model, using the training set to train & the eval set as
         validation.
         """
-
-        def simple_accuracy(preds: np.ndarray, labels: np.ndarray) -> np.ndarray:
-            """
-            Checks how often preds == labels
-            """
-            return (preds == labels).mean()
-
-        def build_compute_metrics_fn() -> T.Callable[
-            [EvalPrediction], T.Dict[str, np.ndarray]
-        ]:
-            """
-            Get a metrics computation function
-            """
-
-            def compute_metrics_fn(p: EvalPrediction) -> T.Dict[str, np.ndarray]:
-                """
-                Compute accuracy of predictions vs labels
-                """
-                preds = np.argmax(p.predictions, axis=1)
-                labels = p.label_ids
-                return {"acc": simple_accuracy(preds, labels)}
-
-            return compute_metrics_fn
+        assert self.train_dataset is not None, "train_file was not provided!"
 
         self.trainer = Trainer(
             model=self.model,
@@ -202,53 +224,30 @@ class ClassifierModel(object):
             ),
             train_dataset=self.train_dataset,
             eval_dataset=self.eval_dataset,
-            compute_metrics=build_compute_metrics_fn(),
+            compute_metrics=self.compute_metrics,
         )
         self.trainer.train(model_path=self.model_path)
         self.trainer.save_model()
         self.tokenizer.save_pretrained(self.trainer.args.output_dir)
 
-    def eval_model(self) -> T.Dict[str, float]:
+    def train_and_evaluate(self) -> ClassificationMetrics:
         """
         Wrapper on the trainer.evaluate method; evaluate model's performance on eval set
         provided by the user.
         """
-        return self.trainer.evaluate(eval_dataset=self.eval_dataset)  # type: ignore
+        assert self.eval_dataset is not None, "dev_file was not provided!"
+        assert self.train_dataset is not None, "train_file was not provided!"
 
-    def _run_inference(self, inference_dset: ClassificationDataset) -> T.List[str]:
-        """
-        Given a dataset, return the labels 
-        (as drawn from the original set of labels given by the user) 
-        that the model predicts.
+        self.train()
+        return self.trainer.evaluate(eval_dataset=self.eval_dataset)
 
-        Inputs:
-            inference_dset: ClassificationDataset object. May or may not have labels.
-        Outputs: 
-            list of predicted labels (congruent with user input).
-        """
-        preds = None
-        with torch.no_grad():
-            for inputs in inference_dset:
-                inputs_new = {}
-                inputs_new["input_ids"] = torch.Tensor([inputs.input_ids]).long()
-                inputs_new["token_type_ids"] = torch.Tensor(
-                    [inputs.token_type_ids]
-                ).long()
-                inputs_new["attention_mask"] = torch.Tensor([inputs.attention_mask])
-                outputs = self.model(**inputs_new)
-                logits = outputs[0]
-                if preds is None:
-                    preds = torch.nn.functional.softmax(logits).detach()
-                else:
-                    preds = torch.cat((preds, logits.detach()), dim=0)
-
-        preds = preds.cpu().numpy()
-        preds = [self.label_map_reverse[np.argmax(i)] for i in preds]
-        return preds
-
-    def run_inference_no_eval(
-        self, inference_dset_path: str, text_col: str
-    ) -> T.List[str]:
+    def predict_and_save_predictions(
+        self,
+        inference_dset_path: str,
+        text_col: str,
+        predict_col: str,
+        output_file_path: str,
+    ) -> None:
         """
         Given a path to a dataset and the column containing text, 
         provide the labels predicted by the model.
@@ -256,30 +255,22 @@ class ClassifierModel(object):
         Inputs:
             inference_dset_path: absolute filepath of inference dataset
             text_col: column containing the text we'll analyze
+            predict_col: what to name the column with predictions.
+            output_file_path: path where the CSV of predictions.
 
         Outputs:
             list of predictions (as user-supplied labels)
         """
         inference_dset = self.make_dataset(inference_dset_path, text_col, None)
-        return self._run_inference(inference_dset)
+        pred_output: PredictionOutput = self.trainer.predict(inference_dset)
+        preds_in_user_labels = [
+            inference_dset.labels[i] for i in pred_output.predictions
+        ]
 
-    def run_inference_and_evaluate(
-        self, inference_dset_path: str, text_col: str, label_col: str
-    ) -> T.Dict[str, float]:
-        """
-        Given a path to a dataset and the columns containing text & labels,
-        provide the labels predicted by the model and some basic metrics.
+        pred_series = pd.Series(preds_in_user_labels, name=predict_col)
+        output_df = pd.concat(
+            [inference_dset.content_series, pred_series],
+            names=[inference_dset.content_series, pred_series.name],
+        )
 
-        Inputs:
-            inference_dset_path: absolute path to inference dataset
-            text_col: column containing the text we'll analyze
-            label_col: column containing the labels
-
-        Outputs:
-            list of predictions (as user-supplied labels)
-            a dict containing basic classification metrics
-        """
-        inference_dset = self.make_dataset(inference_dset_path, text_col, label_col)
-        labels = inference_dset.encoded_labels
-        preds = self._run_inference(inference_dset)
-        return preds, classification_report(labels, preds, output_dict=True)
+        output_df.to_csv(output_file_path)

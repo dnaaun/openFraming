@@ -8,15 +8,13 @@ from unittest import mock
 import pandas as pd  # type: ignore
 from tests.common import AppMixin
 from tests.common import debug_on
+from tests.common import TESTING_FILES_DIR
 
 from flask_app import db
 from flask_app import utils
 from flask_app.app import API_URL_PREFIX
 from flask_app.modeling.train_queue import Scheduler
 from flask_app.utils import Json
-
-
-TESTING_FILES_DIR = Path(__file__).parent / "testing_files"
 
 
 class TopicModelMixin(AppMixin):
@@ -139,7 +137,6 @@ class TestTopicModels(TopicModelMixin, unittest.TestCase):
 
 
 class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
-    @debug_on()
     def test_post(self) -> None:
         # Mock the scheduler
         with self._app.app_context():
@@ -184,7 +181,6 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
             fname_topics_by_doc=str(fname_topics_by_doc),
         )
 
-    @debug_on()
     def test_training(self) -> None:
 
         with self._app.app_context():
@@ -221,8 +217,6 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
         self.assertTrue(fname_keywords.exists())
         self.assertTrue(fname_topics_by_doc.exists())
 
-        breakpoint()
-
         # Inspect the content of the keywords file
         fname_keywords_df = pd.read_excel(fname_keywords, index_col=0, header=0)
         expected_fname_keywords_index = pd.Index(
@@ -247,9 +241,9 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
             fname_topics_by_doc_df.index, expected_fname_topics_by_doc_index
         )
         expected_fname_topics_by_doc_columns = pd.Index(
-            [utils.ID_COL, utils.CONTENT_COL]
+            [utils.ID_COL, utils.CONTENT_COL, utils.STEMMED_CONTENT_COL]
             + [f"proba_topic_{i}" for i in range(self._num_topics)]
-            + ["most_likely_topic"]
+            + [utils.MOST_LIKELY_TOPIC_COL]
         )
         pd.testing.assert_index_equal(
             fname_topics_by_doc_df.columns, expected_fname_topics_by_doc_columns,

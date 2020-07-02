@@ -19,7 +19,7 @@ TOPIC_PROPORTIONS_ROW = "proportions"
 # Used by classiifiers only
 LABEL_COL = "category"
 
-TRANSFORMERS_MODEL = "bert-base-uncased"
+TRANSFORMERS_MODEL = "distilbert-base-uncased"
 TEST_SET_SPLIT = 0.2
 MINIMUM_LDA_EXAMPLES = 20
 DEFAULT_NUM_KEYWORDS_TO_GENERATE = 20

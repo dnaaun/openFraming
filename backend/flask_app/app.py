@@ -254,7 +254,8 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         model_scheduler.add_classifier_training(
             labels=classifier.category_names,
             model_path=utils.TRANSFORMERS_MODEL,
-            data_dir=str(utils.Files.classifier_dir(classifier_id)),
+            train_file=str(utils.Files.classifier_train_set_file(classifier_id)),
+            dev_file=str(utils.Files.classifier_dev_set_file(classifier_id)),
             cache_dir=current_app.config["TRANSFORMERS_CACHE_DIR"],
             output_dir=str(
                 utils.Files.classifier_output_dir(classifier_id, ensure_exists=True)
