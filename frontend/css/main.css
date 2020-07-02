@@ -23,6 +23,19 @@
     min-height: 100%;
 }
 
+.form-gap {
+    padding-top: 70px;
+    /* margin: 20%; */
+}
+
+.modal-dialog {
+    margin-top: 20%;
+}
+
+/* .container {
+    margin: 100px;
+} */
+
 html, body {
     height: 100%;
     margin: 0;
