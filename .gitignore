@@ -1,5 +1,6 @@
 # For the uploaded files and model weights
 project_data/
+transformers_cache_dir/
 
 # For the database
 sqlite.db
@@ -17,6 +18,7 @@ openFraming
 # Python/mypy related
 __pycache__/
 .mypy_cache/
+.dmypy.json
 
 instance/
 
