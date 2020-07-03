@@ -29,6 +29,9 @@ var API_PREFIX = "/api";
 $(function(){
 
 
+
+
+
 	$("#otherradiobutton").on('click', function () {
 
 		let hasError = false;
