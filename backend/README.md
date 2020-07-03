@@ -38,7 +38,7 @@ Done.
 
 ## Creates a classifier.
 ### Endpoint
-`POST classifiers/`
+`POST /classifiers/`
 
 ### Request body
 ```python
@@ -66,7 +66,7 @@ Done.
 
 ## Get details about one classifier.
 ### Endpoint
-`GET classifiers/<classifier_id:int>`
+`GET /classifiers/<classifier_id:int>`
 
 ### Request body
 Empty.
@@ -99,7 +99,7 @@ Done.
 
 ## Upload training data for a classifier and start training.
 ### Endpoint
-`POST classifiers/<classifier_id:int>/training/file`
+`POST /classifiers/<classifier_id:int>/training/file`
 
 ### Request body
 `FormData` 
@@ -123,7 +123,7 @@ Done.
 
 ## Lists all test sets for a classifier.
 ### Endpoint
-GET classifiers/<classifier_id:int>/test_sets/
+`GET /classifiers/<classifier_id:int>/test_sets/`
 
 ### Request body
 Empty.
@@ -141,9 +141,12 @@ Empty.
 ]
 ```
 
+### Status
+Done.
+
 ## Create a test set.
 ### Endpoint
-`POST classifiers/<classifier_id:int>/test_sets/`
+`POST /classifiers/<classifier_id:int>/test_sets/`
 
 ### Request body
 ```python
@@ -164,11 +167,11 @@ Empty.
 ``` 
 
 ### Status
-In progress.
+Done.
 
 ## Get details about one test set.
 ### Endpoint
-`GET classifiers/<classifier_id:int>/test_sets/<test_set_id:int>`
+`GET /classifiers/<classifier_id:int>/test_sets/<test_set_id:int>`
 
 ### Request body
 Empty.
@@ -191,7 +194,7 @@ In progress.
 
 ## Upload test set and start inference.
 ### Endpoint
-`POST classifiers/<classifier_id:int>/test_sets/<test_set_id:int>/file`
+`POST /classifiers/<classifier_id:int>/test_sets/<test_set_id:int>/file`
 
 
 ### Request body
@@ -210,12 +213,12 @@ In progress.
 ```
 
 ### Status
-In progress.
+Done.
 
 
 ## Download predictions on test set.
 ### Endpoint
-`GET classifiers/<classifier_id:int>/test_sets/<test_set_id:int>/predictions`
+`GET /classifiers/<classifier_id:int>/test_sets/<test_set_id:int>/predictions`
 
 ### Request parameters
 1. `file_type`: Optional. Can be:`csv`, `xlsx`.
@@ -235,7 +238,7 @@ In progress.
 
 # List all topic models.
 ### Endpoint
-`GET topic_models/`
+`GET /topic_models/`
 
 ### Request body
 Empty.
@@ -262,7 +265,7 @@ Empty.
 
 ## Creates a topic model.
 ### Endpoint
-`POST topic_models/`
+`POST /topic_models/`
 
 ### Request body
 ```python
@@ -290,7 +293,7 @@ Done.
 
 ## Get details about one topic model.
 ### Endpoint
-`GET topic_models/<topic_model_id:int>`
+`GET /topic_models/<topic_model_id:int>`
 
 ### Request body 
 Empty.
@@ -313,7 +316,7 @@ In progress.
 
 ## Upload training file and start training topic model.
 ### Endpoint
-`POST topic_models/<topic_model_id:int>/training/file`
+`POST /topic_models/<topic_model_id:int>/training/file`
 
 ### Request body
 `FormData`
@@ -336,7 +339,7 @@ In progress.
 Done
 
 ### Endpoint
-`GET topic_models/<topic_model_id:int>/topics/preview`
+`GET /topic_models/<topic_model_id:int>/topics/preview`
 
 ### Request body
 Empty.
@@ -366,7 +369,7 @@ Done.
 
 ## Name the topics of a trained topic model.
 ### Endpoint
-`POST topic_models/<topic_model_id:int>/topics/names`
+`POST /topic_models/<topic_model_id:int>/topics/names`
 
 ### Request body
 ```python
@@ -392,7 +395,7 @@ Done
 
 ## Download keywords per each topic.
 ### Endpoint
-`GET topic_models/<topic_model_id:int>/keywords`
+`GET /topic_models/<topic_model_id:int>/keywords`
 
 ### Request parameters
 1. `file_type`: Optional. Can be:`csv`, `xlsx`.
@@ -410,7 +413,7 @@ In progress.
 
 ## Download topic proportions for each example.
 ### Endpoint
-`GET topic_models/<topic_model_id:int>/keywords`
+`GET /topic_models/<topic_model_id:int>/keywords`
 
 ### Request parameters
 1. `file_type`: Optional. Can be:`csv`, `xlsx`.
