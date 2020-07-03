@@ -1,5 +1,4 @@
 black
-fakeredis==1.4.1
 mypy==0.780
 bandit==1.6.2
 pytest==5.4.3
