@@ -1,4 +1,5 @@
 """Classifier related backend functionality."""
+import tempfile
 import typing as T
 
 import numpy as np  # type: ignore
@@ -101,8 +102,8 @@ class ClassifierModel(object):
         labels: T.List[str],
         model_path: str,
         cache_dir: str,
-        output_dir: str,
-        num_train_epochs: T.Optional[float],
+        output_dir: T.Optional[str] = None,
+        num_train_epochs: T.Optional[float] = None,
         train_file: T.Optional[str] = None,
         dev_file: T.Optional[str] = None,
     ):
@@ -252,9 +253,9 @@ class ClassifierModel(object):
 
     def predict_and_save_predictions(
         self,
-        inference_dset_path: str,
-        text_col: str,
-        predict_col: str,
+        test_set_path: str,
+        content_column: str,
+        predicted_column: str,
         output_file_path: str,
     ) -> None:
         """
@@ -262,24 +263,44 @@ class ClassifierModel(object):
         provide the labels predicted by the model.
 
         Inputs:
-            inference_dset_path: absolute filepath of inference dataset
-            text_col: column containing the text we'll analyze
-            predict_col: what to name the column with predictions.
+            test_set_path: absolute filepath of inference dataset
+            content_column: column containing the text we'll analyze
+            predicted_column: what to name the column with predictions.
             output_file_path: path where the CSV of predictions.
 
-        Outputs:
-            list of predictions (as user-supplied labels)
+        WritesTo:
+            output_file_path: A CSV with two columns: examples, and predictions.
         """
-        inference_dset = self.make_dataset(inference_dset_path, text_col, None)
-        pred_output: PredictionOutput = self.trainer.predict(inference_dset)
-        preds_in_user_labels = [
-            inference_dset.labels[i] for i in pred_output.predictions
-        ]
+        # The transformers library should not require an output_dir if we're only
+        # predicting using the model and getting the results returned in Python.
+        # But alas, it does.
+        if self.output_dir is None:
+            output_dir = tempfile.mkdtemp(prefix="openFraming_prediction")
+        else:
+            output_dir = self.output_dir
 
-        pred_series = pd.Series(preds_in_user_labels, name=predict_col)
-        output_df = pd.concat(
-            [inference_dset.content_series, pred_series],
-            names=[inference_dset.content_series, pred_series.name],
+        test_dset = self.make_dataset(test_set_path, content_column, None)
+        trainer: Trainer[None] = Trainer(
+            model=self.model,
+            args=TrainingArguments(
+                do_train=False,
+                do_eval=False,
+                do_predict=False,
+                output_dir=output_dir,
+                num_train_epochs=self.num_train_epochs,
+            ),
         )
 
-        output_df.to_csv(output_file_path)
+        pred_output: PredictionOutput = trainer.predict(test_dset)
+
+        y_pred = pred_output.predictions.argmax(axis=1)
+        preds_in_user_labels = [test_dset.labels[i] for i in y_pred]
+
+        pred_series = pd.Series(preds_in_user_labels, name=predicted_column)
+        output_df: pd.DataFrame = pd.concat(
+            [test_dset.content_series, pred_series],
+            axis=1,
+            names=[test_dset.content_series, pred_series.name],
+        )
+
+        output_df.to_csv(output_file_path, index=False)

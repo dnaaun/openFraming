@@ -83,18 +83,6 @@ class ListField(pw.TextField):
         return None
 
 
-class ProgressEnum(str, enum.Enum):
-    """Progress field for Classifier.
-
-    The inheritance from str is to support json serialization.
-    """
-
-    NOT_TRAINED = "NOT_TRAINED"
-    TRAINING = "TRAINING"
-    RUNNING_INFERENCE = "RUNNING_INFERENCE"
-    DONE = "DONE"
-
-
 class Metrics(BaseModel):
     """Metrics on a labeled set.
 
@@ -105,10 +93,10 @@ class Metrics(BaseModel):
         accuracy:
     """
 
-    macro_f1_score = pw.FloatField()
-    macro_precision = pw.FloatField()
-    macro_recall = pw.FloatField()
-    accuracy = pw.FloatField()
+    macro_f1_score: float = pw.FloatField()
+    macro_precision: float = pw.FloatField()
+    macro_recall: float = pw.FloatField()
+    accuracy: float = pw.FloatField()
 
 
 class LabeledSet(BaseModel):
@@ -125,7 +113,7 @@ class LabeledSet(BaseModel):
         metrics: Metrics on set. Can be null in the case of a train set.
     """
 
-    id_ = pw.AutoField(primary_key=True)
+    id_: int = pw.AutoField(primary_key=True)
     training_or_inference_completed: bool = pw.BooleanField(default=False)  # type: ignore
     metrics: Metrics = pw.ForeignKeyField(Metrics, null=True)  # type: ignore
 
@@ -143,15 +131,17 @@ class Classifier(BaseModel):
         dev_set: The dev set for classififer.
     """
 
-    classifier_id: int = pw.AutoField(primary_key=True)
-    name = pw.TextField()
+    classifier_id: int = pw.AutoField(primary_key=True)  # type: ignore
+    name: str = pw.TextField()  # type: ignore
     category_names: T.List[str] = ListField()  # type: ignore
     trained_by_openFraming: bool = pw.BooleanField(default=False)  # type: ignore
     train_set: T.Optional[LabeledSet] = pw.ForeignKeyField(LabeledSet, null=True)  # type: ignore
     dev_set: T.Optional[LabeledSet] = pw.ForeignKeyField(LabeledSet, null=True)  # type: ignore
 
+    test_sets: T.Iterable[TestSet]  # provided by backref on TestSet
 
-class PredictionSet(BaseModel):
+
+class TestSet(BaseModel):
     """This will be a prediction set.
 
     Attributes:
@@ -162,14 +152,15 @@ class PredictionSet(BaseModel):
             completed this set.
     """
 
-    id_ = pw.AutoField(primary_key=True)
-    name = pw.CharField()
-    classifier = pw.ForeignKeyField(Classifier, backref="prediction_sets")
-    inference_completed = pw.BooleanField()
+    id_: int = pw.AutoField(primary_key=True)  # type: ignore
+    name: str = pw.CharField()  # type: ignore
+    classifier: Classifier = pw.ForeignKeyField(Classifier, backref="test_sets")  # type: ignore
+    inference_began: bool = pw.BooleanField(default=False)  # type: ignore
+    inference_completed: bool = pw.BooleanField(default=False)  # type: ignore
 
 
 class LDASet(BaseModel):
-    id_ = pw.AutoField(primary_key=True)
+    id_: int = pw.AutoField(primary_key=True)  # type: ignore
     lda_completed: bool = pw.BooleanField(default=False)  # type: ignore
 
 

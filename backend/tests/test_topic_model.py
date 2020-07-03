@@ -1,5 +1,4 @@
 import csv
-import io
 import shutil
 import unittest
 from unittest import mock
@@ -7,6 +6,7 @@ from unittest import mock
 import pandas as pd  # type: ignore
 from tests.common import AppMixin
 from tests.common import debug_on  # noqa:
+from tests.common import make_csv_file
 from tests.common import TESTING_FILES_DIR
 
 from flask_app import db
@@ -151,11 +151,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
 
         test_url = API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}/training/file"
         # Prepare the file to "upload"
-        text_io = io.StringIO()
-        writer = csv.writer(text_io)
-        writer.writerows(self._valid_training_table)
-        text_io.seek(0)
-        to_upload_file = io.BytesIO(text_io.read().encode())
+        to_upload_file = make_csv_file(self._valid_training_table)
 
         with self._app.test_client() as client, self._app.app_context():
             res = client.post(test_url, data={"file": (to_upload_file, "train.csv")},)
