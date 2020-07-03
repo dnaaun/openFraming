@@ -64,7 +64,7 @@ Empty.
      "category_names": [str, ...],
 
      # Indicates the status of the training for this classifier.
-     # "not_begun" means no training data was uploaded and training has not begun.
+     # "not_begun" means no training data was not uploaded and training has not begun.
      # "training" means the classifier is training right now.
      # "completed' means the classifier has completed training.
      "status": One_of("not_begun", "training", "completed"),
@@ -117,7 +117,7 @@ the new classifier and what the categories should be.
   # it's not provided by openFraming.
   "provided_by_openFraming": False,
 
-  # The classifier was just created . No  training data was uploaded yet.
+  # The classifier was just created. No  training data was uploaded yet.
   "status": "not_begun"
 
   # The classifier is not trained yet, it has no metrics.
@@ -545,6 +545,8 @@ human readable names to the topic.
 ```python
 { 
     # Length must be equal to "num_topics" of topic model.
+    # The first element of this list corresponds to the name given to the first
+    # topic discovered by LDA, and so on.
     "topic_names": [str, ...] 
 }
 ```
