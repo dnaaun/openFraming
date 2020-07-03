@@ -50,3 +50,21 @@ input:invalid {
 #submitbutton:disabled {
     opacity: 0.5;
 }
+
+
+.jumbotron{
+    background-color:mediumpurple !important;
+    opacity: 70%;
+    text-align: center;
+    color: rgb(46, 3, 71);
+}
+
+
+/* for testing purposes */
+
+.nav-item.active .nav-link{
+    color: blue !important;
+}
+.nav-item.hover .nav-link{
+    color: red !important;
+}
