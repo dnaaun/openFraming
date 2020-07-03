@@ -16,4 +16,8 @@ extend-ignore =
 
     # Allow lambda
     E731
+    #
+    # Mypy overloads are marked as errors
+    F811
+
 
