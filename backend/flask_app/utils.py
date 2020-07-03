@@ -10,6 +10,7 @@ from werkzeug.exceptions import BadRequest
 
 # Used by  both classifiers and lda models
 CONTENT_COL = "text"
+PREDICTED_LABEL_COL = "predicted category"
 
 # Used by lda model only
 ID_COL = "id"
@@ -96,23 +97,27 @@ class Files:
         return dir_
 
     @classmethod
-    def classifier_prediction_set_dir(
-        cls, classifier_id: int, prediction_set_id: int, ensure_exists: bool = True
+    def classifier_test_set_dir(
+        cls, classifier_id: int, test_set_id: int, ensure_exists: bool = True
     ) -> Path:
         """Files related to one prediction set will be stored here"""
-        dir_ = cls.classifier_dir(classifier_id) / f"prediction_set_{prediction_set_id}"
+        dir_ = cls.classifier_dir(classifier_id) / f"prediction_set_{test_set_id}"
         if ensure_exists:
             cls._create_dir_if_not_exists(dir_)
         return dir_
 
     @classmethod
-    def classifier_prediction_set_file(
-        cls, classifier_id: int, prediction_set_id: int
+    def classifier_test_set_file(cls, classifier_id: int, test_set_id: int) -> Path:
+        """CSV test file for classifier."""
+        return cls.classifier_test_set_dir(classifier_id, test_set_id) / "test.csv"
+
+    @classmethod
+    def classifier_test_set_predictions_file(
+        cls, classifier_id: int, test_set_id: int
     ) -> Path:
-        """CSV training file for classifier."""
+        """CSV file for predictions on a test set."""
         return (
-            cls.classifier_prediction_set_dir(classifier_id, prediction_set_id)
-            / "test.csv"
+            cls.classifier_test_set_dir(classifier_id, test_set_id) / "predictions.csv"
         )
 
     @classmethod
@@ -281,4 +286,7 @@ class Validate:
             is_valid:
         """
         if not len(table[0]) == num_columns:
-            raise BadRequest(f"table must have {num_columns} columns.")
+            raise BadRequest(
+                f"table must have {num_columns}"
+                + ("column." if num_columns == 1 else "columns.")
+            )

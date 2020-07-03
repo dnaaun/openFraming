@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import csv
 import functools
+import io
 import pdb
 import shutil
 import sys
@@ -20,6 +22,15 @@ F = T.TypeVar("F", bound=T.Callable[[T.Any], T.Any])
 
 
 TESTING_FILES_DIR = Path(__file__).parent / "testing_files"
+
+
+def make_csv_file(table: T.List[T.List[str]]) -> io.BytesIO:
+    text_io = io.StringIO()
+    writer = csv.writer(text_io)
+    writer.writerows(table)
+    text_io.seek(0)
+    csv_file = io.BytesIO(text_io.read().encode())
+    return csv_file
 
 
 def debug_on(*exceptions: T.Type[Exception]) -> T.Callable[[F], F]:

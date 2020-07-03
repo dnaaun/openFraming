@@ -9,6 +9,7 @@ from pathlib import Path
 import pandas as pd  # type: ignore
 from flask import current_app
 from flask import Flask
+from flask import request
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
 from flask_restful import Resource
@@ -249,7 +250,7 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
     def _validate_training_file_and_get_data(
         category_names: T.List[str], file_: FileStorage
     ) -> T.Tuple[T.List[str], T.List[T.List[str]]]:
-        """Validate user input and return uploaded CSV data, without the headers.
+        """Validate user uploaded file and return uploaded validated data.
 
         Args:
             category_names: The categories for the classifier.
@@ -298,6 +299,180 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
                 "There are less than two examples with the categories: "
                 f"{','.join(categories_with_less_than_two_exs)}."
                 " We need at least two examples per category."
+            )
+
+        return table_headers, table_data
+
+
+class ClassifierTestSetStatusJson(TypedDict):
+    classifier_id: int
+    test_set_id: int
+    test_set_name: str
+    status: T.Literal["not_begun", "predicting", "completed"]
+
+
+class ClassifierTestSetRelatedResource(ClassifierRelatedResource):
+    @staticmethod
+    def _test_set_status(test_set: db.TestSet) -> ClassifierTestSetStatusJson:
+        status: T.Literal["not_begun", "predicting", "completed"] = "not_begun"
+        if test_set.inference_began:
+            if test_set.inference_completed:
+                status = "completed"
+            else:
+                status = "predicting"
+
+        return ClassifierTestSetStatusJson(
+            classifier_id=test_set.classifier.classifier_id,
+            test_set_id=test_set.id_,
+            test_set_name=test_set.name,
+            status=status,
+        )
+
+
+class ClassifiersTestSets(ClassifierTestSetRelatedResource):
+    """Upload training data to the classifier."""
+
+    url = "/classifiers/<int:classifier_id>/test_sets/"
+
+    def __init__(self) -> None:
+        """Set up request parser."""
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument(name="test_set_name", type=str, required=True)
+
+    def get(self, classifier_id: int) -> T.List[ClassifierTestSetStatusJson]:
+        clsf = get_object_or_404(
+            db.Classifier, db.Classifier.classifier_id == classifier_id
+        )
+
+        return [self._test_set_status(test_set) for test_set in clsf.test_sets]
+
+    def post(self, classifier_id: int) -> ClassifierTestSetStatusJson:
+        """Create a test set
+
+        Body:
+            {
+                "test_set_name": str,
+            }
+
+        Raises:
+            BadRequest
+            NotFound
+        """
+        args = self.reqparse.parse_args()
+        test_set_name: str = args["test_set_name"]
+
+        try:
+            classifier = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
+        except db.Classifier.DoesNotExist:
+            raise NotFound("classifier not found.")
+
+        if classifier.train_set is None:
+            assert classifier.dev_set is None
+            raise BadRequest("This classifier has not been trained yet.")
+        elif not classifier.train_set.training_or_inference_completed:
+            assert classifier.dev_set is not None
+            assert not classifier.dev_set.training_or_inference_completed
+            raise BadRequest("This classifier's training has not been completed yet.")
+
+        test_set = db.TestSet(classifier=classifier, name=test_set_name)
+        test_set.save()
+
+        # Create directory for test set
+        utils.Files.classifier_test_set_dir(
+            classifier_id, test_set.id_, ensure_exists=True
+        )
+
+        return self._test_set_status(test_set)
+
+
+class ClassifiersTestSetsFile(ClassifierTestSetRelatedResource):
+    """Upload training data to the classifier."""
+
+    url = "/classifiers/<int:classifier_id>/test_sets/<int:test_set_id>/file"
+
+    def __init__(self) -> None:
+        """Set up request parser."""
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument(
+            name="file", type=FileStorage, required=True, location="files"
+        )
+
+    def post(self, classifier_id: int, test_set_id: int) -> ClassifierTestSetStatusJson:
+        """Upload a training set for classifier, and start training.
+
+        Body:
+            FormData: with "file" item. 
+
+        Raises:
+            BadRequest
+            UnprocessableEntity
+            NotFound
+        """
+        args = self.reqparse.parse_args()
+        file_: FileStorage = args["file"]
+
+        test_set = get_object_or_404(db.TestSet, db.TestSet.id_ == test_set_id)
+
+        if test_set.classifier.classifier_id != classifier_id:
+            raise NotFound("The test set id was not found.")
+
+        if test_set.inference_began:
+            raise AlreadyExists("The file for this test set has already been uploaded.")
+
+        table_headers, table_data = self._validate_test_file_and_get_data(file_)
+
+        test_file = utils.Files.classifier_test_set_file(classifier_id, test_set_id)
+        self._write_headers_and_data_to_csv(table_headers, table_data, test_file)
+
+        test_set.inference_began = True
+        test_set.save()
+
+        model_scheduler: Scheduler = current_app.config["SCHEDULER"]
+
+        # TODO: Add a check to make sure model training didn't start already and crashed
+
+        test_output_file = utils.Files.classifier_test_set_predictions_file(
+            classifier_id, test_set_id
+        )
+        model_path = utils.Files.classifier_output_dir(classifier_id)
+
+        model_scheduler.add_classifier_prediction(
+            test_set_id=test_set_id,
+            labels=test_set.classifier.category_names,
+            model_path=str(model_path),
+            test_file=str(test_file),
+            cache_dir=str(current_app.config["TRANSFORMERS_CACHE_DIR"]),
+            test_output_file=str(test_output_file),
+        )
+
+        return self._test_set_status(test_set)
+
+    @staticmethod
+    def _validate_test_file_and_get_data(
+        file_: FileStorage,
+    ) -> T.Tuple[T.List[str], T.List[T.List[str]]]:
+        """Validate user uploaded file and return validated data.
+
+        Args:
+            file_: uploaded file.
+            category_names: The categories for the classifier.
+
+        Returns:
+            table_headers: A list of length 2.
+            table_data: A list of lists of length 2.
+        """
+
+        table = utils.Validate.csv_and_get_table(T.cast(io.BytesIO, file_))
+
+        utils.Validate.table_has_no_empty_cells(table)
+        utils.Validate.table_has_num_columns(table, 1)
+        utils.Validate.table_has_headers(table, [utils.CONTENT_COL])
+        table_headers, table_data = table[0], table[1:]
+
+        min_num_examples = 1
+        if len(table_data) < min_num_examples:
+            raise BadRequest(
+                f"We need at least {min_num_examples} examples to run prediction on."
             )
 
         return table_headers, table_data
@@ -653,6 +828,8 @@ def create_app(
     lsresource_cls: T.Tuple[T.Type[BaseResource], ...] = (
         Classifiers,
         ClassifiersTrainingFile,
+        ClassifiersTestSets,
+        ClassifiersTestSetsFile,
         TopicModels,
         TopicModelsTrainingFile,
         TopicModelsTopicsNames,
