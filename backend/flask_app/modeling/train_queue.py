@@ -45,6 +45,7 @@ class TopicModelTrainingTaskArgs(TT.TypedDict):
     fname_keywords: str
     fname_topics_by_doc: str
     iterations: int
+    mallet_bin_dir: str
 
 
 class Scheduler(object):
@@ -125,6 +126,7 @@ class Scheduler(object):
         num_topics: int,
         fname_keywords: str,
         fname_topics_by_doc: str,
+        mallet_bin_dir: str,
         iterations: int = 1000,
     ) -> None:
         logger.info("Enqueued lda training with pickle_data")
@@ -137,6 +139,7 @@ class Scheduler(object):
                 fname_keywords=fname_keywords,
                 fname_topics_by_doc=fname_topics_by_doc,
                 iterations=iterations,
+                mallet_bin_dir=mallet_bin_dir,
             ),
         )
 
@@ -198,7 +201,11 @@ def do_topic_model_related_task(task_args: TopicModelTrainingTaskArgs) -> None:
         content_column_name=utils.CONTENT_COL,
         id_column_name=utils.ID_COL,
     )
-    lda_modeler = LDAModeler(corpus, iterations=task_args["iterations"])
+    lda_modeler = LDAModeler(
+        corpus,
+        iterations=task_args["iterations"],
+        mallet_bin_dir=task_args["mallet_bin_dir"],
+    )
     lda_modeler.model_topics_to_spreadsheet(
         num_topics=task_args["num_topics"],
         fname_keywords=task_args["fname_keywords"],

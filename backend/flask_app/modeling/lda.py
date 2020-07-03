@@ -18,7 +18,6 @@ EXCEL_EXTENSIONS = {"xlsx", "xls"}
 CSV_EXTENSIONS = {"csv"}
 TSV_EXTENSIONS = {"tsv"}
 
-MALLET_PATH = "~/Downloads/mallet-2.0.8/bin/mallet"
 
 EXPERT_LABEL_COLUMN_NAME = "EXPERT_LABEL"
 TOPIC_PROBA_PREFIX = "proba_topic_"
@@ -248,11 +247,13 @@ class LDAModeler(object):
     def __init__(
         self,
         content: Corpus,
+        mallet_bin_dir: str,
         low_bound_dict: float = 0.02,
         high_bound_dict: float = 0.5,
         iterations: int = 1000,
     ):
         self.content = content
+        self.mallet_bin_dir = mallet_bin_dir
         self.my_corpus = list(self.content.df_docs[utils.STEMMED_CONTENT_COL])
 
         self.dictionary = corpora.Dictionary(self.my_corpus)
@@ -271,8 +272,15 @@ class LDAModeler(object):
         num_keywords: int = utils.DEFAULT_NUM_KEYWORDS_TO_GENERATE,
     ) -> T.Tuple[T.List[T.List[str]], T.Any, T.Iterator[T.List[T.Tuple[int, float]]]]:
         self.num_topics = num_topics
+
+        mallet_path = Path(self.mallet_bin_dir) / "mallet"
+        if not mallet_path.exists():
+            raise Exception(
+                f"Could not find a file named 'mallet' {str(self.mallet_bin_dir)}. Are"
+                " you sure you installed Mallet and set MALLET_BIN_DIRECTORY correctly?"
+            )
         self.lda_model = models.wrappers.LdaMallet(
-            MALLET_PATH,
+            mallet_path,
             corpus=self.corpus_bow,
             num_topics=num_topics,
             optimize_interval=10,
