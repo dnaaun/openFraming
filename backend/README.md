@@ -1,8 +1,4 @@
-NOTE: You will have to prefix every endpoint with `/api/`.  If the server is
-running on `http://localhost:5000`, the first endpoint below can be accessed by
-doing `http://localhost:5000/api/classifiers/`,
-
-# Notes.
+# Notes
 ## Error messages
 The API documentation below is missing what the API returns in case the user
 provides incorrectly formatted input (or an incorrectly formatted file).
@@ -34,6 +30,11 @@ The HTTP status code is `400`. The body of the response is.
 
 ## File formats
 Currently, only CSV uploads are accepted. XLSX will be supported soon.
+
+## URL Prefix
+You will have to prefix every endpoint with `/api/`.  If the server is
+running on `http://localhost:5000`, the first endpoint below can be accessed by
+doing `http://localhost:5000/api/classifiers/`,
 
 # API Documentation
 
@@ -464,6 +465,10 @@ topic model.
 `FormData`
 
 1. `file`
+#### File format
+A CSV/XLSX file with one column, with a header named "Example". The 
+file format is identical to the file format required by the 
+`/classifiers/<classifier_id:int>/test_sets/<test_set_id:int>/file` endpoint.
 
 ### Return body 
 #### When successful
