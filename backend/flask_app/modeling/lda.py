@@ -247,13 +247,13 @@ class LDAModeler(object):
     def __init__(
         self,
         content: Corpus,
-        mallet_bin_dir: str,
+        mallet_bin_directory: str,
         low_bound_dict: float = 0.02,
         high_bound_dict: float = 0.5,
         iterations: int = 1000,
     ):
         self.content = content
-        self.mallet_bin_dir = mallet_bin_dir
+        self.mallet_bin_directory = mallet_bin_directory
         self.my_corpus = list(self.content.df_docs[utils.STEMMED_CONTENT_COL])
 
         self.dictionary = corpora.Dictionary(self.my_corpus)
@@ -273,14 +273,14 @@ class LDAModeler(object):
     ) -> T.Tuple[T.List[T.List[str]], T.Any, T.Iterator[T.List[T.Tuple[int, float]]]]:
         self.num_topics = num_topics
 
-        mallet_path = Path(self.mallet_bin_dir) / "mallet"
+        mallet_path = Path(self.mallet_bin_directory) / "mallet"
         if not mallet_path.exists():
             raise Exception(
-                f"Could not find a file named 'mallet' {str(self.mallet_bin_dir)}. Are"
+                f"Could not find a file named 'mallet' {str(self.mallet_bin_directory)}. Are"
                 " you sure you installed Mallet and set MALLET_BIN_DIRECTORY correctly?"
             )
         self.lda_model = models.wrappers.LdaMallet(
-            mallet_path,
+            str(mallet_path),
             corpus=self.corpus_bow,
             num_topics=num_topics,
             optimize_interval=10,
