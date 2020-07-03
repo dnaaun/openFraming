@@ -801,7 +801,7 @@ def create_app(
     Returns:
         app: Flask() object.
     """
-    app = Flask(__name__, static_url_path="/", static_folder="../frontend")
+    app = Flask(__name__, static_url_path="/", static_folder="../../frontend")
 
     @app.before_request
     def _db_connect() -> None:
