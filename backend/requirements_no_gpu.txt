@@ -2,6 +2,7 @@
 scikit-learn==0.23.1
 Flask==1.1.2
 wheel==0.34.2
+fakeredis==1.4.1
 flask-restful==0.3.8
 nltk==3.5
 transformers==2.11.0
