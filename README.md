@@ -1,25 +1,41 @@
-## Python version
-This was made and tested on Python 3.7.3 and Anaconda Python 3.6.5. It should work on any Python3. Please create a GitHub issue if otherwise.
+## Required Python version
+Python 3.5 or higher is required (due to use of PEP 526 style annotations).
 
-## Quick setup to get the server going
+## Installation
 
-
-Use the following commands to git clone this repo, and then change your directory to it. Then, setup a virtual environment and install the required packages.
-
+### Clone this repo and prepare a virtual environment.
 	$ git clone https://github.com/davidatbu/openFraming.git
-	$ cd openFraming
-	$ python -m venv openFraming
-	$ pip install -r requirements.txt
-	$ cd api
-	$ source openFraming/bin/activate
+	$ cd openFraming/
+	$ python -m venv venv/
+	$ source venv/bin/activate
 
-You should be able to run the server using.
-	
+### Install necessary Python packages
+	$ pip install -r backend/requirements_no_gpu.txt
+
+### Download additional requirements
+
+### NLTK Corpora
+	$ python -m nltk.downloader stopwords wordnet
+
+### Mallet
+The installation of the Mallet library will depend on your platform. Have a look 
+at the [installation instructions on their website.](http://mallet.cs.umass.edu/download.php). 
+On Unix, it would look something like:
+
+	$ wget http://mallet.cs.umass.edu/dist/mallet-2.0.8.tar.gz -O $HOME/mallet-2.0.8.tar.gz
+	# mkdir $HOME/mallet
+	$ tar -xvf ~/mallet-2.0.8.tar.gz --one-top-level=$HOME/mallet
+
+One then has to export the directory where the mallet executable is found as an environment variable.
+(This also depends on your platform).
+
+	$ export MALLET_BIN_DIRECTORY=$HOME/mallet/mallet-2.0.8/bin
+
+## Command to run
+
+Running the development server should then be possible with:
+
+	$ cd backend/flask_app/
 	$ flask run --host=0.0.0.0 --port=5000 --debugger --reload 
 
-If you go to your browser and try the following URLS, you should get a simple JSON 
-response back.
-
- 1. http://localhost:5000/classifiers/0/progress
- 2. http://localhost:5000/classifiers/1/progress
- 3. http://localhost:5000/classifiers/2/progress
+You should be able to interact with the API endpoints documented at [the README in the `/backend` directory](backend/README.md).

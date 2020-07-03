@@ -2,6 +2,8 @@
 import csv
 import io
 import logging
+import os
+import sys
 import typing as T
 from collections import Counter
 from pathlib import Path
@@ -9,7 +11,6 @@ from pathlib import Path
 import pandas as pd  # type: ignore
 from flask import current_app
 from flask import Flask
-from flask import request
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
 from flask_restful import Resource
@@ -615,6 +616,7 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
             num_topics=topic_mdl.num_topics,
             fname_keywords=str(utils.Files.topic_model_keywords_file(id_)),
             fname_topics_by_doc=str(utils.Files.topic_model_topics_by_doc_file(id_)),
+            mallet_bin_dir=current_app.config["MALLET_BIN_DIRECTORY"],
         )
         topic_mdl.lda_set = db.LDASet()
         topic_mdl.lda_set.save()
@@ -794,6 +796,7 @@ def create_app(
         app.config["PROJECT_DATA_DIR"]
         app.config["TRANSFORMERS_CACHE_DIR"]
         app.config["SCHEDULER"]
+        app.config["MALLET_BIN_DIRECTORY"]
 
     Returns:
         app: Flask() object.
@@ -814,6 +817,14 @@ def create_app(
     app.config["PROJECT_DATA_DIR"] = project_data_dir
     app.config["SCHEDULER"] = Scheduler(do_tasks_sychronously=do_tasks_sychronously)
     app.config["TRANSFORMERS_CACHE_DIR"] = transformers_cache_dir
+
+    mallet_bin_dir = os.environ.get("MALLET_BIN_DIRECTORY", None)
+    if mallet_bin_dir is None:
+        print(
+            "Please set the MALLET_BIN_DIRECTORY environment variable. Have a look at the README for why."
+        )
+        sys.exit(1)
+    app.config["MALLET_BIN_DIRECTORY"] = mallet_bin_dir
 
     api = Api(app)
     # `utils.Files` uses flask.current_app. Since we're not

@@ -1,4 +1,6 @@
-NOTE: You will have to prefix every endpoint with `/api/`.  If the server is running on `http://localhost:5000`, the first endpoint below can be accessed by doing `http://localhost:5000/api/classifiers`,
+NOTE: You will have to prefix every endpoint with `/api/`.  If the server is
+running on `http://localhost:5000`, the first endpoint below can be accessed by
+doing `http://localhost:5000/api/classifiers/`,
 
 
 ## List all classifiers.
