@@ -616,7 +616,7 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
             num_topics=topic_mdl.num_topics,
             fname_keywords=str(utils.Files.topic_model_keywords_file(id_)),
             fname_topics_by_doc=str(utils.Files.topic_model_topics_by_doc_file(id_)),
-            mallet_bin_dir=current_app.config["MALLET_BIN_DIRECTORY"],
+            mallet_bin_directory=str(current_app.config["MALLET_BIN_DIRECTORY"]),
         )
         topic_mdl.lda_set = db.LDASet()
         topic_mdl.lda_set.save()

@@ -170,6 +170,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
 
         # Asssert the scheduler was called with the right arguments
         scheduler.add_topic_model_training.assert_called_with(
+            mallet_bin_directory=str(self._app.config["MALLET_BIN_DIRECTORY"]),
             topic_model_id=self._topic_mdl.id_,
             training_file=str(training_file_path),
             num_topics=self._num_topics,
@@ -177,6 +178,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
             fname_topics_by_doc=str(fname_topics_by_doc),
         )
 
+    @debug_on()
     def test_training(self) -> None:
 
         with self._app.app_context():
@@ -203,6 +205,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
 
         # Start the training
         scheduler.add_topic_model_training(
+            mallet_bin_directory=str(self._app.config["MALLET_BIN_DIRECTORY"]),
             topic_model_id=self._topic_mdl.id_,
             training_file=str(training_file_path),
             num_topics=self._num_topics,
@@ -218,7 +221,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
         fname_keywords_df = pd.read_excel(fname_keywords, index_col=0, header=0)
         expected_fname_keywords_index = pd.Index(
             [f"word_{i}" for i in range(utils.DEFAULT_NUM_KEYWORDS_TO_GENERATE)]
-            + ["proportions"]
+            + [utils.TOPIC_PROPORTIONS_ROW]
         )
         pd.testing.assert_index_equal(
             fname_keywords_df.index, expected_fname_keywords_index

@@ -9,17 +9,17 @@ from flask import current_app
 from werkzeug.exceptions import BadRequest
 
 # Used by  both classifiers and lda models
-CONTENT_COL = "text"
-PREDICTED_LABEL_COL = "predicted category"
+CONTENT_COL = "Example"
+PREDICTED_LABEL_COL = "Predicted category"
 
 # Used by lda model only
-ID_COL = "id"
-STEMMED_CONTENT_COL = "simplified text"
-MOST_LIKELY_TOPIC_COL = "most likely topic"
-TOPIC_PROPORTIONS_ROW = "proportions"
+ID_COL = "Id"
+STEMMED_CONTENT_COL = "Simplified text"
+MOST_LIKELY_TOPIC_COL = "Most likely topic"
+TOPIC_PROPORTIONS_ROW = "Proportions"
 
 # Used by classiifiers only
-LABEL_COL = "category"
+LABEL_COL = "Category"
 
 TRANSFORMERS_MODEL = "distilbert-base-uncased"
 TEST_SET_SPLIT = 0.2
