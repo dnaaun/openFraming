@@ -5,7 +5,6 @@ from unittest import mock
 
 import pandas as pd  # type: ignore
 from tests.common import AppMixin
-from tests.common import debug_on  # noqa:
 from tests.common import make_csv_file
 from tests.common import TESTING_FILES_DIR
 
@@ -178,7 +177,6 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
             fname_topics_by_doc=str(fname_topics_by_doc),
         )
 
-    @debug_on()
     def test_training(self) -> None:
 
         with self._app.app_context():
