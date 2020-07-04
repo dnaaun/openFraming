@@ -48,8 +48,9 @@ jobs:
     - name: Download nltk resources
       run: python -m nltk.downloader stopwords wordnet
     
+    - name: Set the MALLET_BIN_DIRECTORY env variable
+      run: echo ::set-env name=MALLET_BIN_DIRECTORY::$HOME/mallet/mallet-2.0.8/bin
+
     - name: Run unittesting
       run: python -m unittest
       working-directory: backend/
-      env:
-        MALLET_BIN_DIRECTORY: ${{ env.HOME }}/mallet/mallet-2.0.8/bin
