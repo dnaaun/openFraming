@@ -52,4 +52,4 @@ jobs:
       run: python -m unittest
       working-directory: backend/
       env:
-        MALLET_BIN_DIRECTORY: $HOME/mallet/mallet-2.0.8/bin
+        MALLET_BIN_DIRECTORY: ${{ env.HOME }}/mallet/mallet-2.0.8/bin
