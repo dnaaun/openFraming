@@ -14,11 +14,19 @@ Python 3.5 or higher is required (due to use of PEP 526 style annotations).
 
 ### Download additional requirements
 
+### Install Redis
+This step will depend on your operating system. On Ubuntu, this is as simple as:
+
+	$ sudo apt-get install redis
+
+For Windows, you might have to look at [Memiurai](https://www.memurai.com), a drop-in replacement for 
+Redis.
+
 ### NLTK Corpora
 	$ python -m nltk.downloader stopwords wordnet
 
 ### Mallet
-The installation of the Mallet library will depend on your platform. Have a look 
+The installation of the Mallet library will depend on your operating system. Have a look 
 at the [installation instructions on their website.](http://mallet.cs.umass.edu/download.php). 
 On Unix, it would look something like:
 
@@ -27,7 +35,7 @@ On Unix, it would look something like:
 	$ tar -xvf ~/mallet-2.0.8.tar.gz --one-top-level=$HOME/mallet
 
 One then has to export the directory where the mallet executable is found as an environment variable.
-(This also depends on your platform).
+(This also depends on your operating system).
 
 	$ export MALLET_BIN_DIRECTORY=$HOME/mallet/mallet-2.0.8/bin
 
