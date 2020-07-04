@@ -44,6 +44,9 @@ jobs:
           
     - name: Install Python libraries
       run: python -m pip install -r backend/requirements_no_gpu.txt
+
+    - name: Download nltk resources
+      run: python -m nltk.downloader stopwords wordnet
     
     - name: Run unittesting
       run: python -m unittest

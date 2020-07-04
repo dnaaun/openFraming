@@ -5,7 +5,6 @@ import unittest
 from unittest import mock
 
 from tests.common import AppMixin
-from tests.common import debug_on
 from tests.common import make_csv_file
 from tests.common import TESTING_FILES_DIR
 
@@ -107,7 +106,6 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
         self.assertTrue(dev_set_file.exists())
         self.assertTrue(train_set_file.exists())
 
-    @debug_on()
     def test_training_and_testing(self) -> None:
         with self.subTest("training classifier"):
             with self._app.app_context():
