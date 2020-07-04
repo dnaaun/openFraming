@@ -1,3 +1,4 @@
+$(".other-option").hide();
 /* submit button
 
 $(function () {
@@ -21,6 +22,16 @@ $(function () {
 });
 
  */
+
+
+ $(".form-check-inline").on("click", function(){
+ 	$(".other-option").fadeOut();
+ });
+
+ $(".other-policy").on("click", function(){
+ 	$("h1").show();
+	$(".other-option").fadeIn()();
+ });
 
 // The API endpoint prefix
 var API_PREFIX = "/api";
@@ -144,4 +155,3 @@ function regularFruit(){
 	let a = document.getElementById('other_text');
 	a.value="";
 }
-
