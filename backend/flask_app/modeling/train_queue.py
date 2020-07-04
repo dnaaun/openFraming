@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class ClassifierPredictionTaskArgs(TT.TypedDict):
-    task_type: T.Literal["prediction"]  # This redundancy is for mypy's sake
+    task_type: TT.Literal["prediction"]  # This redundancy is for mypy's sake
     test_set_id: int
     test_file: str
     labels: T.List[str]
@@ -26,7 +26,7 @@ class ClassifierPredictionTaskArgs(TT.TypedDict):
 
 
 class ClassifierTrainingTaskArgs(TT.TypedDict):
-    task_type: T.Literal["training"]
+    task_type: TT.Literal["training"]
     classifier_id: int
     labels: T.List[str]
     model_path: str

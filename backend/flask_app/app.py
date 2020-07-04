@@ -9,6 +9,7 @@ from collections import Counter
 from pathlib import Path
 
 import pandas as pd  # type: ignore
+import typing_extensions as TT
 from flask import current_app
 from flask import Flask
 from flask_restful import Api  # type: ignore
@@ -78,7 +79,7 @@ class ClassifierStatusJson(TypedDict):
     classifier_name: str
     category_names: T.List[str]
     trained_by_openFraming: bool
-    status: T.Literal["not_begun", "training", "completed"]
+    status: TT.Literal["not_begun", "training", "completed"]
     metrics: T.Optional[utils.ClassifierMetrics]
     # TODO: Update backend README to reflect API change for line above.
 
@@ -90,7 +91,7 @@ class ClassifierRelatedResource(BaseResource):
     def _classifier_status(clsf: db.Classifier) -> ClassifierStatusJson:
         """Process a Classifier instance and format it into the API spec."""
         metrics: T.Optional[utils.ClassifierMetrics] = None
-        status: T.Literal["not_begun", "completed", "training"] = "not_begun"
+        status: TT.Literal["not_begun", "completed", "training"] = "not_begun"
         if clsf.train_set is not None:
             assert clsf.dev_set is not None
             if clsf.train_set.training_or_inference_completed:
@@ -309,13 +310,13 @@ class ClassifierTestSetStatusJson(TypedDict):
     classifier_id: int
     test_set_id: int
     test_set_name: str
-    status: T.Literal["not_begun", "predicting", "completed"]
+    status: TT.Literal["not_begun", "predicting", "completed"]
 
 
 class ClassifierTestSetRelatedResource(ClassifierRelatedResource):
     @staticmethod
     def _test_set_status(test_set: db.TestSet) -> ClassifierTestSetStatusJson:
-        status: T.Literal["not_begun", "predicting", "completed"] = "not_begun"
+        status: TT.Literal["not_begun", "predicting", "completed"] = "not_begun"
         if test_set.inference_began:
             if test_set.inference_completed:
                 status = "completed"
@@ -484,7 +485,7 @@ class TopicModelStatusJson(TypedDict):
     topic_model_name: str
     num_topics: int
     topic_names: T.Optional[T.List[str]]
-    status: T.Literal["not_begun", "training", "topics_to_be_named", "completed"]
+    status: TT.Literal["not_begun", "training", "topics_to_be_named", "completed"]
     # TODO: Update backend README to reflect API change for line above.
 
 
@@ -503,7 +504,7 @@ class TopicModelRelatedResource(BaseResource):
     @staticmethod
     def _topic_model_status_json(topic_mdl: db.TopicModel) -> TopicModelStatusJson:
         topic_names = topic_mdl.topic_names
-        status: T.Literal["not_begun", "training", "topics_to_be_named", "completed"]
+        status: TT.Literal["not_begun", "training", "topics_to_be_named", "completed"]
         if topic_mdl.lda_set is None:
             status = "not_begun"
         else:
