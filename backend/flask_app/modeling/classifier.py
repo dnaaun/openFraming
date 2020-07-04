@@ -157,8 +157,7 @@ class ClassifierModel(object):
                 dev_file, utils.CONTENT_COL, utils.LABEL_COL,
             )
 
-    @staticmethod
-    def compute_metrics(p: EvalPrediction) -> utils.ClassifierMetrics:
+    def compute_metrics(self, p: EvalPrediction) -> utils.ClassifierMetrics:
         """
         Compute accuracy of predictions vs labels. Piggy back on sklearn.
         """
@@ -166,7 +165,12 @@ class ClassifierModel(object):
         y_pred = p.label_ids
 
         clsf_report_sklearn = classification_report(
-            y_true=y_true, y_pred=y_pred, output_dict=True
+            y_true=y_true,
+            y_pred=y_pred,
+            output_dict=True,
+            # self.labels are human readable,
+            # but y_pred is actually nominal.
+            labels=list(range(len(self.labels))),
         )
         final = utils.ClassifierMetrics(
             {
