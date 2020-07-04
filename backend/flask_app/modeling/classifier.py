@@ -162,11 +162,11 @@ class ClassifierModel(object):
         """
         Compute accuracy of predictions vs labels. Piggy back on sklearn.
         """
-        y_pred = np.argmax(p.predictions, axis=1)
-        y_true = p.label_ids
+        y_true = np.argmax(p.predictions, axis=1)
+        y_pred = p.label_ids
 
         clsf_report_sklearn = classification_report(
-            y_true=y_true, y_pred=y_pred, output_dict=True, labels=self.labels
+            y_true=y_true, y_pred=y_pred, output_dict=True
         )
         final = utils.ClassifierMetrics(
             {
@@ -176,13 +176,7 @@ class ClassifierModel(object):
                 "macro_precision": clsf_report_sklearn["macro avg"]["precision"],
             }
         )
-
-        micro_metrics = [
-            utils.ClassifierMicroMetrics(clsf_report_sklearn[label])
-            for label in self.labels
-        ]
-
-        return final, micro_metrics
+        return final
 
     def make_dataset(
         self, fname: str, content_column: str, label_column: T.Optional[str]
