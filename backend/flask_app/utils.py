@@ -40,11 +40,6 @@ ClassifierMetrics = TT.TypedDict(
     },
 )
 
-ClassifierMicroMetrics = TT.TypedDict(
-    "ClassifierMicroMetrics",
-    {"precision": float, "recall": float, "f1-score": float, "support": int},
-)
-
 
 class Files:
     """A class for defining where files will be stored."""
@@ -182,7 +177,7 @@ class Files:
         """
 
         Here's the format of the file. Number of columns depends on number of topics. 
-    Just as the 'proba_topic_0' column, there will be a column for every topic.
+	Just as the 'proba_topic_0' column, there will be a column for every topic.
         Number of rows depends on number of examples the user uploaded.
 | a  | b  | c                                                                                     | d                                                                                                         | e                   | o                 |
 | -- | -- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------- | ----------------- |
@@ -206,7 +201,7 @@ class Files:
 | 16 | 17 | Here’s Proof We Need Better Mental Health Care For People Of Color                    | ['here', 'proof', 'need', 'better', 'mental', 'health', 'care', 'people', 'color']                        | 0.1071428571428571  | 1                 |
 | 17 | 18 | “I hope that this is real,” Lauren Boebert said of the deep-state conspiracy theory.  | ['hope', 'real', 'lauren', 'boebert', 'said', 'deepstate', 'conspiracy', 'theory']                        | 0.1052631578947369  | 6                 |
 | 18 | 19 | U.S. Buys Virtually All Of Coronavirus Drug Remdesivir In The World                   | ['buy', 'virtually', 'coronavirus', 'drug', 'remdesivir', 'world']                                        | 0.08928571428571429 | 6                 | 
-    """
+	"""
         return cls.topic_model_dir(id_) / "topics_by_doc.xlsx"
 
 

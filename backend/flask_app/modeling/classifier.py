@@ -157,16 +157,20 @@ class ClassifierModel(object):
                 dev_file, utils.CONTENT_COL, utils.LABEL_COL,
             )
 
-    @staticmethod
-    def compute_metrics(p: EvalPrediction) -> utils.ClassifierMetrics:
+    def compute_metrics(self, p: EvalPrediction) -> utils.ClassifierMetrics:
         """
         Compute accuracy of predictions vs labels. Piggy back on sklearn.
         """
-        y_pred = np.argmax(p.predictions, axis=1)
-        y_true = p.label_ids
+        y_true = np.argmax(p.predictions, axis=1)
+        y_pred = p.label_ids
 
         clsf_report_sklearn = classification_report(
-            y_true=y_true, y_pred=y_pred, output_dict=True, labels=self.labels
+            y_true=y_true,
+            y_pred=y_pred,
+            output_dict=True,
+            # self.labels are human readable,
+            # but y_pred is actually nominal.
+            labels=list(range(len(self.labels))),
         )
         final = utils.ClassifierMetrics(
             {
@@ -176,13 +180,7 @@ class ClassifierModel(object):
                 "macro_precision": clsf_report_sklearn["macro avg"]["precision"],
             }
         )
-
-        micro_metrics = [
-            utils.ClassifierMicroMetrics(clsf_report_sklearn[label])
-            for label in self.labels
-        ]
-
-        return final, micro_metrics
+        return final
 
     def make_dataset(
         self, fname: str, content_column: str, label_column: T.Optional[str]
