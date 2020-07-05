@@ -1,3 +1,12 @@
+$(".other-option").hide();
+
+$(".form-check-inline").on("click", function(){
+   $(".other-option").fadeOut();
+});
+
+$(".other-policy").on("click", function(){
+   $(".other-option").fadeIn()();
+});
 /* submit button
 
 $(function () {
@@ -144,4 +153,3 @@ function regularFruit(){
 	let a = document.getElementById('other_text');
 	a.value="";
 }
-
