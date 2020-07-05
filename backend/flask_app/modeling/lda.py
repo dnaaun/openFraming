@@ -8,6 +8,7 @@ import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 from gensim import corpora  # type: ignore
 from gensim import models
+from gensim.models import CoherenceModel
 from nltk.corpus import stopwords  # type: ignore
 from nltk.stem.wordnet import WordNetLemmatizer  # type: ignore
 
@@ -288,6 +289,12 @@ class LDAModeler(object):
             random_seed=1,
             iterations=self.iterations,
         )
+
+        coherence_model = CoherenceModel(
+            model=self.lda_model, corpus=self.corpus_bow, coherence="u_mass"
+        )
+        coherence = coherence_model.get_coherence()
+
         topic_keywords: T.List[T.List[str]] = []
         for idx, topic in self.lda_model.show_topics(
             num_topics=num_topics, num_words=num_keywords, formatted=False
@@ -350,7 +357,6 @@ class LDAModeler(object):
 
         topic_keyword_writer.save()
         doc_topic_writer.save()
-
         return True
 
     def get_topic_proportions(self) -> np.ndarray:
@@ -371,3 +377,21 @@ class LDAModeler(object):
         z = group_topic_proba / sum(group_topic_proba)
 
         return z
+
+
+phrases_to_join = ["white house", "social distancing"]
+phrases_to_remove = ["join our mailing list", "click to subscribe"]
+dir_docs = "../../../../Downloads/test_docs/"
+import os
+
+os.listdir(dir_docs)
+my_corpus = Corpus(
+    dir_docs,
+    "Unnamed: 3",
+    "Unnamed: 0",
+    phrases_to_remove=phrases_to_remove,
+    phrases_to_join=phrases_to_join,
+    header=True,
+)
+modeler = LDAModeler(my_corpus)
+modeler.model_topics_to_spreadsheet(10, 20)
