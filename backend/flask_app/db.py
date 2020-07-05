@@ -192,11 +192,7 @@ class SemiSupervisedSet(BaseModel):
 MODELS = BaseModel.__subclasses__()
 
 
-def _create_tables(database: pw.Database = DATABASE) -> None:
+def create_tables(database: pw.Database = DATABASE) -> None:
     """Create the tables in the database."""
     with database:
         database.create_tables(MODELS)
-
-
-if __name__ == "__main__":
-    _create_tables()

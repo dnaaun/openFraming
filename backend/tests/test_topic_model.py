@@ -108,6 +108,18 @@ class TestTopicModels(TopicModelMixin, unittest.TestCase):
             expected_topic_model_list_json = [expected_topic_model_json]
             self.assertListEqual(resp_json, expected_topic_model_list_json)
 
+            # Single entity endpoint
+            single_topic_mdl_url = (
+                API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}"
+            )
+            single_topic_mdl_resp = client.get(single_topic_mdl_url)
+            self._assert_response_success(single_topic_mdl_resp, single_topic_mdl_url)
+            single_topic_mdl_resp_json = single_topic_mdl_resp.get_json()
+            self.assertIsInstance(single_topic_mdl_resp_json, dict)
+            self.assertDictEqual(
+                single_topic_mdl_resp_json, dict(expected_topic_model_json)
+            )
+
     def test_post(self) -> None:
         url = API_URL_PREFIX + "/topic_models/"
 

@@ -27,6 +27,9 @@ MINIMUM_LDA_EXAMPLES = 20
 DEFAULT_NUM_KEYWORDS_TO_GENERATE = 20
 MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW = 10
 
+PROJECT_ROOT = Path(__name__).parent / "project_data"
+DATABASE_FILE = PROJECT_ROOT / "sqlite.db"
+
 # mypy doesn't support recrsive types, so this is the best we can do
 Json = T.Optional[T.Union[T.List[T.Any], T.Dict[str, T.Any], int, str, bool]]
 
