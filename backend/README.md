@@ -295,7 +295,7 @@ Empty.
 ```
 
 ### Status
-In progress.
+Done.
 
 
 ## Upload test set and start inference.
@@ -453,7 +453,6 @@ Empty.
 
 
 ### Status
-In progress.
 
 ## Upload training file and start training topic model.
 Once a topic model is created, the user can upload a file to start training the

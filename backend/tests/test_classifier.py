@@ -60,6 +60,25 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
             )
             self.assertDictEqual(clsf_status, dict(expected_classifier_status))
 
+    def test_get_one_classifier(self) -> None:
+        url = API_URL_PREFIX + f"/classifiers/{self._clsf.classifier_id}"
+        with self._app.test_client() as client, self._app.app_context():
+            resp = client.get(url)
+            self._assert_response_success(resp, url)
+            resp_json = resp.get_json()
+            self.assertIsInstance(resp_json, dict)
+
+            clsf_status = resp_json
+            expected_classifier_status = ClassifierStatusJson(
+                classifier_id=self._clsf.classifier_id,
+                classifier_name=self._clsf.name,
+                category_names=self._clsf.category_names,
+                status="not_begun",
+                trained_by_openFraming=False,
+                metrics=None,
+            )
+            self.assertDictEqual(clsf_status, dict(expected_classifier_status))
+
     def test_trigger_training(self) -> None:
         # Mock the scheduler
         scheduler: Scheduler = self._app.config["SCHEDULER"]
@@ -195,6 +214,16 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
                     status="not_begun",
                 )
                 self.assertDictEqual(resp_json, dict(expected_json))
+
+                # Test the single-entity endpoint
+                single_test_set_url = (
+                    API_URL_PREFIX
+                    + f"/classifiers/{self._clsf.classifier_id}/test_sets/{created_test_set.id_}"
+                )
+
+                one_test_set_resp = client.get(single_test_set_url)
+                self._assert_response_success(one_test_set_resp, single_test_set_url)
+                self.assertDictEqual(one_test_set_resp.get_json(), dict(expected_json))
 
         with self.subTest("uploading a test set and running inference"):
             file_upload_url = (

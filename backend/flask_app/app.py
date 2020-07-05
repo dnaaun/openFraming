@@ -121,6 +121,17 @@ class ClassifierRelatedResource(BaseResource):
         )
 
 
+class OneClassifier(ClassifierRelatedResource):
+
+    url = "/classifiers/<int:classifier_id>"
+
+    def get(self, classifier_id: int) -> ClassifierStatusJson:
+        clsf = get_object_or_404(
+            db.Classifier, db.Classifier.classifier_id == classifier_id
+        )
+        return self._classifier_status(clsf)
+
+
 class Classifiers(ClassifierRelatedResource):
     """Create a classifer, get a list of classifiers."""
 
@@ -331,6 +342,17 @@ class ClassifierTestSetRelatedResource(ClassifierRelatedResource):
         )
 
 
+class OneClassifierTestSet(ClassifierTestSetRelatedResource):
+
+    url = "/classifiers/<int:classifier_id>/test_sets/<int:test_set_id>"
+
+    def get(self, classifier_id: int, test_set_id: int) -> ClassifierTestSetStatusJson:
+        test_set = get_object_or_404(db.TestSet, db.TestSet.id_ == test_set_id)
+        if test_set.classifier.classifier_id != classifier_id:
+            raise NotFound("!test set not found.")
+        return self._test_set_status(test_set)
+
+
 class ClassifiersTestSets(ClassifierTestSetRelatedResource):
     """Upload training data to the classifier."""
 
@@ -532,6 +554,17 @@ class TopicModelRelatedResource(BaseResource):
             raise BadRequest("Topic model has not started training yet.")
         elif not topic_mdl.lda_set.lda_completed:
             raise BadRequest("Topic model has not finished trianing yet.")
+
+
+class OneTopicModel(TopicModelRelatedResource):
+
+    url = "/topic_models/<int:topic_model_id>"
+
+    def get(self, topic_model_id: int) -> TopicModelStatusJson:
+        topic_mdl = get_object_or_404(
+            db.TopicModel, db.TopicModel.id_ == topic_model_id
+        )
+        return self._topic_model_status_json(topic_mdl)
 
 
 class TopicModels(TopicModelRelatedResource):
@@ -839,10 +872,13 @@ def create_app(
 
     lsresource_cls: T.Tuple[T.Type[BaseResource], ...] = (
         Classifiers,
+        OneClassifier,
         ClassifiersTrainingFile,
         ClassifiersTestSets,
+        OneClassifierTestSet,
         ClassifiersTestSetsFile,
         TopicModels,
+        OneTopicModel,
         TopicModelsTrainingFile,
         TopicModelsTopicsNames,
         TopicModelsTopicsPreview,
