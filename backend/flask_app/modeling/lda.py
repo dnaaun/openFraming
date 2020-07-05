@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
+import typing_extensions as TT
 from gensim import corpora  # type: ignore
 from gensim import models
 from nltk.corpus import stopwords  # type: ignore
@@ -27,6 +28,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class LDAPreprocessingOptions(TT.TypedDict, total=False):
+    remove_phrases: str
+    join_phrases: str
+    remove_punctuation_and_digits: str
+    remove_stopwords: str
+    lemmatize_content: str
+    remove_short_words: str
+
+
 class Corpus(object):
     """Creates a dataset suitable for LDA analysis; does text preprocessing."""
 
@@ -42,9 +52,27 @@ class Corpus(object):
         phrases_to_join: T.List[str] = [],
         phrases_to_remove: T.List[str] = [],
         dont_stem: T.Set[str] = set(),
-        header: bool = False,
-        processing_to_do: T.Dict[str, bool] = {},
+        processing_to_do: LDAPreprocessingOptions = LDAPreprocessingOptions({}),
     ):
+        """
+        Args:
+            file_name: The CSV or Excel file.
+            content_column_name: The header of content column.
+            id_column_name:  The header of the id column.
+            language: The language to use for stopwords.
+            min_word_length: Minimum length of a word after stemming.
+            extra_punctuation: Additional punctuation to be removed.
+            extra_stopwords: Stopwords additional to the list obtained from ntlk using 
+                `language` arg above.
+            phrases_to_join: Phrases that would normally be split into multiple words, 
+                but should be retained as a single word.
+            phrases_to_remove: Phrases to remove.
+            dont_stem: Words that should not be stemmbed.
+            processing_to_do: What preprocessing to do. Look at LDAPreprocessingOptions 
+                for the available options. If any preprocessing option is omitted, (as 
+                opposed to being set to False explicitly), that preprocessing option
+                will be executed.
+            """
 
         file_path = Path(file_name)
 
@@ -69,7 +97,7 @@ class Corpus(object):
 
         else:
             raise ValueError(
-                "File type of {} are inconsistent or invalid!".format(file_name)
+                "File type of {} is inconsistent or invalid!".format(file_name)
             )
 
         self.df_docs = doc_reader(file_name)
