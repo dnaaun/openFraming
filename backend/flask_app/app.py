@@ -12,6 +12,8 @@ import pandas as pd  # type: ignore
 import typing_extensions as TT
 from flask import current_app
 from flask import Flask
+from flask import Response
+from flask import send_file
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
 from flask_restful import Resource
@@ -409,6 +411,30 @@ class ClassifiersTestSets(ClassifierTestSetRelatedResource):
         return self._test_set_status(test_set)
 
 
+class ClassifiersTestSetsPredictions(ClassifierTestSetRelatedResource):
+    url = "/classifiers/<int:classifier_id>/test_sets/<int:test_set_id>/predictions"
+
+    def get(self, classifier_id: int, test_set_id: int) -> Response:
+        test_set = get_object_or_404(db.TestSet, db.TestSet.id_ == test_set_id)
+        if test_set.classifier.classifier_id != classifier_id:
+            raise NotFound("The test set id was not found.")
+        if not test_set.inference_began:
+            raise BadRequest(
+                "No data has been uploaded to the test set yet. Please upload test data first."
+            )
+        if not test_set.inference_completed:
+            raise BadRequest("Inference on this test set has not been completed yet")
+        else:
+            test_file = utils.Files.classifier_test_set_predictions_file(
+                classifier_id, test_set_id
+            )
+            name_for_file = f"Classifier_{test_set.classifier.name}-test_set_{test_set.name}{test_file.suffix}"
+            with open(test_file) as f:
+                return send_file(
+                    f, as_attachment=True, attachment_filename=name_for_file
+                )
+
+
 class ClassifiersTestSetsFile(ClassifierTestSetRelatedResource):
     """Upload training data to the classifier."""
 
@@ -436,7 +462,6 @@ class ClassifiersTestSetsFile(ClassifierTestSetRelatedResource):
         file_: FileStorage = args["file"]
 
         test_set = get_object_or_404(db.TestSet, db.TestSet.id_ == test_set_id)
-
         if test_set.classifier.classifier_id != classifier_id:
             raise NotFound("The test set id was not found.")
 
@@ -733,10 +758,12 @@ class TopicModelsTopicsNames(TopicModelRelatedResource):
 
 class TopicModelsTopicsPreview(TopicModelRelatedResource):
 
-    url = "/topic_models/<int:id_>/topics/preview"
+    url = "/topic_models/<int:topic_model_id>/topics/preview"
 
-    def get(self, id_: int) -> TopicModelPreviewJson:
-        topic_mdl = get_object_or_404(db.TopicModel, db.TopicModel.id_ == id_)
+    def get(self, topic_model_id: int) -> TopicModelPreviewJson:
+        topic_mdl = get_object_or_404(
+            db.TopicModel, db.TopicModel.id_ == topic_model_id
+        )
         self._validate_topic_model_finished_training(topic_mdl)
 
         keywords_per_topic = self._get_keywords_per_topic(topic_mdl)
@@ -814,7 +841,7 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
 
 
 def create_app(
-    project_data_dir: Path = Path("./project_data"),
+    project_data_dir: Path = utils.PROJECT_ROOT,
     transformers_cache_dir: Path = Path("./transformers_cache_dir"),
     do_tasks_sychronously: bool = False,
 ) -> Flask:
@@ -831,6 +858,9 @@ def create_app(
         app.config["TRANSFORMERS_CACHE_DIR"]
         app.config["SCHEDULER"]
         app.config["MALLET_BIN_DIRECTORY"]
+
+    Creates:
+        sqlite.db, and the database tables, if the file doesn't exist.
 
     Returns:
         app: Flask() object.
@@ -860,6 +890,10 @@ def create_app(
         sys.exit(1)
     app.config["MALLET_BIN_DIRECTORY"] = mallet_bin_dir
 
+    # Create tables if necessary
+    if not utils.DATABASE_FILE.exists():
+        db.create_tables()
+
     api = Api(app)
     # `utils.Files` uses flask.current_app. Since we're not
     # handling a request just yet, we need this.
@@ -877,6 +911,7 @@ def create_app(
         ClassifiersTestSets,
         OneClassifierTestSet,
         ClassifiersTestSetsFile,
+        ClassifiersTestSetsPredictions,
         TopicModels,
         OneTopicModel,
         TopicModelsTrainingFile,
