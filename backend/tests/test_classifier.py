@@ -13,7 +13,7 @@ from flask_app import utils
 from flask_app.app import API_URL_PREFIX
 from flask_app.app import ClassifierStatusJson
 from flask_app.app import ClassifierTestSetStatusJson
-from flask_app.modeling.train_queue import Scheduler
+from flask_app.modeling.queue_jobs import Scheduler
 
 
 class ClassifierMixin(AppMixin):

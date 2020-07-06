@@ -1,5 +1,5 @@
 ## Required Python version
-Python 3.5 or higher is required (due to use of PEP 526 style annotations).
+Python 3.7 or higher is required.
 
 ## Installation
 
@@ -34,10 +34,16 @@ On Unix, it would look something like:
 	# mkdir $HOME/mallet
 	$ tar -xvf ~/mallet-2.0.8.tar.gz --one-top-level=$HOME/mallet
 
-One then has to export the directory where the mallet executable is found as an environment variable.
-(This also depends on your operating system).
+## Prepare environment variables
+This also depends on your operating system.
+
+The directory where the mallet executable is found:
 
 	$ export MALLET_BIN_DIRECTORY=$HOME/mallet/mallet-2.0.8/bin
+
+The directory where the application should store files:
+
+	$ export PROEJCT_DATA_DIRECTORY=$HOME/openFraming/project_data/
 
 ## Command to run
 

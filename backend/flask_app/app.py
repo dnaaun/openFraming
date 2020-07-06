@@ -27,7 +27,7 @@ from werkzeug.exceptions import NotFound
 
 from flask_app import db
 from flask_app import utils
-from flask_app.modeling.train_queue import Scheduler
+from flask_app.modeling.queue_jobs import Scheduler
 
 API_URL_PREFIX = "/api"
 
@@ -429,10 +429,9 @@ class ClassifiersTestSetsPredictions(ClassifierTestSetRelatedResource):
                 classifier_id, test_set_id
             )
             name_for_file = f"Classifier_{test_set.classifier.name}-test_set_{test_set.name}{test_file.suffix}"
-            with open(test_file) as f:
-                return send_file(
-                    f, as_attachment=True, attachment_filename=name_for_file
-                )
+            return send_file(
+                test_file, as_attachment=True, attachment_filename=name_for_file
+            )
 
 
 class ClassifiersTestSetsFile(ClassifierTestSetRelatedResource):
@@ -841,8 +840,8 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
 
 
 def create_app(
-    project_data_dir: Path = utils.PROJECT_ROOT,
-    transformers_cache_dir: Path = Path("./transformers_cache_dir"),
+    project_data_dir: Path = utils.PROJECT_DATA_DIRECTORY,
+    transformers_cache_dir: Path = utils.TRANSFORMERS_CACHE_DIRECTORY,
     do_tasks_sychronously: bool = False,
 ) -> Flask:
     """App factory to for easier testing.
@@ -854,14 +853,14 @@ def create_app(
             topic modeling synchronously. This is used to support unit testing.
 
     Sets:
-        app.config["PROJECT_DATA_DIR"]
+        app.config["PROJECT_DATA_DIRECTORY"]
         app.config["TRANSFORMERS_CACHE_DIR"]
         app.config["SCHEDULER"]
         app.config["MALLET_BIN_DIRECTORY"]
 
     Creates:
-        sqlite.db, and the database tables, if the file doesn't exist.
-
+        PROJECT_DATA_DIRECTORY if it doesn't exist.
+        
     Returns:
         app: Flask() object.
     """
@@ -878,7 +877,7 @@ def create_app(
         if not db.DATABASE.is_closed():
             db.DATABASE.close()
 
-    app.config["PROJECT_DATA_DIR"] = project_data_dir
+    app.config["PROJECT_DATA_DIRECTORY"] = project_data_dir
     app.config["SCHEDULER"] = Scheduler(do_tasks_sychronously=do_tasks_sychronously)
     app.config["TRANSFORMERS_CACHE_DIR"] = transformers_cache_dir
 
@@ -890,6 +889,9 @@ def create_app(
         sys.exit(1)
     app.config["MALLET_BIN_DIRECTORY"] = mallet_bin_dir
 
+    # Create project root if necessary
+    if not project_data_dir.exists():
+        project_data_dir.mkdir()
     # Create tables if necessary
     if not utils.DATABASE_FILE.exists():
         db.create_tables()
@@ -900,7 +902,6 @@ def create_app(
     with app.app_context():
         # Create the project data directory
         # In the future, this hould be disabled.
-        utils.Files.project_data_dir(ensure_exists=True)
         utils.Files.supervised_dir(ensure_exists=True)
         utils.Files.unsupervised_dir(ensure_exists=True)
 

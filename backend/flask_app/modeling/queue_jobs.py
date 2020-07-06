@@ -94,6 +94,7 @@ class Scheduler(object):
                 cache_dir=cache_dir,
                 output_dir=output_dir,
             ),
+            job_timeout=-1,
         )
 
     def add_classifier_prediction(

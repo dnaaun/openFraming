@@ -6,8 +6,10 @@ import typing as T
 
 import peewee as pw
 
+from flask_app import utils
 
-DATABASE = pw.SqliteDatabase("sqlite.db")
+
+DATABASE = pw.SqliteDatabase(str(utils.DATABASE_FILE))
 """The database connection."""
 
 
@@ -152,9 +154,13 @@ class TestSet(BaseModel):
             completed this set.
     """
 
+    # TODO: The primary key here should be composite of classifier and id field.
+    # Right now, we have checks in app.py to make sure a certain classifier id/test set
+    # id combo exists, but that's not good design at all.
     id_: int = pw.AutoField(primary_key=True)  # type: ignore
-    name: str = pw.CharField()  # type: ignore
     classifier: Classifier = pw.ForeignKeyField(Classifier, backref="test_sets")  # type: ignore
+
+    name: str = pw.CharField()  # type: ignore
     inference_began: bool = pw.BooleanField(default=False)  # type: ignore
     inference_completed: bool = pw.BooleanField(default=False)  # type: ignore
 

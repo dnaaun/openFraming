@@ -45,10 +45,13 @@ class ClassificationDataset(Dataset):  # type: ignore
         """
         suffix = dset_filename.split(".")[-1]
         if suffix in EXCEL_EXTENSIONS:
+            # TODO: Remove this because we will always convert to CSV even if the user
+            # uploads Excel.
             doc_reader = pd.read_excel
         elif suffix in CSV_EXTENSIONS:
-            doc_reader = pd.read_csv
+            doc_reader = lambda b: pd.read_csv(b, dtype=object)
         elif suffix in TSV_EXTENSIONS:
+            # TODO: Same thing as above. We'll convert to CSV (not TSV)
             doc_reader = lambda b: pd.read_csv(b, sep="\t")
         else:
             raise ValueError(
