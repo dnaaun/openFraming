@@ -13,7 +13,7 @@ from flask_app import utils
 from flask_app.app import API_URL_PREFIX
 from flask_app.app import ClassifierStatusJson
 from flask_app.app import ClassifierTestSetStatusJson
-from flask_app.modeling.train_queue import Scheduler
+from flask_app.modeling.enqueue_jobs import Scheduler
 
 
 class ClassifierMixin(AppMixin):
@@ -225,20 +225,18 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
                 self._assert_response_success(one_test_set_resp, single_test_set_url)
                 self.assertDictEqual(one_test_set_resp.get_json(), dict(expected_json))
 
-        with self.subTest("uploading a test set and running inference"):
-            file_upload_url = (
-                API_URL_PREFIX
-                + f"/classifiers/{self._clsf.classifier_id}/test_sets/{created_test_set.id_}/file"
-            )
-            valid_test_file_table = [
-                [f"{utils.CONTENT_COL}"],
-                ["galaxies"],
-                ["ocean"],
-                ["directions?"],
-            ]
+                file_upload_url = (
+                    API_URL_PREFIX
+                    + f"/classifiers/{self._clsf.classifier_id}/test_sets/{created_test_set.id_}/file"
+                )
+                valid_test_file_table = [
+                    [f"{utils.CONTENT_COL}"],
+                    ["galaxies"],
+                    ["ocean"],
+                    ["directions?"],
+                ]
 
-            file_to_upload = make_csv_file(valid_test_file_table)
-            with self._app.test_client() as client, self._app.app_context():
+                file_to_upload = make_csv_file(valid_test_file_table)
                 resp = client.post(
                     file_upload_url, data={"file": (file_to_upload, "test.csv")}
                 )

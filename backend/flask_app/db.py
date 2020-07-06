@@ -7,17 +7,12 @@ import typing as T
 import peewee as pw
 
 
-DATABASE = pw.SqliteDatabase("sqlite.db")
-"""The database connection."""
+database_proxy = pw.DatabaseProxy()  # Create a proxy for our db.
 
 
 class BaseModel(pw.Model):
-    """Defines metaclass with database connection."""
-
     class Meta:
-        """meta class."""
-
-        database = DATABASE
+        database = database_proxy
 
 
 # From: https://github.com/coleifer/peewee/issues/630
@@ -152,9 +147,13 @@ class TestSet(BaseModel):
             completed this set.
     """
 
+    # TODO: The primary key here should be composite of classifier and id field.
+    # Right now, we have checks in app.py to make sure a certain classifier id/test set
+    # id combo exists, but that's not good design at all.
     id_: int = pw.AutoField(primary_key=True)  # type: ignore
-    name: str = pw.CharField()  # type: ignore
     classifier: Classifier = pw.ForeignKeyField(Classifier, backref="test_sets")  # type: ignore
+
+    name: str = pw.CharField()  # type: ignore
     inference_began: bool = pw.BooleanField(default=False)  # type: ignore
     inference_completed: bool = pw.BooleanField(default=False)  # type: ignore
 
@@ -189,10 +188,12 @@ class SemiSupervisedSet(BaseModel):
     clustering_completed: bool = pw.BooleanField()  # type: ignore
 
 
-MODELS = BaseModel.__subclasses__()
-
-
-def create_tables(database: pw.Database = DATABASE) -> None:
-    """Create the tables in the database."""
-    with database:
-        database.create_tables(MODELS)
+MODELS: T.Tuple[T.Type[pw.Model], ...] = (
+    Metrics,
+    LabeledSet,
+    Classifier,
+    TestSet,
+    LDASet,
+    TopicModel,
+    SemiSupervisedSet,
+)

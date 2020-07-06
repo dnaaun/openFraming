@@ -1,6 +1,7 @@
 """Everything that is not dealing with HTTP and that doesn't belong in modeling/."""
 import csv
 import io
+import os
 import typing as T
 from pathlib import Path
 
@@ -27,8 +28,13 @@ MINIMUM_LDA_EXAMPLES = 20
 DEFAULT_NUM_KEYWORDS_TO_GENERATE = 20
 MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW = 10
 
-PROJECT_ROOT = Path(__name__).parent / "project_data"
-DATABASE_FILE = PROJECT_ROOT / "sqlite.db"
+PROJECT_DATA_DIRECTORY = Path(os.environ["PROJECT_DATA_DIRECTORY"])
+if "TRANSFORMERS_CACHE_DIRECTORY" in os.environ:
+    TRANSFORMERS_CACHE_DIRECTORY = Path(os.environ["TRANSFORMERS_CACHE_DIRECTORY"])
+else:
+    TRANSFORMERS_CACHE_DIRECTORY = PROJECT_DATA_DIRECTORY / "transformers_cache"
+
+DATABASE_FILE = PROJECT_DATA_DIRECTORY / "sqlite.db"
 
 # mypy doesn't support recrsive types, so this is the best we can do
 Json = T.Optional[T.Union[T.List[T.Any], T.Dict[str, T.Any], int, str, bool]]
@@ -50,7 +56,7 @@ class Files:
     @classmethod
     def project_data_dir(cls, ensure_exists: bool = True) -> Path:
         """Dir where all project related files will be stored."""
-        dir_: Path = current_app.config["PROJECT_DATA_DIR"]
+        dir_: Path = current_app.config["PROJECT_DATA_DIRECTORY"]
         if ensure_exists:
             cls._create_dir_if_not_exists(dir_)
         return dir_

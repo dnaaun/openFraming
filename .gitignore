@@ -1,6 +1,6 @@
 # For the uploaded files and model weights
 project_data/
-transformers_cache_dir/
+transformers_cache/
 
 # For the database
 sqlite.db
