@@ -65,13 +65,15 @@ input:invalid {
         font-weight: bolder;
     }
 
-.nav-item.active .nav-link{
-    color: black !important;
-    background-color: lightpink;
-}
+
 .nav-item:hover .nav-link{
     color: rgb(46, 3, 71);
     background-color: mediumslateblue;
+}
+
+.nav-item:active .nav-link{
+    color: black !important;
+    background-color: lightpink !important;
 }
 
 
