@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import functools
 import io
+import logging
 import pdb
 import shutil
 import sys
@@ -12,10 +13,10 @@ import typing as T
 import unittest
 from pathlib import Path
 
-import peewee as pw
 from flask import Response
 
 from flask_app import db
+from flask_app import utils
 from flask_app.app import create_app
 
 F = T.TypeVar("F", bound=T.Callable[[T.Any], T.Any])
@@ -55,25 +56,21 @@ def debug_on(*exceptions: T.Type[Exception]) -> T.Callable[[F], F]:
 
 class AppMixin(unittest.TestCase):
     def setUp(self) -> None:
-        self._temp_proj_dir = Path(tempfile.mkdtemp(prefix="project_data_"))
-        self._test_db = pw.SqliteDatabase(":memory:")
-        self._app = create_app(
-            project_data_dir=self._temp_proj_dir, do_tasks_sychronously=True
+        # NOTE: IF you remove the following, make sure to remove the shutil.rmtree call
+        # in tearDown() as well.
+        utils.PROJECT_DATA_DIRECTORY = Path(tempfile.mkdtemp(prefix="project_data_"))
+        utils.DATABASE_FILE = (
+            Path(tempfile.mkdtemp(prefix="project_data_")) / "sqlite.db"
         )
-        self._app.config["TESTING"] = True
+        self._app = create_app(do_tasks_synchronously=True, logging_level=logging.DEBUG)
 
-        # Bind model to test db, since we have a complete list of all models, we do not need
-        # to recursively bind dependencies.
-        # http://docs.peewee-orm.com/en/latest/peewee/database.html?highlight=bind#testing-peewee-applications
-        self._test_db.bind(db.MODELS, bind_refs=False, bind_backrefs=False)
-        self._test_db.connect()
-        self._test_db.create_tables(db.MODELS)
-        super().setUp()
+        self._app.config["TESTING"] = True
+        self._app.config["DEBUG"] = True
 
     def tearDown(self) -> None:
-        self._test_db.drop_tables(db.MODELS)
-        self._test_db.close()
-        shutil.rmtree(self._temp_proj_dir)
+        db.database_proxy.drop_tables(db.MODELS)
+        db.database_proxy.close()
+        shutil.rmtree(utils.PROJECT_DATA_DIRECTORY)
 
     def _assert_response_success(
         self: AppMixin, res: Response, url: T.Optional[str] = None

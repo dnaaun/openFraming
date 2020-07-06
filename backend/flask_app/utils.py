@@ -33,6 +33,7 @@ if "TRANSFORMERS_CACHE_DIRECTORY" in os.environ:
     TRANSFORMERS_CACHE_DIRECTORY = Path(os.environ["TRANSFORMERS_CACHE_DIRECTORY"])
 else:
     TRANSFORMERS_CACHE_DIRECTORY = PROJECT_DATA_DIRECTORY / "transformers_cache"
+
 DATABASE_FILE = PROJECT_DATA_DIRECTORY / "sqlite.db"
 
 # mypy doesn't support recrsive types, so this is the best we can do

@@ -9,9 +9,11 @@ from collections import Counter
 from pathlib import Path
 
 import pandas as pd  # type: ignore
+import peewee as pw
 import typing_extensions as TT
 from flask import current_app
 from flask import Flask
+from flask import request
 from flask import Response
 from flask import send_file
 from flask_restful import Api  # type: ignore
@@ -27,7 +29,7 @@ from werkzeug.exceptions import NotFound
 
 from flask_app import db
 from flask_app import utils
-from flask_app.modeling.queue_jobs import Scheduler
+from flask_app.modeling.enqueue_jobs import Scheduler
 
 API_URL_PREFIX = "/api"
 
@@ -840,17 +842,17 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
 
 
 def create_app(
-    project_data_dir: Path = utils.PROJECT_DATA_DIRECTORY,
-    transformers_cache_dir: Path = utils.TRANSFORMERS_CACHE_DIRECTORY,
-    do_tasks_sychronously: bool = False,
+    do_tasks_synchronously: bool = False, logging_level: int = logging.WARNING,
 ) -> Flask:
     """App factory to for easier testing.
 
     Args:
-        project_data_dir: 
         transforemrs_cache_dir:
         do_tasks_sychronously: Whether to do things like classifier training and LDA
             topic modeling synchronously. This is used to support unit testing.
+        database: The peewee database instance to use. If this is None,
+            then "sqlite.db" in PROJECT_DATA_DIRECTORY will be used. If that file doesn't
+            exist yet, it will be created, alongside the tables.
 
     Sets:
         app.config["PROJECT_DATA_DIRECTORY"]
@@ -864,23 +866,39 @@ def create_app(
     Returns:
         app: Flask() object.
     """
+    logging.basicConfig()
+    logger.setLevel(logging_level)
     app = Flask(__name__, static_url_path="/", static_folder="../../frontend")
+
+    # Create project root if necessary
+    if not utils.PROJECT_DATA_DIRECTORY.exists():
+        utils.PROJECT_DATA_DIRECTORY.mkdir(exist_ok=True)
+
+    if not utils.DATABASE_FILE.exists():
+        database = pw.SqliteDatabase(str(utils.DATABASE_FILE))
+        db.database_proxy.initialize(database)
+        with db.database_proxy.connection_context():
+            logger.info("Created tables because SQLITE file was not found.")
+            db.database_proxy.create_tables(db.MODELS)
+    else:
+        database = pw.SqliteDatabase(str(utils.DATABASE_FILE))
+        db.database_proxy.initialize(database)
+        logger.info("SQLITE file found. Not creating tables")
 
     @app.before_request
     def _db_connect() -> None:
         """Ensures that a connection is opened to handle queries by the request."""
-        db.DATABASE.connect()
+        db.database_proxy.connect(reuse_if_open=True)
 
     @app.teardown_request
     def _db_close(exc: T.Optional[Exception]) -> None:
         """Close on tear down."""
-        if not db.DATABASE.is_closed():
-            db.DATABASE.close()
+        if not db.database_proxy.is_closed():
+            db.database_proxy.close()
 
-    app.config["PROJECT_DATA_DIRECTORY"] = project_data_dir
-    app.config["SCHEDULER"] = Scheduler(do_tasks_sychronously=do_tasks_sychronously)
-    app.config["TRANSFORMERS_CACHE_DIR"] = transformers_cache_dir
-
+    app.config["PROJECT_DATA_DIRECTORY"] = utils.PROJECT_DATA_DIRECTORY
+    app.config["SCHEDULER"] = Scheduler(do_tasks_synchronously=do_tasks_synchronously)
+    app.config["TRANSFORMERS_CACHE_DIR"] = utils.TRANSFORMERS_CACHE_DIRECTORY
     mallet_bin_dir = os.environ.get("MALLET_BIN_DIRECTORY", None)
     if mallet_bin_dir is None:
         print(
@@ -888,13 +906,6 @@ def create_app(
         )
         sys.exit(1)
     app.config["MALLET_BIN_DIRECTORY"] = mallet_bin_dir
-
-    # Create project root if necessary
-    if not project_data_dir.exists():
-        project_data_dir.mkdir()
-    # Create tables if necessary
-    if not utils.DATABASE_FILE.exists():
-        db.create_tables()
 
     api = Api(app)
     # `utils.Files` uses flask.current_app. Since we're not

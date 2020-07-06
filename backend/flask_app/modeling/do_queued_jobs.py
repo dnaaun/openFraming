@@ -1,6 +1,12 @@
 """A helper script to start RQ workers.
 
-Has options for allowing debugging (going to a pdb prompt on an Exception).
+Has an option for allowing debugging (going to a pdb prompt on an Exception).
+
+This is basically a stripped down (restricted) version of running
+
+    rq worker
+
+On the commandline.
 """
 import typing as T
 from argparse import ArgumentParser

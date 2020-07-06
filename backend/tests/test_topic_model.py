@@ -11,7 +11,7 @@ from tests.common import TESTING_FILES_DIR
 from flask_app import db
 from flask_app import utils
 from flask_app.app import API_URL_PREFIX
-from flask_app.modeling.queue_jobs import Scheduler
+from flask_app.modeling.enqueue_jobs import Scheduler
 from flask_app.utils import Json
 
 

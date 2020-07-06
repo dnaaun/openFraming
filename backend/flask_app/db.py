@@ -6,20 +6,13 @@ import typing as T
 
 import peewee as pw
 
-from flask_app import utils
 
-
-DATABASE = pw.SqliteDatabase(str(utils.DATABASE_FILE))
-"""The database connection."""
+database_proxy = pw.DatabaseProxy()  # Create a proxy for our db.
 
 
 class BaseModel(pw.Model):
-    """Defines metaclass with database connection."""
-
     class Meta:
-        """meta class."""
-
-        database = DATABASE
+        database = database_proxy
 
 
 # From: https://github.com/coleifer/peewee/issues/630
@@ -195,10 +188,12 @@ class SemiSupervisedSet(BaseModel):
     clustering_completed: bool = pw.BooleanField()  # type: ignore
 
 
-MODELS = BaseModel.__subclasses__()
-
-
-def create_tables(database: pw.Database = DATABASE) -> None:
-    """Create the tables in the database."""
-    with database:
-        database.create_tables(MODELS)
+MODELS: T.Tuple[T.Type[pw.Model], ...] = (
+    Metrics,
+    LabeledSet,
+    Classifier,
+    TestSet,
+    LDASet,
+    TopicModel,
+    SemiSupervisedSet,
+)
