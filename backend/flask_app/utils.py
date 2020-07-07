@@ -1,7 +1,6 @@
 """Everything that is not dealing with HTTP and that doesn't belong in modeling/."""
 import csv
 import io
-import os
 import typing as T
 from pathlib import Path
 
@@ -9,32 +8,8 @@ import typing_extensions as TT
 from flask import current_app
 from werkzeug.exceptions import BadRequest
 
-# Used by  both classifiers and lda models
-CONTENT_COL = "Example"
-PREDICTED_LABEL_COL = "Predicted category"
+from flask_app.settings import Settings
 
-# Used by lda model only
-ID_COL = "Id"
-STEMMED_CONTENT_COL = "Simplified text"
-MOST_LIKELY_TOPIC_COL = "Most likely topic"
-TOPIC_PROPORTIONS_ROW = "Proportions"
-
-# Used by classiifiers only
-LABEL_COL = "Category"
-
-TRANSFORMERS_MODEL = "distilbert-base-uncased"
-TEST_SET_SPLIT = 0.2
-MINIMUM_LDA_EXAMPLES = 20
-DEFAULT_NUM_KEYWORDS_TO_GENERATE = 20
-MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW = 10
-
-PROJECT_DATA_DIRECTORY = Path(os.environ["PROJECT_DATA_DIRECTORY"])
-if "TRANSFORMERS_CACHE_DIRECTORY" in os.environ:
-    TRANSFORMERS_CACHE_DIRECTORY = Path(os.environ["TRANSFORMERS_CACHE_DIRECTORY"])
-else:
-    TRANSFORMERS_CACHE_DIRECTORY = PROJECT_DATA_DIRECTORY / "transformers_cache"
-
-DATABASE_FILE = PROJECT_DATA_DIRECTORY / "sqlite.db"
 
 # mypy doesn't support recrsive types, so this is the best we can do
 Json = T.Optional[T.Union[T.List[T.Any], T.Dict[str, T.Any], int, str, bool]]
@@ -54,17 +29,9 @@ class Files:
     """A class for defining where files will be stored."""
 
     @classmethod
-    def project_data_dir(cls, ensure_exists: bool = True) -> Path:
-        """Dir where all project related files will be stored."""
-        dir_: Path = current_app.config["PROJECT_DATA_DIRECTORY"]
-        if ensure_exists:
-            cls._create_dir_if_not_exists(dir_)
-        return dir_
-
-    @classmethod
     def supervised_dir(cls, ensure_exists: bool = True) -> Path:
         """Dir for classifier weights, training and inference data."""
-        dir_ = cls.project_data_dir() / "supervised"
+        dir_ = Settings.PROJECT_DATA_DIRECTORY / "supervised"
         if ensure_exists:
             cls._create_dir_if_not_exists(dir_)
         return dir_
@@ -72,7 +39,7 @@ class Files:
     @classmethod
     def unsupervised_dir(cls, ensure_exists: bool = True) -> Path:
         """Dir for LDA results, training and inference data."""
-        dir_ = cls.project_data_dir() / "unsupervised"
+        dir_ = Settings.PROJECT_DATA_DIRECTORY / "unsupervised"
         if ensure_exists:
             cls._create_dir_if_not_exists(dir_)
         return dir_

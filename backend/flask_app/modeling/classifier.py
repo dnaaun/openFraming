@@ -20,6 +20,7 @@ from flask_app import utils
 from flask_app.modeling.lda import CSV_EXTENSIONS
 from flask_app.modeling.lda import EXCEL_EXTENSIONS
 from flask_app.modeling.lda import TSV_EXTENSIONS
+from flask_app.settings import Settings
 
 
 class ClassificationDataset(Dataset):  # type: ignore
@@ -153,11 +154,11 @@ class ClassifierModel(object):
 
         if train_file is not None:
             self.train_dataset = self.make_dataset(
-                train_file, utils.CONTENT_COL, utils.LABEL_COL,
+                train_file, Settings.CONTENT_COL, Settings.LABEL_COL,
             )
         if dev_file is not None:
             self.eval_dataset = self.make_dataset(
-                dev_file, utils.CONTENT_COL, utils.LABEL_COL,
+                dev_file, Settings.CONTENT_COL, Settings.LABEL_COL,
             )
 
     def compute_metrics(self, p: EvalPrediction) -> utils.ClassifierMetrics:

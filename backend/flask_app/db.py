@@ -2,9 +2,13 @@
 from __future__ import annotations
 
 import enum
+import functools
 import typing as T
 
 import peewee as pw
+
+from flask_app.settings import needs_settings_init
+from flask_app.settings import Settings
 
 
 database_proxy = pw.DatabaseProxy()  # Create a proxy for our db.
@@ -186,6 +190,32 @@ class SemiSupervisedSet(BaseModel):
     topic_model: TopicModel = pw.ForeignKeyField(TopicModel, backref="semi_supervised_sets")  # type: ignore
     labeled_set: LabeledSet = pw.ForeignKeyField(LabeledSet)  # type: ignore
     clustering_completed: bool = pw.BooleanField()  # type: ignore
+
+
+F = T.TypeVar("F", bound=T.Callable[..., T.Any])
+
+
+def may_need_database_init(func: F) -> T.Callable[..., T.Any]:
+    """A decorator for connecting to the database first. When doing queued jobs, 
+       we're in a different process, so there's no database connection yet. 
+
+    Returns:
+        func: A function that takes the keyword argument `init_database`, specifiying
+        if the database initialization should be made before proceeding with the wrapped
+        function.
+    """
+    wrapper: F
+
+    @needs_settings_init(from_env=True)  # type: ignore[no-redef]
+    @functools.wraps(func)
+    def wrapper(*args: T.Any, **kwargs: T.Any) -> T.Any:
+        init_database = kwargs.pop("init_database")
+        if init_database:
+            database = pw.SqliteDatabase(str(Settings.DATABASE_FILE))
+            database_proxy.initialize(database)
+        return func(*args, **kwargs)
+
+    return wrapper
 
 
 MODELS: T.Tuple[T.Type[pw.Model], ...] = (
