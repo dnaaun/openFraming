@@ -4,8 +4,10 @@ import shutil
 import unittest
 from unittest import mock
 
+from flask import current_app
 from tests.common import AppMixin
 from tests.common import make_csv_file
+from tests.common import RQWorkerMixin
 from tests.common import TESTING_FILES_DIR
 
 from flask_app import db
@@ -14,22 +16,21 @@ from flask_app.app import API_URL_PREFIX
 from flask_app.app import ClassifierStatusJson
 from flask_app.app import ClassifierTestSetStatusJson
 from flask_app.modeling.enqueue_jobs import Scheduler
+from flask_app.settings import Settings
 
 
-class ClassifierMixin(AppMixin):
+class ClassifierMixin(RQWorkerMixin, AppMixin):
     def setUp(self) -> None:
         super().setUp()
-        with self._app.app_context():
-
-            # Create a classifer in the database
-            self._clsf = db.Classifier.create(
-                name="test_classifier", category_names=["up", "down"]
-            )
-            utils.Files.classifier_dir(self._clsf.classifier_id, ensure_exists=True)
+        # Create a classifer in the database
+        self._clsf = db.Classifier.create(
+            name="test_classifier", category_names=["up", "down"]
+        )
+        utils.Files.classifier_dir(self._clsf.classifier_id, ensure_exists=True)
 
         self._valid_training_contents = "\n".join(
             [
-                f"{utils.CONTENT_COL},{utils.LABEL_COL}",
+                f"{Settings.CONTENT_COL},{Settings.LABEL_COL}",
                 "sky,up",
                 "earth,down",
                 "dimonds,down",
@@ -43,7 +44,7 @@ class ClassifierMixin(AppMixin):
 class TestClassifiers(ClassifierMixin, unittest.TestCase):
     def test_get(self) -> None:
         url = API_URL_PREFIX + "/classifiers/"
-        with self._app.test_client() as client, self._app.app_context():
+        with current_app.test_client() as client:
             resp = client.get(url)
             self._assert_response_success(resp, url)
             resp_json = resp.get_json()
@@ -62,7 +63,7 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
 
     def test_get_one_classifier(self) -> None:
         url = API_URL_PREFIX + f"/classifiers/{self._clsf.classifier_id}"
-        with self._app.test_client() as client, self._app.app_context():
+        with current_app.test_client() as client:
             resp = client.get(url)
             self._assert_response_success(resp, url)
             resp_json = resp.get_json()
@@ -81,14 +82,14 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
 
     def test_trigger_training(self) -> None:
         # Mock the scheduler
-        scheduler: Scheduler = self._app.config["SCHEDULER"]
+        scheduler: Scheduler = current_app.scheduler
         scheduler.add_classifier_training: mock.MagicMock = mock.MagicMock(return_value=None)  # type: ignore
 
         test_url = (
             API_URL_PREFIX + f"/classifiers/{self._clsf.classifier_id}/training/file"
         )
         file_ = io.BytesIO(self._valid_training_contents.encode())
-        with self._app.test_client() as client, self._app.app_context():
+        with current_app.test_client() as client:
             output_dir = utils.Files.classifier_output_dir(self._clsf.classifier_id)
             dev_set_file = utils.Files.classifier_dev_set_file(self._clsf.classifier_id)
             train_set_file = utils.Files.classifier_train_set_file(
@@ -114,10 +115,10 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
         scheduler.add_classifier_training.assert_called_with(
             classifier_id=self._clsf.classifier_id,
             labels=self._clsf.category_names,
-            model_path=utils.TRANSFORMERS_MODEL,
+            model_path=Settings.TRANSFORMERS_MODEL,
             dev_file=str(dev_set_file),
             train_file=str(train_set_file),
-            cache_dir=str(self._app.config["TRANSFORMERS_CACHE_DIR"]),
+            cache_dir=str(Settings.TRANSFORMERS_CACHE_DIRECTORY),
             output_dir=str(output_dir),
         )
 
@@ -127,14 +128,11 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
 
     def test_training_and_testing(self) -> None:
         with self.subTest("training classifier"):
-            with self._app.app_context():
-                output_dir = utils.Files.classifier_output_dir(self._clsf.classifier_id)
-                dev_set_file = utils.Files.classifier_dev_set_file(
-                    self._clsf.classifier_id
-                )
-                train_set_file = utils.Files.classifier_train_set_file(
-                    self._clsf.classifier_id
-                )
+            output_dir = utils.Files.classifier_output_dir(self._clsf.classifier_id)
+            dev_set_file = utils.Files.classifier_dev_set_file(self._clsf.classifier_id)
+            train_set_file = utils.Files.classifier_train_set_file(
+                self._clsf.classifier_id
+            )
 
             # Copy over the files
             shutil.copy(TESTING_FILES_DIR / "classifiers" / "dev.csv", dev_set_file)
@@ -147,17 +145,21 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
             self._clsf.train_set.save()
             self._clsf.save()
 
-            scheduler: Scheduler = self._app.config["SCHEDULER"]
+            # Perform training, also will modify the database to indicate that it was
+            # trained
+            scheduler: Scheduler = current_app.scheduler
             scheduler.add_classifier_training(
                 classifier_id=self._clsf.classifier_id,
                 labels=self._clsf.category_names,
-                model_path=utils.TRANSFORMERS_MODEL,
+                model_path=Settings.TRANSFORMERS_MODEL,
                 train_file=str(train_set_file),
                 dev_file=str(dev_set_file),
-                cache_dir=str(self._app.config["TRANSFORMERS_CACHE_DIR"]),
+                cache_dir=str(Settings.TRANSFORMERS_CACHE_DIRECTORY),
                 output_dir=str(output_dir),
                 num_train_epochs=1.0,
             )
+            # Do the queued work
+            assert self._burst_workers("classifiers")
 
             expected_classifier_status = dict(
                 classifier_id=self._clsf.classifier_id,
@@ -169,7 +171,7 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
             )
 
             file_upload_url = API_URL_PREFIX + "/classifiers/"
-            with self._app.test_client() as client, self._app.app_context():
+            with current_app.test_client() as client:
                 resp = client.get(file_upload_url)
             self._assert_response_success(resp, file_upload_url)
 
@@ -195,7 +197,7 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
             test_set_name = "my first test set ever!"
             req_json = {"test_set_name": test_set_name}
 
-            with self._app.test_client() as client, self._app.app_context():
+            with current_app.test_client() as client:
                 resp = client.post(main_test_sets_url, json=req_json)
 
                 # Assert successful response
@@ -230,7 +232,7 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
                     + f"/classifiers/{self._clsf.classifier_id}/test_sets/{created_test_set.id_}/file"
                 )
                 valid_test_file_table = [
-                    [f"{utils.CONTENT_COL}"],
+                    [f"{Settings.CONTENT_COL}"],
                     ["galaxies"],
                     ["ocean"],
                     ["directions?"],
@@ -241,6 +243,9 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
                     file_upload_url, data={"file": (file_to_upload, "test.csv")}
                 )
                 self._assert_response_success(resp, file_upload_url)
+
+                # The above API call queued some work, Do the queued work
+                assert self._burst_workers("classifiers")
 
                 # Assert status changed to predicting
                 expected_json = resp.get_json()
@@ -263,7 +268,8 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
                     reader = csv.reader(f)
                     rows = list(reader)
                 self.assertListEqual(
-                    rows[0], [f"{utils.CONTENT_COL}", f"{utils.PREDICTED_LABEL_COL}",]
+                    rows[0],
+                    [f"{Settings.CONTENT_COL}", f"{Settings.PREDICTED_LABEL_COL}",],
                 )
                 examples, predicted_labels = zip(*rows[1:])
                 (expected_examples,) = zip(*valid_test_file_table[1:])

@@ -16,6 +16,20 @@ import ipdb  # type: ignore
 from redis import Redis
 from rq import Queue  # type: ignore
 from rq import Worker
+from rq.job import Job
+
+
+class ExceptionHandler(T.Protocol):
+    """We love type checking!"""
+
+    def __call__(
+        self,
+        job: Job,
+        exc_type: T.Optional[T.Type[BaseException]],
+        exc_value: T.Optional[BaseException],
+        traceback: TracebackType,
+    ) -> None:
+        ...
 
 
 def ipdb_handler(job, exc_type, exc_value, traceback: TracebackType) -> None:  # type: ignore
@@ -36,9 +50,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    exception_handlers: T.Optional[
-        T.List[T.Callable[[T.Any, T.Any, T.Any, TracebackType], None]]
-    ] = None
+    exception_handlers: T.Optional[T.List[ExceptionHandler]] = None
     if args.debug:
         exception_handlers = [ipdb_handler]
 

@@ -1,18 +1,16 @@
-import functools
 import logging
 import typing as T
 
-import peewee as pw
 import typing_extensions as TT
 from fakeredis import FakeStrictRedis  # type: ignore
 from redis import Redis
 from rq import Queue  # type: ignore
 
 from flask_app import db
-from flask_app import utils
 from flask_app.modeling.classifier import ClassifierModel
 from flask_app.modeling.lda import Corpus
 from flask_app.modeling.lda import LDAModeler
+from flask_app.settings import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -50,32 +48,7 @@ class TopicModelTrainingTaskArgs(TT.TypedDict):
     mallet_bin_directory: str
 
 
-FuncT = T.TypeVar("FuncT", bound=T.Callable[..., T.Any])
-
-
-def may_need_database_init(func: FuncT) -> T.Callable[..., T.Any]:
-    """A decorator for connecting to the database first. When doing queued jobs, 
-       we're in a different process, so there's no database connection yet. 
-
-    Returns:
-        func: A function that takes the keyword argument `init_database`, specifiying
-        if the database initialization should be made before proceeding with the wrapped
-        function.
-    """
-    wrapper: FuncT
-
-    @functools.wraps(func)  # type: ignore[no-redef]
-    def wrapper(*args, **kwargs):  # type: ignore[no-untyped-def,no-redef]
-        init_database = kwargs.pop("init_database")
-        if init_database:
-            database = pw.SqliteDatabase(str(utils.DATABASE_FILE))
-            db.database_proxy.initialize(database)
-        return func(*args, **kwargs)
-
-    return wrapper
-
-
-@may_need_database_init
+@db.may_need_database_init
 def do_classifier_related_task(
     task_args: T.Union[ClassifierTrainingTaskArgs, ClassifierPredictionTaskArgs],
 ) -> None:
@@ -92,8 +65,8 @@ def do_classifier_related_task(
 
         classifier_model.predict_and_save_predictions(
             test_set_path=task_args["test_file"],
-            content_column=utils.CONTENT_COL,
-            predicted_column=utils.PREDICTED_LABEL_COL,
+            content_column=Settings.CONTENT_COL,
+            predicted_column=Settings.PREDICTED_LABEL_COL,
             output_file_path=task_args["test_output_file"],
         )
 
@@ -127,12 +100,12 @@ def do_classifier_related_task(
         clsf.train_set.save()
 
 
-@may_need_database_init
+@db.may_need_database_init
 def do_topic_model_related_task(task_args: TopicModelTrainingTaskArgs) -> None:
     corpus = Corpus(
         file_name=task_args["training_file"],
-        content_column_name=utils.CONTENT_COL,
-        id_column_name=utils.ID_COL,
+        content_column_name=Settings.CONTENT_COL,
+        id_column_name=Settings.ID_COL,
     )
     lda_modeler = LDAModeler(
         corpus,
@@ -147,14 +120,15 @@ def do_topic_model_related_task(task_args: TopicModelTrainingTaskArgs) -> None:
 
 
 class Scheduler(object):
-    def __init__(self, do_tasks_synchronously: bool) -> None:
+    def __init__(self, do_tasks_synchronously: bool = False) -> None:
         """"
 
         Args:
             do_tasks_synchronously: If true, all the jobs are done synchronously. Also, 
-                no new database connection is created.
-
-                Used for unit testing.
+                no new database connection is created. 
+                NOTE: This is NOT being used right now. It's a "leftover" feature from
+                when we thought it's not possible to spawn asynchronous workers during
+                unit tests. 
         """
         if not do_tasks_synchronously:
             connection = Redis()

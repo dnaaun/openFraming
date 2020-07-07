@@ -2,8 +2,6 @@
 import csv
 import io
 import logging
-import os
-import sys
 import typing as T
 from collections import Counter
 from pathlib import Path
@@ -13,7 +11,6 @@ import peewee as pw
 import typing_extensions as TT
 from flask import current_app
 from flask import Flask
-from flask import request
 from flask import Response
 from flask import send_file
 from flask_restful import Api  # type: ignore
@@ -30,6 +27,8 @@ from werkzeug.exceptions import NotFound
 from flask_app import db
 from flask_app import utils
 from flask_app.modeling.enqueue_jobs import Scheduler
+from flask_app.settings import needs_settings_init
+from flask_app.settings import Settings
 
 API_URL_PREFIX = "/api"
 
@@ -245,17 +244,17 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         # Refresh classifier
         classifier = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
 
-        model_scheduler: Scheduler = current_app.config["SCHEDULER"]
+        model_scheduler: Scheduler = current_app.scheduler
 
         # TODO: Add a check to make sure model training didn't start already and crashed
 
         model_scheduler.add_classifier_training(
             classifier_id=classifier.classifier_id,
             labels=classifier.category_names,
-            model_path=utils.TRANSFORMERS_MODEL,
+            model_path=Settings.TRANSFORMERS_MODEL,
             train_file=str(utils.Files.classifier_train_set_file(classifier_id)),
             dev_file=str(utils.Files.classifier_dev_set_file(classifier_id)),
-            cache_dir=str(current_app.config["TRANSFORMERS_CACHE_DIR"]),
+            cache_dir=str(Settings.TRANSFORMERS_CACHE_DIRECTORY),
             output_dir=str(
                 utils.Files.classifier_output_dir(classifier_id, ensure_exists=True)
             ),
@@ -283,11 +282,13 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
 
         utils.Validate.table_has_no_empty_cells(table)
         utils.Validate.table_has_num_columns(table, 2)
-        utils.Validate.table_has_headers(table, [utils.CONTENT_COL, utils.LABEL_COL])
+        utils.Validate.table_has_headers(
+            table, [Settings.CONTENT_COL, Settings.LABEL_COL]
+        )
 
         table_headers, table_data = table[0], table[1:]
 
-        min_num_examples = int(len(table_data) * utils.TEST_SET_SPLIT)
+        min_num_examples = int(len(table_data) * Settings.TEST_SET_SPLIT)
         if len(table_data) < min_num_examples:
             raise BadRequest(
                 f"We need at least {min_num_examples} labelled examples for this issue."
@@ -477,7 +478,7 @@ class ClassifiersTestSetsFile(ClassifierTestSetRelatedResource):
         test_set.inference_began = True
         test_set.save()
 
-        model_scheduler: Scheduler = current_app.config["SCHEDULER"]
+        model_scheduler: Scheduler = current_app.scheduler
 
         # TODO: Add a check to make sure model training didn't start already and crashed
 
@@ -491,7 +492,7 @@ class ClassifiersTestSetsFile(ClassifierTestSetRelatedResource):
             labels=test_set.classifier.category_names,
             model_path=str(model_path),
             test_file=str(test_file),
-            cache_dir=str(current_app.config["TRANSFORMERS_CACHE_DIR"]),
+            cache_dir=str(Settings.TRANSFORMERS_CACHE_DIRECTORY),
             test_output_file=str(test_output_file),
         )
 
@@ -516,7 +517,7 @@ class ClassifiersTestSetsFile(ClassifierTestSetRelatedResource):
 
         utils.Validate.table_has_no_empty_cells(table)
         utils.Validate.table_has_num_columns(table, 1)
-        utils.Validate.table_has_headers(table, [utils.CONTENT_COL])
+        utils.Validate.table_has_headers(table, [Settings.CONTENT_COL])
         table_headers, table_data = table[0], table[1:]
 
         min_num_examples = 1
@@ -668,7 +669,7 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         train_file = utils.Files.topic_model_training_file(id_)
         self._write_headers_and_data_to_csv(table_headers, table_data, train_file)
 
-        scheduler: Scheduler = current_app.config["SCHEDULER"]
+        scheduler: Scheduler = current_app.scheduler
 
         scheduler.add_topic_model_training(
             topic_model_id=topic_mdl.id_,
@@ -676,7 +677,7 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
             num_topics=topic_mdl.num_topics,
             fname_keywords=str(utils.Files.topic_model_keywords_file(id_)),
             fname_topics_by_doc=str(utils.Files.topic_model_topics_by_doc_file(id_)),
-            mallet_bin_directory=str(current_app.config["MALLET_BIN_DIRECTORY"]),
+            mallet_bin_directory=str(Settings.MALLET_BIN_DIRECTORY),
         )
         topic_mdl.lda_set = db.LDASet()
         topic_mdl.lda_set.save()
@@ -684,8 +685,6 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
 
         # Refresh classifier
         topic_mdl = db.TopicModel.get(db.TopicModel.id_ == id_)
-
-        # model_scheduler: ModelScheduler = current_app.config["SCHEDULER"]
 
         return self._topic_model_status_json(topic_mdl)
 
@@ -707,20 +706,20 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         table = utils.Validate.csv_and_get_table(T.cast(io.BytesIO, file_))
 
         utils.Validate.table_has_num_columns(table, 1)
-        utils.Validate.table_has_headers(table, [utils.CONTENT_COL])
+        utils.Validate.table_has_headers(table, [Settings.CONTENT_COL])
         utils.Validate.table_has_no_empty_cells(table)
 
         table_headers, table_data = table[0], table[1:]
         # add the ID column to the table, necessary because of how the
         # flask_app.modeling.lda.LDAModeler is coded up right now.
-        table_headers = [utils.ID_COL] + table_headers
+        table_headers = [Settings.ID_COL] + table_headers
         table_data = [
             [str(row_num)] + row for row_num, row in enumerate(table_data, start=1)
         ]
 
-        if len(table_data) < utils.MINIMUM_LDA_EXAMPLES:
+        if len(table_data) < Settings.MINIMUM_LDA_EXAMPLES:
             raise BadRequest(
-                f"We need at least {utils.MINIMUM_LDA_EXAMPLES} for a topic model."
+                f"We need at least {Settings.MINIMUM_LDA_EXAMPLES} for a topic model."
             )
 
         return table_headers, table_data
@@ -818,7 +817,7 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
                 determined to be topic i.
 
                 i starts counting from zero. The maximum number of examples is determined
-                by utils.MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW
+                by Settings.MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW
         """
 
         # Look at the documentation at utils.Files.topic_model_topics_by_doc_file() for
@@ -826,12 +825,12 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
         topics_by_doc_path = utils.Files.topic_model_topics_by_doc_file(topic_mdl.id_)
         topics_by_doc_df = pd.read_excel(topics_by_doc_path, index_col=0, header=0)
         bool_mask_topic_most_likely_examples: T.List[pd.Series] = [
-            topics_by_doc_df[utils.MOST_LIKELY_TOPIC_COL] == topic_num
+            topics_by_doc_df[Settings.MOST_LIKELY_TOPIC_COL] == topic_num
             for topic_num in range(topic_mdl.num_topics)
         ]
         examples_per_topic: T.List[T.List[str]] = [
-            topics_by_doc_df.loc[bool_mask, utils.CONTENT_COL][
-                : utils.MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW
+            topics_by_doc_df.loc[bool_mask, Settings.CONTENT_COL][
+                : Settings.MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW
             ]
             .to_numpy()
             .tolist()
@@ -841,27 +840,16 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
         return examples_per_topic
 
 
-def create_app(
-    do_tasks_synchronously: bool = False, logging_level: int = logging.WARNING,
-) -> Flask:
-    """App factory to for easier testing.
-
-    Args:
-        transforemrs_cache_dir:
-        do_tasks_sychronously: Whether to do things like classifier training and LDA
-            topic modeling synchronously. This is used to support unit testing.
-        database: The peewee database instance to use. If this is None,
-            then "sqlite.db" in PROJECT_DATA_DIRECTORY will be used. If that file doesn't
-            exist yet, it will be created, alongside the tables.
-
-    Sets:
-        app.config["PROJECT_DATA_DIRECTORY"]
-        app.config["TRANSFORMERS_CACHE_DIR"]
-        app.config["SCHEDULER"]
-        app.config["MALLET_BIN_DIRECTORY"]
-
+# We will initialize database manually in here, so we are not going to do
+# db.may_need_database_init
+@needs_settings_init(from_env=True)
+def create_app(logging_level: int = logging.WARNING) -> Flask:
+    """App factory to for easier testing. 
     Creates:
         PROJECT_DATA_DIRECTORY if it doesn't exist.
+
+    Initializes:
+        Sqlite database, if the SQLITE file doesn't exist yet.
         
     Returns:
         app: Flask() object.
@@ -871,19 +859,22 @@ def create_app(
     app = Flask(__name__, static_url_path="/", static_folder="../../frontend")
 
     # Create project root if necessary
-    if not utils.PROJECT_DATA_DIRECTORY.exists():
-        utils.PROJECT_DATA_DIRECTORY.mkdir(exist_ok=True)
+    if not Settings.PROJECT_DATA_DIRECTORY.exists():
+        Settings.PROJECT_DATA_DIRECTORY.mkdir(exist_ok=True)
 
-    if not utils.DATABASE_FILE.exists():
-        database = pw.SqliteDatabase(str(utils.DATABASE_FILE))
+    # Create database tables if the SQLITE file is going to be new
+    if not Settings.DATABASE_FILE.exists():
+        database = pw.SqliteDatabase(str(Settings.DATABASE_FILE))
         db.database_proxy.initialize(database)
         with db.database_proxy.connection_context():
             logger.info("Created tables because SQLITE file was not found.")
             db.database_proxy.create_tables(db.MODELS)
     else:
-        database = pw.SqliteDatabase(str(utils.DATABASE_FILE))
+        database = pw.SqliteDatabase(str(Settings.DATABASE_FILE))
         db.database_proxy.initialize(database)
         logger.info("SQLITE file found. Not creating tables")
+
+    app.scheduler = Scheduler(do_tasks_synchronously=False)
 
     @app.before_request
     def _db_connect() -> None:
@@ -895,17 +886,6 @@ def create_app(
         """Close on tear down."""
         if not db.database_proxy.is_closed():
             db.database_proxy.close()
-
-    app.config["PROJECT_DATA_DIRECTORY"] = utils.PROJECT_DATA_DIRECTORY
-    app.config["SCHEDULER"] = Scheduler(do_tasks_synchronously=do_tasks_synchronously)
-    app.config["TRANSFORMERS_CACHE_DIR"] = utils.TRANSFORMERS_CACHE_DIRECTORY
-    mallet_bin_dir = os.environ.get("MALLET_BIN_DIRECTORY", None)
-    if mallet_bin_dir is None:
-        print(
-            "Please set the MALLET_BIN_DIRECTORY environment variable. Have a look at the README for why."
-        )
-        sys.exit(1)
-    app.config["MALLET_BIN_DIRECTORY"] = mallet_bin_dir
 
     api = Api(app)
     # `utils.Files` uses flask.current_app. Since we're not
