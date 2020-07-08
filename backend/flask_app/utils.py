@@ -1,11 +1,13 @@
 """Everything that is not dealing with HTTP and that doesn't belong in modeling/."""
 import csv
 import io
+import mimetypes
 import typing as T
 from pathlib import Path
 
-import typing_extensions as TT
+import pandas as pd
 from flask import current_app
+from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
 
 from flask_app.settings import Settings
@@ -13,16 +15,6 @@ from flask_app.settings import Settings
 
 # mypy doesn't support recrsive types, so this is the best we can do
 Json = T.Optional[T.Union[T.List[T.Any], T.Dict[str, T.Any], int, str, bool]]
-
-ClassifierMetrics = TT.TypedDict(
-    "ClassifierMetrics",
-    {
-        "accuracy": float,
-        "macro_f1_score": float,
-        "macro_recall": float,
-        "macro_precision": float,
-    },
-)
 
 
 class Files:
@@ -183,8 +175,12 @@ class Files:
 
 class Validate:
     @classmethod
-    def csv_and_get_table(cls, file_: io.BytesIO) -> T.List[T.List[str]]:
-        """Check if file_ is a valid CSV file and returns the contents.
+    def spreadsheet_and_get_table(cls, file_: FileStorage) -> T.List[T.List[str]]:
+        """Check if file_ is a valid csv,xls, xlsx, xlsm, xlsb, or odf
+            file and returns the contents.
+
+            This depends on whatever Flask says is the mimetype, which only checks
+            HTTP headers and the file extension(doesn't inspect
 
         Args:
             file_: A file object.
@@ -195,22 +191,39 @@ class Validate:
         Raises:
             BadRequest:
         """
-        try:
-            # TODO: Check if the file size is too large
-            # TODO: Maybe don't read all the file into memory even if it's small enough?
-            # Not sure though.
-            text_stream = io.TextIOWrapper(file_)
-            table = list(csv.reader(text_stream))
+        table: T.List[T.List[str]]
 
-            if table == []:
-                raise BadRequest("An empty file was uploaded.")
-            # strip blanks
-            table = [[cell.strip() for cell in row] for row in table]
-            text_stream.close()
-            return table
-        except Exception as e:
-            current_app.logger.warning(f"Invalid CSV file: {e}")
-            raise BadRequest("What you uploaded is not a valid CSV file.")
+        file_type = mimetypes.guess_extension(file_.mimetype)
+        if not file_type:
+            raise BadRequest(
+                "The uploaded file type could not be inferred."
+                " Perhaps using a different browser might help."
+            )
+
+        if file_type in Settings.SUPPORTED_NON_CSV_FORMATS:
+            try:
+                df: pd.DataFrame = pd.read_excel(file_, na_filter=False, header=None)  # type: ignore
+            except BaseException:
+                raise BadRequest("The uploaded spreadsheet could not be parsed.")
+            else:
+                df = df.astype(str)
+                table = df.to_numpy().tolist()  # type: ignore
+        elif file_type in [".csv", ".txt"]:
+            try:
+                # TODO: Check if the file size is too large
+                text_stream = io.TextIOWrapper(T.cast(io.BytesIO, file_))
+                table = list(csv.reader(text_stream))
+            except Exception as e:
+                current_app.logger.info(f"Invalid CSV file: {e}")
+                raise BadRequest("Uploaded text file is not in valid CSV format.")
+            else:
+                if table == []:
+                    raise BadRequest("An empty file was uploaded.")
+                # strip blanks
+                table = [[cell.strip() for cell in row] for row in table]
+                text_stream.close()
+
+        return table
 
     @classmethod
     def table_has_headers(

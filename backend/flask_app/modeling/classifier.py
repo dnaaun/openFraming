@@ -2,25 +2,35 @@
 import tempfile
 import typing as T
 
-import numpy as np  # type: ignore
-import pandas as pd  # type: ignore
+import numpy as np
+import pandas as pd
+import typing_extensions as TT
 from sklearn.metrics import classification_report  # type: ignore
 from torch.utils.data.dataset import Dataset
-from transformers import AutoConfig  # type: ignore
-from transformers import AutoModelForSequenceClassification  # type: ignore
+from transformers import AutoConfig
+from transformers import AutoModelForSequenceClassification
 from transformers import AutoTokenizer
-from transformers import EvalPrediction  # type: ignore
+from transformers import EvalPrediction
 from transformers import InputFeatures  # type: ignore
 from transformers import Trainer
 from transformers import TrainingArguments  # type: ignore
 from transformers.tokenization_utils import PreTrainedTokenizer
 from transformers.trainer_utils import PredictionOutput
 
-from flask_app import utils
 from flask_app.modeling.lda import CSV_EXTENSIONS
 from flask_app.modeling.lda import EXCEL_EXTENSIONS
 from flask_app.modeling.lda import TSV_EXTENSIONS
 from flask_app.settings import Settings
+
+ClassifierMetrics = TT.TypedDict(
+    "ClassifierMetrics",
+    {
+        "accuracy": float,
+        "macro_f1_score": float,
+        "macro_recall": float,
+        "macro_precision": float,
+    },
+)
 
 
 class ClassificationDataset(Dataset):  # type: ignore
@@ -48,7 +58,7 @@ class ClassificationDataset(Dataset):  # type: ignore
         if suffix in EXCEL_EXTENSIONS:
             # TODO: Remove this because we will always convert to CSV even if the user
             # uploads Excel.
-            doc_reader = pd.read_excel
+            doc_reader = pd.read_excel  # type: ignore
         elif suffix in CSV_EXTENSIONS:
             doc_reader = lambda b: pd.read_csv(b, dtype=object)
         elif suffix in TSV_EXTENSIONS:
@@ -161,7 +171,7 @@ class ClassifierModel(object):
                 dev_file, Settings.CONTENT_COL, Settings.LABEL_COL,
             )
 
-    def compute_metrics(self, p: EvalPrediction) -> utils.ClassifierMetrics:
+    def compute_metrics(self, p: EvalPrediction) -> ClassifierMetrics:
         """
         Compute accuracy of predictions vs labels. Piggy back on sklearn.
         """
@@ -176,7 +186,7 @@ class ClassifierModel(object):
             # but y_pred is actually nominal.
             labels=list(range(len(self.labels))),
         )
-        final = utils.ClassifierMetrics(
+        final = ClassifierMetrics(
             {
                 "accuracy": clsf_report_sklearn["accuracy"],
                 "macro_f1_score": clsf_report_sklearn["macro avg"]["f1-score"],
@@ -231,7 +241,7 @@ class ClassifierModel(object):
         self.trainer.save_model()
         self.tokenizer.save_pretrained(self.trainer.args.output_dir)
 
-    def train_and_evaluate(self) -> utils.ClassifierMetrics:
+    def train_and_evaluate(self) -> ClassifierMetrics:
         """
         Wrapper on the trainer.evaluate method; evaluate model's performance on eval set
         provided by the user.
@@ -250,7 +260,7 @@ class ClassifierModel(object):
                 new_key = key.replace("eval_", "")
             new_metrics[new_key] = val  # type: ignore
 
-        return utils.ClassifierMetrics(
+        return ClassifierMetrics(
             {
                 "accuracy": new_metrics["accuracy"],
                 "macro_f1_score": new_metrics["macro_f1_score"],
@@ -304,11 +314,11 @@ class ClassifierModel(object):
         y_pred = pred_output.predictions.argmax(axis=1)
         preds_in_user_labels = [test_dset.labels[i] for i in y_pred]
 
-        pred_series = pd.Series(preds_in_user_labels, name=predicted_column)
+        pred_series = pd.Series(preds_in_user_labels, name=predicted_column)  # type: ignore
         output_df: pd.DataFrame = pd.concat(
-            [test_dset.content_series, pred_series],
+            [test_dset.content_series, pred_series],  # type: ignore
             axis=1,
-            names=[test_dset.content_series, pred_series.name],
+            names=[test_dset.content_series, pred_series.name],  # type: ignore
         )
 
         output_df.to_csv(output_file_path, index=False)

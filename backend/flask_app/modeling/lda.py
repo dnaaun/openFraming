@@ -82,7 +82,7 @@ class Corpus(object):
         suffix = file_path.suffix.strip(".")
 
         if suffix in EXCEL_EXTENSIONS:
-            doc_reader = pd.read_excel
+            doc_reader = pd.read_excel  # type: ignore[attr-defined]
         elif suffix in CSV_EXTENSIONS:
 
             def doc_reader(b: str) -> pd.DataFrame:
@@ -262,7 +262,7 @@ class Corpus(object):
         ]
         sample_df[EXPERT_LABEL_COLUMN_NAME] = np.nan
 
-        sample_df_writer = pd.ExcelWriter(spreadsheet_path)
+        sample_df_writer = pd.ExcelWriter(spreadsheet_path)  # type: ignore
         sample_df.to_excel(sample_df_writer)
         sample_df_writer.save()
 
@@ -338,8 +338,8 @@ class LDAModeler(object):
         extra_df_columns_wanted: T.List[str] = [],
     ) -> bool:
 
-        topic_keyword_writer = pd.ExcelWriter(fname_keywords)
-        doc_topic_writer = pd.ExcelWriter(fname_topics_by_doc)
+        topic_keyword_writer = pd.ExcelWriter(fname_keywords)  # type: ignore[attr-defined]
+        doc_topic_writer = pd.ExcelWriter(fname_topics_by_doc)  # type: ignore[attr-defined]
         self.num_topics = num_topics
         topic_keywords, topic_proportions, topics_by_doc = self.model_topics(
             self.num_topics, num_keywords
@@ -359,12 +359,12 @@ class LDAModeler(object):
         topic_dfs.append(topic_keywords_df.T)
 
         full_topic_df = pd.concat(topic_dfs)
-        full_topic_df.to_excel(topic_keyword_writer)
+        full_topic_df.to_excel(topic_keyword_writer)  # type: ignore
 
         doc_topics = np.matrix(
             [[m[1] for m in mat] for mat in topics_by_doc]
         )  # create document --> topic proba matrix
-        doc_max = [np.argmax(r) for r in doc_topics]
+        doc_max = [np.argmax(r) for r in doc_topics]  # type: ignore
         doc_topic_df = self.content.df_docs[
             [self.content.id_column_name]
             + extra_df_columns_wanted
@@ -372,7 +372,7 @@ class LDAModeler(object):
             + [Settings.STEMMED_CONTENT_COL]
         ]
         for c in range(self.num_topics):
-            doc_topic_df[TOPIC_PROBA_PREFIX + str(c)] = doc_topics[:, c]
+            doc_topic_df[TOPIC_PROBA_PREFIX + str(c)] = doc_topics[:, c]  # type: ignore
         doc_topic_df[Settings.MOST_LIKELY_TOPIC_COL] = doc_max
         doc_topic_df.to_excel(doc_topic_writer)
 
@@ -381,7 +381,7 @@ class LDAModeler(object):
 
         return True
 
-    def get_topic_proportions(self) -> np.ndarray:
+    def get_topic_proportions(self) -> np.ndarray:  # type: ignore
         """
         Given a corpus and a model and a number of topics, get the topic probability
         distribution for each document in the corpus and use it to get the average

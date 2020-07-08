@@ -1,6 +1,5 @@
 """All the flask api endpoints."""
 import csv
-import io
 import logging
 import typing as T
 from collections import Counter
@@ -26,6 +25,7 @@ from werkzeug.exceptions import NotFound
 
 from flask_app import db
 from flask_app import utils
+from flask_app.modeling.classifier import ClassifierMetrics
 from flask_app.modeling.enqueue_jobs import Scheduler
 from flask_app.settings import needs_settings_init
 from flask_app.settings import Settings
@@ -83,7 +83,7 @@ class ClassifierStatusJson(TypedDict):
     category_names: T.List[str]
     trained_by_openFraming: bool
     status: TT.Literal["not_begun", "training", "error_encountered", "completed"]
-    metrics: T.Optional[utils.ClassifierMetrics]
+    metrics: T.Optional[ClassifierMetrics]
     # TODO: Update backend README to reflect API change for line above.
 
 
@@ -93,7 +93,7 @@ class ClassifierRelatedResource(BaseResource):
     @staticmethod
     def _classifier_status(clsf: db.Classifier) -> ClassifierStatusJson:
         """Process a Classifier instance and format it into the API spec."""
-        metrics: T.Optional[utils.ClassifierMetrics] = None
+        metrics: T.Optional[ClassifierMetrics] = None
         status: TT.Literal[
             "not_begun", "error_encountered", "completed", "training"
         ] = "not_begun"
@@ -103,7 +103,7 @@ class ClassifierRelatedResource(BaseResource):
                 assert clsf.dev_set.training_or_inference_completed
                 assert clsf.dev_set.metrics is not None
                 status = "completed"
-                metrics = utils.ClassifierMetrics(
+                metrics = ClassifierMetrics(
                     accuracy=clsf.dev_set.metrics.accuracy,
                     macro_f1_score=clsf.dev_set.metrics.macro_f1_score,
                     macro_precision=clsf.dev_set.metrics.macro_precision,
@@ -283,7 +283,7 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         """
         # TODO: Write tests for all of these!
 
-        table = utils.Validate.csv_and_get_table(T.cast(io.BytesIO, file_))
+        table = utils.Validate.spreadsheet_and_get_table(file_)
 
         utils.Validate.table_has_no_empty_cells(table)
         utils.Validate.table_has_num_columns(table, 2)
@@ -522,7 +522,7 @@ class ClassifiersTestSetsFile(ClassifierTestSetRelatedResource):
             table_data: A list of lists of length 2.
         """
 
-        table = utils.Validate.csv_and_get_table(T.cast(io.BytesIO, file_))
+        table = utils.Validate.spreadsheet_and_get_table(file_)
 
         utils.Validate.table_has_no_empty_cells(table)
         utils.Validate.table_has_num_columns(table, 1)
@@ -721,7 +721,7 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         """
         # TODO: Write tests for all of these!
 
-        table = utils.Validate.csv_and_get_table(T.cast(io.BytesIO, file_))
+        table = utils.Validate.spreadsheet_and_get_table(file_)
 
         utils.Validate.table_has_num_columns(table, 1)
         utils.Validate.table_has_headers(table, [Settings.CONTENT_COL])
@@ -821,7 +821,9 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
         # what the file is supposed to look like.
         keywords_file_path = utils.Files.topic_model_keywords_file(topic_mdl.id_)
 
-        keywords_df = pd.read_excel(keywords_file_path, index_col=0, header=0)
+        keywords_df = pd.read_excel(  # type:ignore[attr-defined]
+            keywords_file_path, index_col=0, header=0
+        )
         keywords_df = keywords_df.iloc[:-1]  # Remove the "probabilities" row
         return keywords_df.T.values.tolist()  # type: ignore[no-any-return]
 
@@ -841,8 +843,8 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
         # Look at the documentation at utils.Files.topic_model_topics_by_doc_file() for
         # what the file is supposed to look like.
         topics_by_doc_path = utils.Files.topic_model_topics_by_doc_file(topic_mdl.id_)
-        topics_by_doc_df = pd.read_excel(topics_by_doc_path, index_col=0, header=0)
-        bool_mask_topic_most_likely_examples: T.List[pd.Series] = [
+        topics_by_doc_df = pd.read_excel(topics_by_doc_path, index_col=0, header=0)  # type: ignore[attr-defined]
+        bool_mask_topic_most_likely_examples: T.List[pd.Series[str]] = [
             topics_by_doc_df[Settings.MOST_LIKELY_TOPIC_COL] == topic_num
             for topic_num in range(topic_mdl.num_topics)
         ]
