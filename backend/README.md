@@ -28,9 +28,6 @@ The HTTP status code is `400`. The body of the response is.
 }
 ```
 
-## File formats
-Currently, only CSV uploads are accepted. XLSX will be supported soon.
-
 ## URL Prefix
 You will have to prefix every endpoint with `/api/`.  If the server is
 running on `http://localhost:5000`, the first endpoint below can be accessed by
