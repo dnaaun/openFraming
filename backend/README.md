@@ -67,7 +67,9 @@ Empty.
      # "not_begun" means no training data was not uploaded and training has not begun.
      # "training" means the classifier is training right now.
      # "completed' means the classifier has completed training.
-     "status": One_of("not_begun", "training", "completed"),
+     # "error_encountered" means exactly that. The user should attempt to 
+     # create another classifier and start trainiing again.
+     "status": One_of("not_begun", "training", "error_encountered", "completed"),
 
      # If the "status" is "completed" above, then "metrics" will indicate the performance
      # of the classifier on a development set.
@@ -147,7 +149,7 @@ Empty.
   "classifier_name": str,
   "provided_by_openFraming": bool,
   "category_names": [str, ...],
-  "status": One_of("not_begun", "training", "completed")
+  "status": One_of("not_begun", "training", "error_encountered", "completed")
   "metrics": One_of(
      NULL,
      {
@@ -233,7 +235,7 @@ Empty.
 
     # The status here indicates whether inference on this test set has begun, is
     # in progress, or has completed.
-    "status": One_of("not_begun", "predicting", "completed")
+    "status": One_of("not_begun", "predicting", "error_encountered", "completed")
   } ...
 ]
 ```
@@ -389,7 +391,7 @@ Empty.
     # "training" indicates the topic model is training currently. "topics_to_be_named"
     # indicates the topic model finished training, but the topics have not been named yet by the
     # user. "completed" indicates the topic model finished training, and the user assigned names to the topics.
-    "status": One_of("not_begun", "training", "topics_to_be_named", "completed")
+    "status": One_of("not_begun", "training", "error_encountered", "topics_to_be_named", "completed")
   },
   ...
 ]
@@ -447,7 +449,7 @@ Empty.
   "topic_model_name": str,
   "num_topics": int,
   "topic_names": One_of(NULL, [str, ...]),
-  "status": One_of("not_begun", "training", "topics_to_be_named", "completed")
+  "status": One_of("not_begun", "training", "error_encountered", "topics_to_be_named", "completed")
 }
 ```
 
