@@ -675,8 +675,8 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
 
         try:
             topic_mdl = db.TopicModel.get(db.TopicModel.id_ == id_)
-        except db.Classifier.DoesNotExist:
-            raise NotFound("classifier not found.")
+        except db.TopicModel.DoesNotExist:
+            raise NotFound("topic model not found.")
 
         if topic_mdl.lda_set is not None:
             raise AlreadyExists("This topic model already has a training set.")
