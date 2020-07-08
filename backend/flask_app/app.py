@@ -82,7 +82,7 @@ class ClassifierStatusJson(TypedDict):
     classifier_name: str
     category_names: T.List[str]
     trained_by_openFraming: bool
-    status: TT.Literal["not_begun", "training", "completed"]
+    status: TT.Literal["not_begun", "training", "error_encountered", "completed"]
     metrics: T.Optional[utils.ClassifierMetrics]
     # TODO: Update backend README to reflect API change for line above.
 
@@ -94,7 +94,9 @@ class ClassifierRelatedResource(BaseResource):
     def _classifier_status(clsf: db.Classifier) -> ClassifierStatusJson:
         """Process a Classifier instance and format it into the API spec."""
         metrics: T.Optional[utils.ClassifierMetrics] = None
-        status: TT.Literal["not_begun", "completed", "training"] = "not_begun"
+        status: TT.Literal[
+            "not_begun", "error_encountered", "completed", "training"
+        ] = "not_begun"
         if clsf.train_set is not None:
             assert clsf.dev_set is not None
             if clsf.train_set.training_or_inference_completed:
@@ -107,6 +109,9 @@ class ClassifierRelatedResource(BaseResource):
                     macro_precision=clsf.dev_set.metrics.macro_precision,
                     macro_recall=clsf.dev_set.metrics.macro_recall,
                 )
+            elif clsf.train_set.error_encountered:
+                assert clsf.dev_set.error_encountered
+                status = "error_encountered"
             else:
                 status = "training"
 
@@ -326,16 +331,20 @@ class ClassifierTestSetStatusJson(TypedDict):
     classifier_id: int
     test_set_id: int
     test_set_name: str
-    status: TT.Literal["not_begun", "predicting", "completed"]
+    status: TT.Literal["not_begun", "predicting", "error_encountered", "completed"]
 
 
 class ClassifierTestSetRelatedResource(ClassifierRelatedResource):
     @staticmethod
     def _test_set_status(test_set: db.TestSet) -> ClassifierTestSetStatusJson:
-        status: TT.Literal["not_begun", "predicting", "completed"] = "not_begun"
+        status: TT.Literal[
+            "not_begun", "predicting", "error_encountered", "completed"
+        ] = "not_begun"
         if test_set.inference_began:
             if test_set.inference_completed:
                 status = "completed"
+            elif test_set.error_encountered:
+                status = "error_encountered"
             else:
                 status = "predicting"
 
@@ -534,7 +543,9 @@ class TopicModelStatusJson(TypedDict):
     topic_model_name: str
     num_topics: int
     topic_names: T.Optional[T.List[str]]
-    status: TT.Literal["not_begun", "training", "topics_to_be_named", "completed"]
+    status: TT.Literal[
+        "not_begun", "training", "topics_to_be_named", "error_encountered", "completed"
+    ]
     # TODO: Update backend README to reflect API change for line above.
 
 
@@ -553,17 +564,24 @@ class TopicModelRelatedResource(BaseResource):
     @staticmethod
     def _topic_model_status_json(topic_mdl: db.TopicModel) -> TopicModelStatusJson:
         topic_names = topic_mdl.topic_names
-        status: TT.Literal["not_begun", "training", "topics_to_be_named", "completed"]
+        status: TT.Literal[
+            "not_begun",
+            "training",
+            "error_encountered",
+            "topics_to_be_named",
+            "completed",
+        ]
         if topic_mdl.lda_set is None:
             status = "not_begun"
         else:
             if topic_mdl.lda_set.lda_completed:
-
                 if topic_names is None:
                     status = "topics_to_be_named"
                 else:
                     status = "completed"
                 status = "completed"
+            elif topic_mdl.lda_set.error_encountered:
+                status = "error_encountered"
             else:
                 status = "training"
 
@@ -874,7 +892,7 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
         db.database_proxy.initialize(database)
         logger.info("SQLITE file found. Not creating tables")
 
-    app.scheduler = Scheduler(do_tasks_synchronously=False)
+    app.scheduler = Scheduler()
 
     @app.before_request
     def _db_connect() -> None:
@@ -915,6 +933,7 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
             resource_cls.url[0] == "/"
         ), f"{resource_cls.__name__}.url must start with a /"
         url = API_URL_PREFIX + resource_cls.url
-        api.add_resource(resource_cls, url)
+        # the "endpoint" makes it easier to use url_for() in unit testing
+        api.add_resource(resource_cls, url, endpoint=resource_cls.__name__.lower())
 
     return app

@@ -29,6 +29,14 @@ F = T.TypeVar("F", bound=T.Callable[..., T.Any])
 TESTING_FILES_DIR = Path(__file__).parent / "testing_files"
 
 
+class MockedException(Exception):
+    pass
+
+
+def exception_raising_mock(*args: T.Any, **kwargs: T.Any) -> None:
+    raise MockedException()
+
+
 def make_csv_file(table: T.List[T.List[str]]) -> io.BytesIO:
     text_io = io.StringIO()
     writer = csv.writer(text_io)
@@ -72,6 +80,7 @@ class AppMixin(unittest.TestCase):
             {"PROJECT_DATA_DIRECTORY": tempfile.mkdtemp(prefix="project_data_")},
         ):
             app = create_app(logging_level=logging.DEBUG)
+        app.config["SERVER_NAME"] = "testing_server:5000"  # Required for url_for
         app.config["TESTING"] = True
         app.config["DEBUG"] = True
 

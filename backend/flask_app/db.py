@@ -1,6 +1,4 @@
 """Peewee database ORM."""
-from __future__ import annotations
-
 import enum
 import functools
 import typing as T
@@ -14,9 +12,16 @@ from flask_app.settings import Settings
 database_proxy = pw.DatabaseProxy()  # Create a proxy for our db.
 
 
+SubClass = T.TypeVar("SubClass", bound="BaseModel")
+
+
 class BaseModel(pw.Model):
     class Meta:
         database = database_proxy
+
+    def refresh(self: SubClass) -> SubClass:
+        # https://stackoverflow.com/a/32156865/13664712
+        return type(self).get(self._pk_expr())
 
 
 # From: https://github.com/coleifer/peewee/issues/630
@@ -114,6 +119,7 @@ class LabeledSet(BaseModel):
 
     id_: int = pw.AutoField(primary_key=True)
     training_or_inference_completed: bool = pw.BooleanField(default=False)  # type: ignore
+    error_encountered: bool = pw.BooleanField(default=False)  # type: ignore
     metrics: Metrics = pw.ForeignKeyField(Metrics, null=True)  # type: ignore
 
 
@@ -137,7 +143,7 @@ class Classifier(BaseModel):
     train_set: T.Optional[LabeledSet] = pw.ForeignKeyField(LabeledSet, null=True)  # type: ignore
     dev_set: T.Optional[LabeledSet] = pw.ForeignKeyField(LabeledSet, null=True)  # type: ignore
 
-    test_sets: T.Iterable[TestSet]  # provided by backref on TestSet
+    test_sets: T.Iterable["TestSet"]  # provided by backref on TestSet
 
 
 class TestSet(BaseModel):
@@ -149,6 +155,7 @@ class TestSet(BaseModel):
         name: User given name of the set.
         inference_completed: Whether the training or the inference has
             completed this set.
+        error_encountered: Whether error was encontered during inference.
     """
 
     # TODO: The primary key here should be composite of classifier and id field.
@@ -159,11 +166,13 @@ class TestSet(BaseModel):
 
     name: str = pw.CharField()  # type: ignore
     inference_began: bool = pw.BooleanField(default=False)  # type: ignore
+    error_encountered: bool = pw.BooleanField(default=False)  # type: ignore
     inference_completed: bool = pw.BooleanField(default=False)  # type: ignore
 
 
 class LDASet(BaseModel):
     id_: int = pw.AutoField(primary_key=True)  # type: ignore
+    error_encountered: bool = pw.BooleanField(default=False)  # type: ignore
     lda_completed: bool = pw.BooleanField(default=False)  # type: ignore
 
 
@@ -178,11 +187,11 @@ class TopicModel(BaseModel):
 
     # NOTE: The below is ONLY a type annotation.
     # The actual attribute is made available using "backreferences" in peewee
-    semi_supervised_sets: T.Type[SemiSupervisedSet]
+    semi_supervised_sets: T.Type["SemiSupervisedSet"]
 
     @property
     # https://github.com/coleifer/peewee/issues/1667#issuecomment-405095432
-    def semi_supervised_set(self) -> SemiSupervisedSet:
+    def semi_supervised_set(self) -> "SemiSupervisedSet":
         return self.semi_supervised_sets.get()  # type: ignore
 
 
@@ -195,27 +204,21 @@ class SemiSupervisedSet(BaseModel):
 F = T.TypeVar("F", bound=T.Callable[..., T.Any])
 
 
-def may_need_database_init(func: F) -> T.Callable[..., T.Any]:
+def needs_database_init(func: F) -> F:
     """A decorator for connecting to the database first. When doing queued jobs, 
        we're in a different process, so there's no database connection yet. 
-
-    Returns:
-        func: A function that takes the keyword argument `init_database`, specifiying
-        if the database initialization should be made before proceeding with the wrapped
-        function.
     """
-    wrapper: F
 
-    @needs_settings_init(from_env=True)  # type: ignore[no-redef]
+    # This functools.wraps is SUPER IMPORTANT because pickling the decorated function
+    # fails without it, which is necessary for RQ.
     @functools.wraps(func)
+    @needs_settings_init(from_env=True)
     def wrapper(*args: T.Any, **kwargs: T.Any) -> T.Any:
-        init_database = kwargs.pop("init_database")
-        if init_database:
-            database = pw.SqliteDatabase(str(Settings.DATABASE_FILE))
-            database_proxy.initialize(database)
+        database = pw.SqliteDatabase(str(Settings.DATABASE_FILE))
+        database_proxy.initialize(database)
         return func(*args, **kwargs)
 
-    return wrapper
+    return T.cast(F, wrapper)
 
 
 MODELS: T.Tuple[T.Type[pw.Model], ...] = (

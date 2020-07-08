@@ -112,8 +112,9 @@ def needs_settings_init(
     assert from_env ^ (from_dict is not None)
 
     def decorator(func: F) -> F:
-        wrapper: F
 
+        # This functools.wraps is SUPER IMPORTANT because pickling the decorated function
+        # fails without it, which is necessary for RQ
         @functools.wraps(func)  # type: ignore[no-redef]
         def wrapper(*args: T.Any, **kwargs: T.Any) -> T.Any:
             if not Settings.is_initialized_already():
@@ -124,6 +125,6 @@ def needs_settings_init(
                     Settings.initialize_from_dict(from_dict)
             return func(*args, **kwargs)
 
-        return wrapper
+        return T.cast(F, wrapper)
 
     return decorator

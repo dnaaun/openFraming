@@ -5,6 +5,7 @@ from unittest import mock
 
 import pandas as pd  # type: ignore
 from flask import current_app
+from flask import url_for
 from tests.common import AppMixin
 from tests.common import make_csv_file
 from tests.common import RQWorkerMixin
@@ -102,25 +103,29 @@ class TestTopicModels(TopicModelMixin, unittest.TestCase):
             "topic_names": None,
             "status": "not_begun",
         }
-        with current_app.test_client() as client, current_app.app_context():
-            resp = client.get(url)
-            self._assert_response_success(resp, url)
-            resp_json = resp.get_json()
-            self.assertIsInstance(resp_json, list)
-            expected_topic_model_list_json = [expected_topic_model_json]
-            self.assertListEqual(resp_json, expected_topic_model_list_json)
+        with current_app.test_client() as client:
+            with self.subTest("get all topic models"):
+                resp = client.get(url)
+                self._assert_response_success(resp, url)
+                resp_json = resp.get_json()
+                self.assertIsInstance(resp_json, list)
+                expected_topic_model_list_json = [expected_topic_model_json]
+                self.assertListEqual(resp_json, expected_topic_model_list_json)
 
-            # Single entity endpoint
-            single_topic_mdl_url = (
-                API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}"
-            )
-            single_topic_mdl_resp = client.get(single_topic_mdl_url)
-            self._assert_response_success(single_topic_mdl_resp, single_topic_mdl_url)
-            single_topic_mdl_resp_json = single_topic_mdl_resp.get_json()
-            self.assertIsInstance(single_topic_mdl_resp_json, dict)
-            self.assertDictEqual(
-                single_topic_mdl_resp_json, dict(expected_topic_model_json)
-            )
+            with self.subTest("get single topic model"):
+                # Single entity endpoint
+                single_topic_mdl_url = (
+                    API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}"
+                )
+                single_topic_mdl_resp = client.get(single_topic_mdl_url)
+                self._assert_response_success(
+                    single_topic_mdl_resp, single_topic_mdl_url
+                )
+                single_topic_mdl_resp_json = single_topic_mdl_resp.get_json()
+                self.assertIsInstance(single_topic_mdl_resp_json, dict)
+                self.assertDictEqual(
+                    single_topic_mdl_resp_json, dict(expected_topic_model_json)
+                )
 
     def test_post(self) -> None:
         url = API_URL_PREFIX + "/topic_models/"
@@ -222,40 +227,53 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
 
         assert self._burst_workers("topic_models")
 
-        self.assertTrue(fname_keywords.exists())
-        self.assertTrue(fname_topics_by_doc.exists())
+        with self.subTest("Test LDA file results."):
+            self.assertTrue(fname_keywords.exists())
+            self.assertTrue(fname_topics_by_doc.exists())
 
-        # Inspect the content of the keywords file
-        fname_keywords_df = pd.read_excel(fname_keywords, index_col=0, header=0)
-        expected_fname_keywords_index = pd.Index(
-            [f"word_{i}" for i in range(Settings.DEFAULT_NUM_KEYWORDS_TO_GENERATE)]
-            + [Settings.TOPIC_PROPORTIONS_ROW]
-        )
-        pd.testing.assert_index_equal(
-            fname_keywords_df.index, expected_fname_keywords_index
-        )
-        expected_fname_keywords_columns = pd.Index(range(self._num_topics))
-        pd.testing.assert_index_equal(
-            fname_keywords_df.columns, expected_fname_keywords_columns
-        )
+            # Inspect the content of the keywords file
+            fname_keywords_df = pd.read_excel(fname_keywords, index_col=0, header=0)
+            expected_fname_keywords_index = pd.Index(
+                [f"word_{i}" for i in range(Settings.DEFAULT_NUM_KEYWORDS_TO_GENERATE)]
+                + [Settings.TOPIC_PROPORTIONS_ROW]
+            )
+            pd.testing.assert_index_equal(
+                fname_keywords_df.index, expected_fname_keywords_index
+            )
+            expected_fname_keywords_columns = pd.Index(range(self._num_topics))
+            pd.testing.assert_index_equal(
+                fname_keywords_df.columns, expected_fname_keywords_columns
+            )
 
-        # Inspect the fname_topics_by_doc file
-        fname_topics_by_doc_df = pd.read_excel(
-            fname_topics_by_doc, index_col=0, header=0
-        )
-        num_examples = len(self._valid_training_table) - 1  # -1 for the header
-        expected_fname_topics_by_doc_index = pd.Index(range(num_examples))
-        pd.testing.assert_index_equal(
-            fname_topics_by_doc_df.index, expected_fname_topics_by_doc_index
-        )
-        expected_fname_topics_by_doc_columns = pd.Index(
-            [Settings.ID_COL, Settings.CONTENT_COL, Settings.STEMMED_CONTENT_COL]
-            + [f"proba_topic_{i}" for i in range(self._num_topics)]
-            + [Settings.MOST_LIKELY_TOPIC_COL]
-        )
-        pd.testing.assert_index_equal(
-            fname_topics_by_doc_df.columns, expected_fname_topics_by_doc_columns,
-        )
+            # Inspect the fname_topics_by_doc file
+            fname_topics_by_doc_df = pd.read_excel(
+                fname_topics_by_doc, index_col=0, header=0
+            )
+            num_examples = len(self._valid_training_table) - 1  # -1 for the header
+            expected_fname_topics_by_doc_index = pd.Index(range(num_examples))
+            pd.testing.assert_index_equal(
+                fname_topics_by_doc_df.index, expected_fname_topics_by_doc_index
+            )
+            expected_fname_topics_by_doc_columns = pd.Index(
+                [Settings.ID_COL, Settings.CONTENT_COL, Settings.STEMMED_CONTENT_COL]
+                + [f"proba_topic_{i}" for i in range(self._num_topics)]
+                + [Settings.MOST_LIKELY_TOPIC_COL]
+            )
+            pd.testing.assert_index_equal(
+                fname_topics_by_doc_df.columns, expected_fname_topics_by_doc_columns,
+            )
+
+        with self.subTest("get request after training finished"):
+            single_topic_mdl_url = (
+                API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}"
+            )
+            with current_app.test_client() as client:
+                resp = client.get(single_topic_mdl_url)
+            self._assert_response_success(resp)
+
+            resp_json: Json = resp.get_json()
+            assert isinstance(resp_json, dict)
+            self.assertEqual(resp_json["status"], "completed")
 
 
 class TestTopicModelsTopicsNames(TrainedTopicModelMixin, unittest.TestCase):
@@ -317,15 +335,57 @@ class TestTopicModelsTopicsPreview(TrainedTopicModelMixin, unittest.TestCase):
         for preview in resp_json["topic_previews"]:
             self.assertTrue("examples" in preview)
             self.assertTrue("keywords" in preview)
+
+            # Check that the examples are longer than the keywords
+            # doesnt NEED to be true, but should prbobably be true
             self.assertEqual(
                 len(preview["keywords"]), Settings.DEFAULT_NUM_KEYWORDS_TO_GENERATE
             )
-            # Check that the examples are longer than the keywords
-            # doesnt NEED to be true, but should prbobably be true
 
             if len(preview["examples"]) > 0:
                 at_least_one_topic_has_examples = True
+        # Test at least one topic has examples
         self.assertTrue(at_least_one_topic_has_examples)
+
+    def test_error_during_training(self) -> None:
+
+        # Get some variables
+        scheduler: Scheduler = current_app.scheduler
+        training_file_path = utils.Files.topic_model_training_file(self._topic_mdl.id_)
+        fname_keywords = utils.Files.topic_model_keywords_file(self._topic_mdl.id_)
+        fname_topics_by_doc = utils.Files.topic_model_topics_by_doc_file(
+            self._topic_mdl.id_
+        )
+
+        # Mock db
+        lda_set = db.LDASet()
+        lda_set.save()
+        self._topic_mdl.lda_set = lda_set
+        self._topic_mdl.save()
+
+        # NOTE: The exception will be raised here because we don't mock the training
+        # file. Again, this is an error that can be checked for easily. But I don't know
+        # how to raise an error in another process(see other NOTE in test_classifier.py)
+
+        # Start the training
+        scheduler.add_topic_model_training(
+            mallet_bin_directory=str(Settings.MALLET_BIN_DIRECTORY),
+            topic_model_id=self._topic_mdl.id_,
+            training_file=str(training_file_path),
+            num_topics=self._num_topics,
+            fname_keywords=str(fname_keywords),
+            fname_topics_by_doc=str(fname_topics_by_doc),
+            iterations=10,
+        )
+
+        self.assertTrue(self._burst_workers("topic_models"))
+        self._topic_mdl = self._topic_mdl.refresh()
+        self.assertEqual(self._topic_mdl.lda_set.error_encountered, True)  # type: ignore[union-attr]
+        client = current_app.test_client()
+        resp = client.get(url_for("onetopicmodel", topic_model_id=self._topic_mdl.id_))
+        self._assert_response_success(resp)
+
+        self.assertEqual(resp.get_json()["status"], "error_encountered")
 
 
 if __name__ == "__main__":
