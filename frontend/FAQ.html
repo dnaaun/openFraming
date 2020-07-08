@@ -6,7 +6,7 @@
   <title>FAQ</title>
   <link href="css/bootstrap.min.css" rel="stylesheet">
   <link href="css/main.css" rel="stylesheet">
-  <link rel="stylesheet" href="theme.css" type="text/css">
+  <link rel="stylesheet" href="css/custom_theme.css" type="text/css">
   <!--<link href="fontawesome-free-5.13.0-web/css/fontawesome.css" rel="stylesheet">-->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/js/all.js" integrity="sha256-2JRzNxMJiS0aHOJjG+liqsEOuBb6++9cY4dSOyiijX4=" crossorigin="anonymous"></script>
   <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/all.min.css" rel="stylesheet">-->
@@ -21,20 +21,17 @@
   <header>
   </header>
   <nav class="navbar navbar-expand-lg navbar-light bg-dark">
-    <a class="navbar-brand" href="#" style="" contenteditable="true"><a href="OpenFraming.html" target="_blank" ><img src="images/light.png" height="40" class="d-inline-block align-top" alt=""></a></a>
+    <a class="navbar-brand" href="#" style="" contenteditable="true"><img src="images/light.png" height="40" class="d-inline-block align-top" alt=""></a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
       <ul class="navbar-nav mr-auto" style="">
-        <li class="nav-item text-light"><a class="nav-link text-white" href="framing.html">Framing Analysis</a></li>
+        <li class="nav-item text-light"><a class="nav-link text-white" href="#">Framing Analysis</a></li>
         <li class="nav-item text-white">
           <a class="nav-link text-white" href="LDA.html">LDA</a>
         </li>
-        <li class="nav-item text-white">
-          <a class="nav-link text-white" href="tutorials.html">Tutorials</a>
-        </li>
-        <li class="nav-item text-white">
+        <li class="nav-item text-white bg-secondary">
           <a class="nav-link text-white" href="FAQ.html">FAQ</a>
         </li>
       </ul>
@@ -47,8 +44,8 @@
   <div class="wrapper bg-light">
     <div class="container">
       <div class="row d-flex align-items-start bg-light py-3 pt-3">
-        <div class="px-5 col-md-8 text-center mx-auto bg-light">
-          <h3 class="text-dark display-3" style="	text-shadow: 0px 0px 0px black;"><b>Frequently Asked Qeustions</b></h3>
+        <div class="col-md-12">
+          <h1 class="display-3 text-center pt-3 text-dark"><b>Frequently Asked Questions</b></h1>
         </div>
       </div>
     </div>
@@ -59,10 +56,10 @@
             <div class="panel panel-default">
               <div class="row">
                 <div class="col-md-12">
-                  <h1 class="text-white bg-secondary w-100 py-1"><b>General Questions</b></h1>
+                  <h1 class="text-white bg-secondary w-100 py-1 pr-3"><b class="pl-3">General Questions</b></h1>
                 </div>
               </div>
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading0" style="color:mediumpurple">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading0" style="color:mediumpurple">
                 <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#accordion" href="#collapse0" aria-expanded="true" aria-controls="collapse0"><b style="font-style: normal;"> I do not have a computational background, can I use your system? </b></a>
                 </h3>
@@ -72,7 +69,7 @@
               </div>
             </div>
             <div class="panel panel-default">
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading1">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading1">
                 <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#accordion" href="#collapse1" aria-expanded="true" aria-controls="collapse1"><b style="font-style: normal;"> Do you have any suggested research papers about the methods used in this project? </b></a>
                 </h3>
@@ -84,7 +81,7 @@
               </div>
             </div>
             <div class="panel panel-default">
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading2">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading2">
                 <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#accordion" href="#collapse2" aria-expanded="true" aria-controls="collapse2"><b><span style="font-style: normal;"> You offer several options: LDA topic modeling, as well as two ways of using BERT. What is the difference between these methods? Which one should I choose? </span></b></a>
                 </h3>
@@ -101,7 +98,7 @@
               </div>
             </div>
             <div class="panel panel-default">
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading3">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading3">
                 <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#accordion" href="#collapse3" aria-expanded="true" aria-controls="collapse3"><b style="font-style: normal;"> What is the difference between unsupervised and supervised machine learning? </b></a>
                 </h3>
@@ -116,9 +113,9 @@
               </div>
             </div>
             <div class="panel panel-default">
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading4">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading4">
                 <h3 class="panel-title">
-                  <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#accordion" href="#collapse4" aria-expanded="true" aria-controls="collapse4" ><b style="font-style: normal;"> What do you mean by a “document”? </b></a>
+                  <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#accordion" href="#collapse4" aria-expanded="true" aria-controls="collapse4"><b style="font-style: normal;"> What do you mean by a “document”? </b></a>
                 </h3>
               </div>
               <div id="collapse4" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading4">
@@ -126,7 +123,7 @@
               </div>
             </div>
             <div class="panel panel-default">
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading5">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading5">
                 <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#accordion" href="#collapse5" aria-expanded="true" aria-controls="collapse5"><b style="font-style: normal;"> Is there a requirement for the data types? Can I use your system to analyze tweets? </b></a>
                 </h3>
@@ -136,7 +133,7 @@
               </div>
             </div>
             <div class="panel panel-default">
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading6">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading6">
                 <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#accordion" href="#collapse6" aria-expanded="true" aria-controls="collapse6"><b style="font-style: normal;"> Is there a requirement for the minimum and maximum length of each document? </b></a>
                 </h3>
@@ -146,7 +143,7 @@
               </div>
             </div>
             <div class="panel panel-default">
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading7" style="">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading7" style="">
                 <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#accordion" href="#collapse7" aria-expanded="true" aria-controls="collapse7"><b style="font-style: normal;"> Your system is called OpenFraming. Can I use your system to do other types of analysis, e.g., sentiment detection? </b></a>
                 </h3>
@@ -164,8 +161,8 @@
           <br>
           <div class="panel-group" id="lda-accordion" role="tablist" aria-multiselectable="true">
             <div class="panel panel-default">
-              <h1 class="bg-secondary text-white py-1"><b>LDA-related Questions</b></h1>
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading8">
+              <h1 class="bg-secondary text-white py-1 pl-3"><b>LDA-related Questions</b></h1>
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading8">
                 <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#lda-accordion" href="#collapse8" aria-expanded="true" aria-controls="collapse8"><b style="font-style: normal;"> What is the minimum and maximum number of documents I should upload? </b></a>
                 </h3>
@@ -175,7 +172,7 @@
               </div>
             </div>
             <div class="panel panel-default">
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading9">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading9">
                 <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#lda-accordion" href="#collapse9" aria-expanded="true" aria-controls="collapse9"><b style="font-style: normal;"> What is a LDA “topic”? Is it equivalent to “frame”? </b></a>
                 </h3>
@@ -193,10 +190,10 @@
         <div class="container">
           <br>
           <br>
-          <h1 class="bg-secondary text-white py-1"><b>BERT using your own labeled data</b></h1>
+          <h1 class="bg-secondary text-white py-1 pl-3"><b>BERT using your own labeled data</b></h1>
           <div class="panel-group" id="bert-accordion" role="tablist" aria-multiselectable="true">
             <div class="panel panel-default">
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading10">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading10">
                 <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#bert-accordion" href="#collapse10" aria-expanded="true" aria-controls="collapse10"><b style="font-style: normal;"> How many labeled documents should I provide? </b></a>
                 </h3>
@@ -206,7 +203,7 @@
               </div>
             </div>
             <div class="panel panel-default">
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading11">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading11">
                 <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#bert-accordion" href="#collapse11" aria-expanded="true" aria-controls="collapse11"><b style="font-style: normal;"> How many unlabeled documents can your system predict? </b></a>
                 </h3>
@@ -218,7 +215,7 @@
               </div>
             </div>
             <div class="panel panel-default">
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading12">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading12">
                 <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#bert-accordion" href="#collapse12" aria-expanded="true" aria-controls="collapse12"><b style="font-style: normal;"> What do you mean by a training and a testing set? </b></a>
                 </h3>
@@ -230,7 +227,7 @@
               </div>
             </div>
             <div class="panel panel-default">
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading13">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading13">
                 <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#bert-accordion" href="#collapse13" aria-expanded="true" aria-controls="collapse13"><b style="font-style: normal;"> What do I do if the model performance is not good? </b></a>
                 </h3>
@@ -250,12 +247,12 @@
           <br>
           <div class="row">
             <div class="col-md-12 bg-light">
-              <h1 class="text-white bg-secondary py-1"><b>BERT using the existing models</b></h1>
+              <h1 class="text-white bg-secondary py-1 pl-3"><b>BERT using the existing models</b></h1>
             </div>
           </div>
           <div class="panel-group" id="bert-other-accordion" role="tablist" aria-multiselectable="true">
             <div class="panel panel-default">
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading14">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading14">
                 <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#bert-other-accordion" href="#collapse14" aria-expanded="true" aria-controls="collapse14"><b style="font-style: normal;"> I have a dataset with news articles published during a specific date range. Can I use your model to generate reliable labels? </b></a>
                 </h3>
@@ -265,7 +262,7 @@
               </div>
             </div>
             <div class="panel panel-default">
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading15">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading15">
                 <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#bert-other-accordion" href="#collapse15" aria-expanded="true" aria-controls="collapse15"><b style="font-style: normal;"> I used one of the models to predict labels for my data, and I found the labels assigned to some documents do not make sense. Why does that happen? </b></a>
                 </h3>
@@ -277,8 +274,8 @@
               </div>
             </div>
             <div class="panel panel-default">
-              <div class="panel-heading p-3 mb-3" role="tab" id="heading16">
-                <h3 class="panel-title" contenteditable="true">
+              <div class="panel-heading p-3 mb-3 bg-primary" role="tab" id="heading16">
+                <h3 class="panel-title">
                   <a class="collapsed" role="button" title="" data-toggle="collapse" data-parent="#bert-other-accordion" href="#collapse16" aria-expanded="true" aria-controls="collapse16"><b style="font-style: normal;"> I have a sample of labeled data that pertains to one of the topics. Should I use the existing models, or is it better to train a new model? </b></a>
                 </h3>
               </div>
@@ -298,14 +295,7 @@
     <div class="footer-copyright text-center">© 2020 All Rights Reversed </div>
     <!-- Copyright -->
   </footer>
-
-  <div class="py-5">
-    <div class="container">
-      <div class="row">
-        <div class="col-md-12"></div>
-      </div>
-    </div>
-  </div>
+  
 </body>
 
 </html>
