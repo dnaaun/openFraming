@@ -43,6 +43,8 @@ class Settings:
     DATABASE_FILE: Path
     MALLET_BIN_DIRECTORY: Path
 
+    SUPPORTED_NON_CSV_FORMATS: T.Set[str] = {".xls", ".xlsx"}
+
     _initialized_already = False
 
     @classmethod
