@@ -11,11 +11,14 @@ logger = logging.getLogger(__name__)
 
 
 class SettingsFromOutside(TT.TypedDict):
-    """Required to be set by the web admin (usually through environment variables)"""
+    """These settings must be set using enviornmetn variables."""
 
     PROJECT_DATA_DIRECTORY: str
     TRANSFORMERS_CACHE_DIRECTORY: T.Optional[str]
     MALLET_BIN_DIRECTORY: str
+    FLASK_ENV: TT.Literal["development", "production"]
+    REDIS_HOST: str
+    REDIS_PORT: int
 
 
 class Settings:
@@ -42,6 +45,9 @@ class Settings:
     TRANSFORMERS_CACHE_DIRECTORY: Path
     DATABASE_FILE: Path
     MALLET_BIN_DIRECTORY: Path
+    FLASK_ENV: TT.Literal["development", "production"]
+    REDIS_HOST: str
+    REDIS_PORT: int
 
     SUPPORTED_NON_CSV_FORMATS: T.Set[str] = {".xls", ".xlsx"}
 
@@ -54,18 +60,28 @@ class Settings:
     @classmethod
     def initialize_from_env(cls) -> None:
         try:
+            any_flask_env = os.environ["FLASK_ENV"]
+            assert any_flask_env in ["production", "development"]
+            flask_env: TT.Literal["production", "development"] = any_flask_env  # type: ignore[assignment]
+
             settings_dict = SettingsFromOutside(
                 {
                     "PROJECT_DATA_DIRECTORY": os.environ["PROJECT_DATA_DIRECTORY"],
-                    "TRANSFORMERS_CACHE_DIRECTORY": os.environ.get(  # Not required, we have a fallback, look at initialize_from_dict
-                        "TRANSFORMERS_CACHE_DIRECTORY", ""
-                    ),
+                    "TRANSFORMERS_CACHE_DIRECTORY": os.environ[
+                        "TRANSFORMERS_CACHE_DIRECTORY"
+                    ],
                     "MALLET_BIN_DIRECTORY": os.environ["MALLET_BIN_DIRECTORY"],
+                    "FLASK_ENV": flask_env,
+                    "REDIS_HOST": os.environ["REDIS_HOST"],
+                    "REDIS_PORT": int(os.environ["REDIS_PORT"]),
                 }
             )
             cls.initialize_from_dict(settings_dict)
         except KeyError as e:
             logger.critical("You did not define one or more environment variable(s).")
+            raise e
+        except BaseException as e:
+            logger.critical("You did not set one or more environment *correctly*.")
             raise e
 
     @classmethod
@@ -86,6 +102,9 @@ class Settings:
             )
         cls.DATABASE_FILE = Path(cls.PROJECT_DATA_DIRECTORY) / "sqlite.db"
         cls.MALLET_BIN_DIRECTORY = Path(settings_dict["MALLET_BIN_DIRECTORY"])
+        cls.FLASK_ENV = settings_dict["FLASK_ENV"]
+        cls.REDIS_HOST = settings_dict["REDIS_HOST"]
+        cls.REDIS_PORT = settings_dict["REDIS_PORT"]
         cls._initialized_already = True
 
     @classmethod
@@ -97,6 +116,9 @@ class Settings:
             "TRANSFORMERS_CACHE_DIRECTORY",
             "DATABASE_FILE",
             "MALLET_BIN_DIRECTORY",
+            "FLASK_ENV",
+            "REDIS_HOST",
+            "REDIS_PORT",
         ]:
             if hasattr(cls, attr):
                 delattr(cls, attr)

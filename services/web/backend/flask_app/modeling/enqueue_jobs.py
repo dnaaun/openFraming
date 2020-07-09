@@ -2,14 +2,13 @@ import logging
 import typing as T
 
 import typing_extensions as TT
-from redis import Redis
-from rq import Queue  # type: ignore
-
 from flask_app import db
 from flask_app.modeling.classifier import ClassifierModel
 from flask_app.modeling.lda import Corpus
 from flask_app.modeling.lda import LDAModeler
 from flask_app.settings import Settings
+from redis import Redis
+from rq import Queue  # type: ignore
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -144,7 +143,7 @@ def do_topic_model_related_task(task_args: TopicModelTrainingTaskArgs) -> None:
 
 class Scheduler(object):
     def __init__(self) -> None:
-        connection = Redis()
+        connection = Redis(host=Settings.REDIS_HOST, port=Settings.REDIS_PORT)
         is_async = True
         self.classifiers_queue = Queue(
             name="classifiers", connection=connection, is_async=is_async

@@ -1,0 +1,38 @@
+# For the uploaded files and model weights
+project_data/
+transformers_cache/
+
+# For the database
+sqlite.db
+
+# vim related
+Session.vim
+
+# related to virt env openFraming
+openFraming
+venv
+
+# py cache and swap files
+*.pyc
+*.swp
+
+# Python/mypy related
+__pycache__/
+.mypy_cache/
+.dmypy.json
+
+instance/
+
+.pytest_cache/
+.coverage
+htmlcov/
+
+.idea
+
+# OSX related files
+.DS_Store
+
+
+dist/
+build/
+*.egg-info/
