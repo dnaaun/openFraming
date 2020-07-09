@@ -1,6 +1,7 @@
-from flask_app.settings import Settings
-from pathlib import Path
 import typing as T
+from pathlib import Path
+
+from flask_app.settings import Settings
 
 
 class Version:

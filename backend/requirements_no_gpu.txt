@@ -1,5 +1,6 @@
 --find-links https://download.pytorch.org/whl/torch_stable.html
 ipdb==0.13.2
+gunicorn==20.0.4
 scikit-learn==0.23.1
 Flask==1.1.2
 wheel==0.34.2
