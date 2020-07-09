@@ -3,6 +3,7 @@ version: '3.3'
 services:
   web:
     image: openframing_web_image
+    restart: always
     build:
       context: ./services/web
     expose:
@@ -18,6 +19,7 @@ services:
       - REDIS_PORT
   nginx:
     build: ./services/nginx
+    restart: always
     volumes:
       - frontend_volume:/home/app/frontend
     ports:
@@ -32,6 +34,7 @@ services:
 
   classifiers_worker:
     image: openframing_web_image
+    restart: always
     command: [ "rq", "worker", "--url", "redis://${REDIS_HOST}:${REDIS_PORT}", "classifiers" ]
     depends_on:
       - redis
@@ -43,6 +46,7 @@ services:
 
   topic_model_worker:
     image: openframing_web_image
+    restart: always
     command: [ "rq", "worker", "--url", "redis://${REDIS_HOST}:${REDIS_PORT}", "topic_models" ]
     depends_on:
       - redis
