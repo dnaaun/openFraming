@@ -7,7 +7,6 @@ from unittest import mock
 from flask import current_app
 from flask import url_for
 from tests.common import AppMixin
-from tests.common import exception_raising_mock
 from tests.common import make_csv_file
 from tests.common import RQWorkerMixin
 from tests.common import TESTING_FILES_DIR
@@ -171,8 +170,8 @@ class TestClassifiersTrainingFile(ClassifierMixin):
         self._burst_workers("classifiers")
 
         self._clsf = self._clsf.refresh()
-        self.assertTrue(self._clsf.dev_set.error_encountered)  # type: ignore[union-attr]
-        self.assertTrue(self._clsf.train_set.error_encountered)  # type: ignore[union-attr]
+        self.assertTrue(self._clsf.dev_set.refresh().error_encountered)  # type: ignore[union-attr]
+        self.assertTrue(self._clsf.train_set.refresh().error_encountered)  # type: ignore[union-attr]
 
         with current_app.test_client() as client:
             get_clsf_url = url_for(

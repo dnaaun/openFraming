@@ -11,7 +11,9 @@ from flask_app.modeling.lda import Corpus
 from flask_app.modeling.lda import LDAModeler
 from flask_app.settings import Settings
 
+logging.basicConfig()
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class ClassifierPredictionTaskArgs(TT.TypedDict):
@@ -108,6 +110,7 @@ def do_classifier_related_task(
         finally:
             clsf.dev_set.save()
             clsf.train_set.save()
+            clsf.save()
 
 
 @db.needs_database_init

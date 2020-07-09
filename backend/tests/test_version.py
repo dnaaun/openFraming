@@ -18,6 +18,7 @@ class TestProjectDataDirChecking(unittest.TestCase):
             os.environ, {"PROJECT_DATA_DIRECTORY": project_data_dir},
         )
         self._patch_cm.__enter__()
+        Settings.deinitialize()
         Settings.initialize_from_env()
 
     def tearDown(self) -> None:

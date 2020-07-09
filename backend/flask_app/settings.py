@@ -91,10 +91,15 @@ class Settings:
     @classmethod
     def deinitialize(cls) -> None:
         """ONLY FOR UNIT TESTING. DO NOT USE OTHERWISE TO CAUSE LESS CONFUSION."""
-        del cls.PROJECT_DATA_DIRECTORY
-        del cls.TRANSFORMERS_CACHE_DIRECTORY
-        del cls.DATABASE_FILE
-        del cls.MALLET_BIN_DIRECTORY
+
+        for attr in [
+            "PROJECT_DATA_DIRECTORY",
+            "TRANSFORMERS_CACHE_DIRECTORY",
+            "DATABASE_FILE",
+            "MALLET_BIN_DIRECTORY",
+        ]:
+            if hasattr(cls, attr):
+                delattr(cls, attr)
         cls._initialized_already = False
 
 
