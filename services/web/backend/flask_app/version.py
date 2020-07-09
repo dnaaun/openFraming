@@ -46,6 +46,8 @@ class Version:
             cls.project_data_dir_indicator_file(): The project data dir version of the 
             code.
         """
+        return # Avoid checking if the file structure on disk matches the file structure the code expects.
+               # because the code below is buggy.
         on_disk = cls.get_project_data_dir_version_on_disk()
         if on_disk is not None and cls.versions_incompatible(
             on_disk, cls.PROJECT_DATA_DIR_VERSION
