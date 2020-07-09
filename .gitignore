@@ -10,6 +10,7 @@ Session.vim
 
 # related to virt env openFraming
 openFraming
+venv
 
 # py cache and swap files
 *.pyc
