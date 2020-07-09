@@ -31,8 +31,4 @@ docker-compose build
 docker-compose up
 ```
 
- You might have to type `sudo` here as well.
-
- 5. That's it! You can now go to `http://localhost/LDA.html` to access the topic modeling frontend,
- or you can interact with the API at `http://localhost/api/...` as documented
- in the [API docs](./services/web/backend/README.md).
+ You might have to type `sudo` here as well. 
