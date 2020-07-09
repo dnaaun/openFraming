@@ -1,5 +1,6 @@
 """All the flask api endpoints."""
 import csv
+from flask_app.version import Version
 import logging
 import typing as T
 from collections import Counter
@@ -881,6 +882,7 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
     # Create project root if necessary
     if not Settings.PROJECT_DATA_DIRECTORY.exists():
         Settings.PROJECT_DATA_DIRECTORY.mkdir(exist_ok=True)
+    Version.ensure_project_data_dir_version_safe()
 
     # Create database tables if the SQLITE file is going to be new
     if not Settings.DATABASE_FILE.exists():

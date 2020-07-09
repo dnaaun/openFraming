@@ -57,8 +57,8 @@ class Settings:
             settings_dict = SettingsFromOutside(
                 {
                     "PROJECT_DATA_DIRECTORY": os.environ["PROJECT_DATA_DIRECTORY"],
-                    "TRANSFORMERS_CACHE_DIRECTORY": os.environ.get(
-                        "TRANSFORMERS_CACHE_DIRECTORY", None
+                    "TRANSFORMERS_CACHE_DIRECTORY": os.environ.get(  # Not required, we have a fallback, look at initialize_from_dict
+                        "TRANSFORMERS_CACHE_DIRECTORY", ""
                     ),
                     "MALLET_BIN_DIRECTORY": os.environ["MALLET_BIN_DIRECTORY"],
                 }
@@ -73,7 +73,10 @@ class Settings:
         if cls._initialized_already:
             raise RuntimeError("Settings already initialized.")
         cls.PROJECT_DATA_DIRECTORY = Path(settings_dict["PROJECT_DATA_DIRECTORY"])
-        if settings_dict["TRANSFORMERS_CACHE_DIRECTORY"] is not None:
+        if settings_dict["TRANSFORMERS_CACHE_DIRECTORY"] not in [None, ""]:
+            assert (
+                settings_dict["TRANSFORMERS_CACHE_DIRECTORY"] is not None
+            )  # Make mypy happy
             cls.TRANSFORMERS_CACHE_DIRECTORY = Path(
                 settings_dict["TRANSFORMERS_CACHE_DIRECTORY"]
             )
@@ -84,6 +87,15 @@ class Settings:
         cls.DATABASE_FILE = Path(cls.PROJECT_DATA_DIRECTORY) / "sqlite.db"
         cls.MALLET_BIN_DIRECTORY = Path(settings_dict["MALLET_BIN_DIRECTORY"])
         cls._initialized_already = True
+
+    @classmethod
+    def deinitialize(cls) -> None:
+        """ONLY FOR UNIT TESTING. DO NOT USE OTHERWISE TO CAUSE LESS CONFUSION."""
+        del cls.PROJECT_DATA_DIRECTORY
+        del cls.TRANSFORMERS_CACHE_DIRECTORY
+        del cls.DATABASE_FILE
+        del cls.MALLET_BIN_DIRECTORY
+        cls._initialized_already = False
 
 
 F = T.TypeVar("F", bound=T.Callable[..., T.Any])
