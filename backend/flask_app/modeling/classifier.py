@@ -162,7 +162,8 @@ class ClassifierModel(object):
         Compute accuracy of predictions vs labels. Piggy back on sklearn.
         """
         y_true = np.argmax(p.predictions, axis=1)
-        y_pred = p.label_ids
+        y_pred = [self.labels[i] for i in y_true]
+        y_true = p.label_ids
 
         clsf_report_sklearn = classification_report(
             y_true=y_true,
@@ -170,7 +171,7 @@ class ClassifierModel(object):
             output_dict=True,
             # self.labels are human readable,
             # but y_pred is actually nominal.
-            labels=list(range(len(self.labels))),
+            labels=self.labels,
         )
         final = utils.ClassifierMetrics(
             {
