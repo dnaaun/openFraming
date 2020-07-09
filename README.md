@@ -43,7 +43,7 @@ The directory where the mallet executable is found:
 
 The directory where the application should store files:
 
-	$ export PROEJCT_DATA_DIRECTORY=$HOME/openFraming/project_data/
+	$ export PROJECT_DATA_DIRECTORY=$HOME/openFraming/project_data/
 
 ## Command to run
 
