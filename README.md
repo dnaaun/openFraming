@@ -1,55 +1,38 @@
-## Required Python version
-Python 3.7 or higher is required.
+## Requirements
+## Docker
+You need [Docker](https://docs.docker.com/get-docker/). Feel free to read up on Docker if you wish.
+My best short explanation for Docker is that, Docker is for deploying applications with complicated
+dependencies, what the printing press was to publishing books(It allows you to do it in a much quicker,
+and much more reproducible way).
 
-## Installation
+The link above has guides on how to install Docker on the most popular platforms.
 
-### Clone this repo and prepare a virtual environment.
-	$ git clone https://github.com/davidatbu/openFraming.git
-	$ cd openFraming/
-	$ python -m venv venv/
-	$ source venv/bin/activate
+## Administrator (sudo) rights
+Interacting with Docker is much easier if you have administrator rights. 
 
-### Install necessary Python packages
-	$ pip install -r backend/requirements_no_gpu.txt
+Have no fear though, the application itself doesn't run as root, so there's much less surface area
+for a security breach.
 
-### Download additional requirements
+# How to install
 
-### Install Redis
-This step will depend on your operating system. On Ubuntu, this is as simple as:
+ 1. Clone this repo.
+ 2. `cd` into the directory where this README file is found.
+ 3. Type:
 
-	$ sudo apt-get install redis
+```
+docker-compose build
+```
 
-For Windows, you might have to look at [Memiurai](https://www.memurai.com), a drop-in replacement for 
-Redis.
+ You might have to add `sudo` at the beginning of that command.
 
-### NLTK Corpora
-	$ python -m nltk.downloader stopwords wordnet
+ 4. Then type:
 
-### Mallet
-The installation of the Mallet library will depend on your operating system. Have a look 
-at the [installation instructions on their website.](http://mallet.cs.umass.edu/download.php). 
-On Unix, it would look something like:
+```
+docker-compose up
+```
 
-	$ wget http://mallet.cs.umass.edu/dist/mallet-2.0.8.tar.gz -O $HOME/mallet-2.0.8.tar.gz
-	# mkdir $HOME/mallet
-	$ tar -xvf ~/mallet-2.0.8.tar.gz --one-top-level=$HOME/mallet
+ You might have to type `sudo` here as well.
 
-## Prepare environment variables
-This also depends on your operating system.
-
-The directory where the mallet executable is found:
-
-	$ export MALLET_BIN_DIRECTORY=$HOME/mallet/mallet-2.0.8/bin
-
-The directory where the application should store files:
-
-	$ export PROEJCT_DATA_DIRECTORY=$HOME/openFraming/project_data/
-
-## Command to run
-
-Running the development server should then be possible with:
-
-	$ cd backend/flask_app/
-	$ flask run --host=0.0.0.0 --port=5000 --debugger --reload 
-
-You should be able to interact with the API endpoints documented at [the README in the `/backend` directory](backend/README.md).
+ 5. That's it! You can now go to `http://localhost/LDA.html` to access the topic modeling frontend,
+ or you can interact with the API at `http://localhost/api/...` as documented
+ in the [API docs](./services/web/backend/README.md).

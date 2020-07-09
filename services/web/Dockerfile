@@ -27,18 +27,12 @@ RUN groupadd -r app -g 999 &&  useradd -r -g app  -u 999 app
 ## install dependencies
 COPY --from=builder /usr/src/app/wheels /wheels
 RUN pip install --no-cache /wheels/*
+RUN python -m nltk.downloader stopwords wordnet
 
-# Install Gosu
-RUN set -eux; \
-	apt-get update; \
-	apt-get install -y gosu; \
-	rm -rf /var/lib/apt/lists/*; \
-# verify that the binary works
-	gosu nobody true
 
 # create directory for the app user
 ENV HOME=/home/app
-RUN mkdir -p $HOME
+RUN mkdir $HOME
 
 # Prepare mallet installation
 ADD mallet-2.0.8.tar.gz $HOME/
