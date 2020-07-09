@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>OpenFraming</title>
+  <title>LDA</title>
   <link href="css/bootstrap.min.css" rel="stylesheet">
   <link href="css/main.css" rel="stylesheet">
   <link rel="stylesheet" href="css/custom_theme.css" type="text/css">
@@ -20,7 +20,7 @@
   <header>
   </header>
   <nav class="navbar navbar-expand-lg navbar-light bg-dark">
-    <a class="navbar-brand" href="#" style="" contenteditable="true"></a><a href="OpenFraming.html" target="_blank"><img src="images/light.png" height="40" class="d-inline-block align-top" alt=""></a>
+    <a class="navbar-brand" href="#" style="" contenteditable="true"><a href="OpenFraming.html" target="_blank" ><img src="images/light.png" height="40" class="d-inline-block align-top" alt=""></a></a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -51,40 +51,52 @@
         </div>
       </div>
       <div class="row">
-        <div class="col-md-12">
-          <h3 class="text-white bg-secondary py-2 pr-3"><b class="pr-2 px-2">What is OpenFraming?</b></h3>
-          <p class="bg-light px-2">OpenFraming is a system for analyzing and categorizing large corpora of text documents by the discursive framing they employ. At a high level, we’ve set up pipelines to let you a) figure out what topics exist in a corpus of text documents and b) create and/or apply classification models to categorize documents. We employ state-of-the-art machine learning models, both unsupervised and supervised, to make these pipelines, and we aim to make them usable for researchers without a computational background.</p>
+        <div class="col-md-12 bg-dark">
+          <h3 class="bg-dark text-white pt-2"><b>What is OpenFraming?</b></h3>
+          <p class="bg-light">OpenFraming is a system for analyzing and categorizing large corpora of text documents by the discursive framing they employ. At a high level, we’ve set up pipelines to let you a) figure out what topics exist in a corpus of text documents and b) create and/or apply classification models to categorize documents. We employ state-of-the-art machine learning models, both unsupervised and supervised, to make these pipelines, and we aim to make them usable for researchers without a computational background.</p>
         </div>
       </div>
+
       <div class="row">
-        <div class="col-md-12">
-          <h3 class="text-white bg-secondary py-2 pl-2 pt-2"><b>Exploring OpenFraming</b></h3>
-          <p class="bg-light px-2">You may want to start by exploring the Instructions and FAQ pages; these give an in-depth overview of the various functionalities of the site and explain how to use them for best results. If you already have an idea of what you’re here for, then read on to see what page might be the best starting point for you.</p>
+          <div class="col-md-12 bg-dark">
+            <h3 class="bg-dark text-white pt-2"><b>Exploring OpenFraming</b></h3>
+            <p class="bg-light">You may want to start by exploring the Instructions and FAQ pages; these give an in-depth overview of the various functionalities of the site and explain how to use them for best results. If you already have an idea of what you’re here for, then read on to see what page might be the best starting point for you.</p>
+          </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-12 bg-dark">
+          <h3 class="bg-dark text-white pt-2"><b>Tutorials</b></h3>
+          <p class="bg-light">Curious about how to use a particular page or feature? Not sure what data you need to have in hand in order to use OpenFraming? Take a look at the Tutorial page for clarification. We have curated videos which will guide you on how to use this Website tools. </p>
         </div>
       </div>
+
       <div class="row">
-        <div class="col-md-12">
-          <h3 class="text-white py-2 pl-2 bg-secondary"><b>Tutorials</b></h3>
-          <p class="bg-light px-2">Curious about how to use a particular page or feature? Not sure what data you need to have in hand in order to use OpenFraming? Take a look at the Tutorial page for clarification. We have curated videos which will guide you on how to use this Website tools. </p>
+        <div class="col-md-12 bg-dark">
+          <h3 class="bg-dark text-white pt-2"><b>Frequently Asked Questions</b></h3>
+          <p class="bg-light">You’ve read the instructions and you have a general idea of what you’re supposed to do, but you’re a little uncertain about a few points here and there. If that sounds like where you’re at, take a look at the FAQ - we’ve tried to answer questions we thought first-time users would have.  </p>
         </div>
       </div>
+
       <div class="row">
-        <div class="col-md-12">
-          <h3 class="text-white bg-secondary py-2 pl-2"><b>Frequently Asked Questions</b></h3>
-          <p class="bg-light px-2">You’ve read the instructions and you have a general idea of what you’re supposed to do, but you’re a little uncertain about a few points here and there. If that sounds like where you’re at, take a look at the FAQ - we’ve tried to answer questions we thought first-time users would have. </p>
+        <div class="col-md-12 bg-dark">
+          <h3 class="bg-dark text-white pt-2"><b>Frame Classification</b></h3>
+          <p class="bg-light">If you have a dataset of text data and some examples labeled with topics (or sentiment or frames or anything else that can be classified by humans), then you’re good to go: you can upload your dataset and create a model that can classify subsequent datasets using the information you’ve given it.  Also, if you have a sense of what topics you see in your dataset, you can go ahead and label your dataset to train the model. And if your data pertains to one of the policy issues we’ve pretrained a model for, you’re in luck - you can upload your dataset and specify which pretrained model you’d like to do the inference, and that model will classify all the examples in your dataset.</p>
         </div>
       </div>
+
       <div class="row">
-        <div class="col-md-12">
-          <h3 class="text-white bg-secondary py-2 pl-2"><b>Frame Classification</b></h3>
-          <p class="bg-light px-2">If you have a dataset of text data and some examples labeled with topics (or sentiment or frames or anything else that can be classified by humans), then you’re good to go: you can upload your dataset and create a model that can classify subsequent datasets using the information you’ve given it. Also, if you have a sense of what topics you see in your dataset, you can go ahead and label your dataset to train the model. And if your data pertains to one of the policy issues we’ve pretrained a model for, you’re in luck - you can upload your dataset and specify which pretrained model you’d like to do the inference, and that model will classify all the examples in your dataset.</p>
-        </div>
+        <div class="col-md-12 bg-dark">
+          <h3 class="bg-dark text-white pt-2"><b>LDA Topic Discovery</b></h3>
+          <p class="bg-light">You have a lot of text data and you want to better understand the main threads of conversation or the things that get discussed throughout your corpus. You may or may not have preconceived ideas about what you’ll discover, but you’d like to see what an unsupervised machine learning algorithm discovers. This algorithm doesn’t need input from the user other than the raw dataset. Our LDA pipeline gives you the keywords that are relevant to the topics it detects as well as the probability distribution over topics for each document included in the corpus.</p>
       </div>
-      <div class="row">
-        <div class="col-md-12 pb-4">
-          <h3 class="text-white py-2 pl-2 bg-secondary"><b>LDA Topic Discovery</b></h3>
-          <p class="bg-light px-2">You have a lot of text data and you want to better understand the main threads of conversation or the things that get discussed throughout your corpus. You may or may not have preconceived ideas about what you’ll discover, but you’d like to see what an unsupervised machine learning algorithm discovers. This algorithm doesn’t need input from the user other than the raw dataset. Our LDA pipeline gives you the keywords that are relevant to the topics it detects as well as the probability distribution over topics for each document included in the corpus.</p>
-        </div>
+
+
+
+
+
+      </div>
+
       </div>
     </div>
   </div>
@@ -93,7 +105,8 @@
     <div class="footer-copyright text-center">© 2020 All Rights Reversed </div>
     <!-- Copyright -->
   </footer>
-
+ 
+ 
 </body>
 
 </html>
