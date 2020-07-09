@@ -49,6 +49,9 @@ jobs:
     - name: Set the MALLET_BIN_DIRECTORY env variable
       run: echo ::set-env name=MALLET_BIN_DIRECTORY::$HOME/mallet/mallet-2.0.8/bin
 
+    - name: Set the PROJECT_DATA_DIRECTORY env variable
+      run: echo ::set-env name=PROJECT_DATA_DIRECTORY::$GITHUB_WORKSPACE/project_data/
+
     - name: Run unittesting
       run: python -m unittest
       working-directory: backend/
