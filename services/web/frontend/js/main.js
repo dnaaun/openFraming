@@ -34,10 +34,58 @@ $(function () {
 // The API endpoint prefix
 var API_PREFIX = "/api";
 
+function make_url(template_url, list_of_subst) {
+	// tempelate_url: str
+	// list_of_subst: [ (to_remove: str, to_add: str), ....]
+	var built_url = template_url;
+
+	for(let i=0; i < list_of_subst.length; i++) {
+		var to_remove = list_of_subst[i][0];
+		var to_add = list_of_subst[i][1];
+		var built_url = built_url.replace(to_remove, to_add);
+	}
+	return built_url
+}
+
+function handle_ajax_error() {
+}
+
+function render_one_topic_mdl(data, textStatus, jqxhr) {
+	// data: JSON Object
+	// textStatus: string
+	// jqxhr:  jqXHR Object
+	//
+	var one_topic_mdl_source = document.getElementById("topic-model-template").innerHTML;
+	var one_topic_mdl_template = Handlebars.compile(one_topic_mdl_source);
+	var one_topic_mdl_html = one_topic_mdl_template(data); 
+	var all_topic_mdls_container = $('#all_topic_models');
+	all_topic_mdls_container.append(one_topic_mdl_html);
+}
+
+
 
 $(function(){
 
+	//
+	// HANDLEBARS STARTS HERE
+	// 
+	var BASE_URL = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api";
+	var GET_ONE_TOPIC_MDL_URL = BASE_URL + "/topic_models/<TOPIC_MODEL_ID>";
 
+	var one_topic_mdl_url = make_url(GET_ONE_TOPIC_MDL_URL, [ ["<TOPIC_MODEL_ID>", "2"] ]) 
+	$.ajax({
+		url: one_topic_mdl_url,
+		type: 'GET',
+		dataType: 'json',
+		success: render_one_topic_mdl,
+		error: handle_ajax_error
+	})
+	
+
+	
+	//
+	// HANDLEBARS ENDS HERE
+	//
 
 
 
@@ -153,3 +201,4 @@ function regularFruit(){
 	let a = document.getElementById('other_text');
 	a.value="";
 }
+
