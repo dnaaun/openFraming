@@ -27,6 +27,7 @@ services:
       - web
   redis:
     image: redis:6.0.5-alpine
+    restart: always
     command: "redis-server --port ${REDIS_PORT}"
     expose:
       - "${REDIS_PORT}"
