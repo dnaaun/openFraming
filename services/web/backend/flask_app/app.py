@@ -12,13 +12,7 @@ from flask import current_app
 from flask import Flask
 from flask import Response
 from flask import send_file
-from flask_app import db
-from flask_app import utils
-from flask_app.modeling.classifier import ClassifierMetrics
-from flask_app.modeling.enqueue_jobs import Scheduler
-from flask_app.settings import needs_settings_init
-from flask_app.settings import Settings
-from flask_app.version import Version
+from flask_cors import CORS
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
 from flask_restful import Resource
@@ -29,6 +23,14 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
 from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import NotFound
+
+from flask_app import db
+from flask_app import utils
+from flask_app.modeling.classifier import ClassifierMetrics
+from flask_app.modeling.enqueue_jobs import Scheduler
+from flask_app.settings import needs_settings_init
+from flask_app.settings import Settings
+from flask_app.version import Version
 
 API_URL_PREFIX = "/api"
 
@@ -882,6 +884,9 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
         app = Flask(__name__, static_url_path="/", static_folder="../../frontend")
     else:
         app = Flask(__name__)
+
+    # Allow Cross Origin ajax
+    CORS(app)
 
     # Create project root if necessary
     if not Settings.PROJECT_DATA_DIRECTORY.exists():
