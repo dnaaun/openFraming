@@ -12,6 +12,8 @@ $(".other-policy").on("click", function(){
 
 
 var stateClassifier_id='';
+var email='';
+var testName='';
 
 
 // GET POST
@@ -186,6 +188,7 @@ var fileName = $('input[type="file"]').change(function(e){
 // ], callback);
 
 $('#performAnalysis').click(async function(){
+	testName = $("input[name='policyissue']:checked").val();
 	// $.when($.when(step1()).then(step2)).then(step3);
 	// console.log($('#email').val()); // take email
 	 // Creates a classifier.
@@ -201,7 +204,7 @@ $('#performAnalysis').click(async function(){
 	await postFraming();
 	await getFraming();
 	await upTrainingFile();
-	await upTestingFile();
+	// await upTestingFile();
 	// checkClassifier(id);
 
 	// async function init() {
