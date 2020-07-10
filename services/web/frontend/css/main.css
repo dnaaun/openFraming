@@ -47,6 +47,18 @@ input:invalid {
     box-shadow: 0 0 5px 1px red;
 }
 
+.step2 {
+    padding: 15px 20px 8px 20px;
+}
+
+.step3 {
+    margin: 0;
+}
+
+.other-policy {
+    padding: 10px 0;
+}
+
 #submitbutton:disabled {
     opacity: 0.5;
 }
