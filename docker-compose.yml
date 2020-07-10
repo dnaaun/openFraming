@@ -9,7 +9,6 @@ services:
     expose:
       - "5000"
     volumes:
-      - frontend_volume:/home/app/web/frontend/
       - project_data_volume:/home/app/project_data_directory
       - transformers_cache_volume:/home/app/transformers_cache_directory
     depends_on:
@@ -21,7 +20,7 @@ services:
     build: ./services/nginx
     restart: always
     volumes:
-      - frontend_volume:/home/app/frontend
+      - ./services/web/frontend:/home/app/frontend
     ports:
       - "80:80"
     depends_on:
@@ -38,6 +37,10 @@ services:
     command: [ "rq", "worker", "--url", "redis://${REDIS_HOST}:${REDIS_PORT}", "classifiers" ]
     depends_on:
       - redis
+    volumes:
+      - project_data_volume:/home/app/project_data_directory
+      - transformers_cache_volume:/home/app/transformers_cache_directory
+
     environment: # Pass down from .env file
       - REDIS_HOST
       - REDIS_PORT
@@ -50,6 +53,9 @@ services:
     command: [ "rq", "worker", "--url", "redis://${REDIS_HOST}:${REDIS_PORT}", "topic_models" ]
     depends_on:
       - redis
+    volumes:
+      - project_data_volume:/home/app/project_data_directory
+      - transformers_cache_volume:/home/app/transformers_cache_directory
     environment: 
       - REDIS_HOST
       - REDIS_PORT
@@ -59,6 +65,5 @@ services:
 
 
 volumes:
-  frontend_volume:
   project_data_volume:
   transformers_cache_volume:
