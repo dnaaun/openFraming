@@ -30,6 +30,13 @@ RUN pip install --no-cache /wheels/*
 RUN python -m nltk.downloader stopwords wordnet
 
 
+RUN set -eux; \
+	apt-get update; \
+	apt-get install -y gosu; \
+	rm -rf /var/lib/apt/lists/*; \
+	# verify that the binary works
+	gosu nobody true
+
 # create directory for the app user
 ENV HOME=/home/app
 RUN mkdir $HOME
@@ -52,20 +59,13 @@ RUN mkdir $APP_HOME
 # copy project
 COPY . $APP_HOME
 
-# Make sure the volumes are owned by the app user
-RUN mkdir -p $PROJECT_DATA_DIRECTORY && chown app:app $PROJECT_DATA_DIRECTORY
-VOLUME  $PROJECT_DATA_DIRECTORY
-RUN mkdir -p $TRANSFORMERS_CACHE_DIRECTORY && chown app:app $TRANSFORMERS_CACHE_DIRECTORY
-VOLUME  $TRANSFORMERS_CACHE_DIRECTORY
-
 # chown all the files to the app user
 RUN chown -R app:app $HOME
-# change to the app user
-USER app
 
 # Needed because all the python imports look like
 # from flask_app import ...
 # and not from backend.flask_app import ...
 WORKDIR $APP_HOME/backend/
 
+ENTRYPOINT [ "../entrypoint.sh" ]
 CMD [ "gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "flask_app.app:create_app()" ]
