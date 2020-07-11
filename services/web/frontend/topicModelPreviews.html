@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Topic Models</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/custom_theme.css" type="text/css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/js/all.js" integrity="sha256-2JRzNxMJiS0aHOJjG+liqsEOuBb6++9cY4dSOyiijX4=" crossorigin="anonymous"></script>
+    <script src="js/jquery-3.5.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/topicModelPreview.js"></script>
+</head>
+
+<body class="container">
+<header>
+</header>
+<!--  header navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-dark">
+    <a class="navbar-brand" href="#" style="" contenteditable="true"><a href="OpenFraming.html" target="_blank" ><img src="images/light.png" height="40" class="d-inline-block align-top" alt=""></a></a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto" style="">
+            <li class="nav-item text-light"><a class="nav-link text-white" href="framing.html">Framing Analysis</a></li>
+            <li class="nav-item text-white">
+                <a class="nav-link text-white" href="LDA.html">LDA</a>
+            </li>
+            <li class="nav-item text-white">
+                <a class="nav-link text-white" href="tutorials.html">Tutorials</a>
+            </li>
+            <li class="nav-item text-white">
+                <a class="nav-link text-white" href="FAQ.html">FAQ</a>
+            </li>
+        </ul>
+        <form class="form-inline my-2 my-lg-0">
+            <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+            <button class="btn my-2 my-sm-0 btn-purple btn-info text-dark" type="submit">Search</button>
+        </form>
+    </div>
+</nav>
+<div class="container">
+    <div class="row d-flex align-items-start bg-light py-3 pt-3">
+        <div class="px-5 col-md-9 text-center mx-auto bg-light">
+            <h3 class="text-dark display-3" style="	text-shadow: 0px 0px 0px black;"><b>Topic Models</b></h3>
+        </div>
+    </div>
+
+</div>
+<!--  Topic Model section -->
+<div id="topic-model-spec" class="wrapper bg-light">
+    <div class="container bg-light pt-2">
+        <div class="table-responsive-sm">
+            <table class="table">
+                <tbody>
+                <tr>
+                    <td class="">Topic model ID</td>
+                    <td class="align-items-center"><input id="topic-model-id" type="text" class="input-group-sm"></td>
+                </tr>
+                <tr>
+                    <td><button id="topic-model-preview-submit">See Preview</button></td>
+                </tr>
+                <tr><td id="no-spec-id" hidden style="color: red">Please enter an ID!</td></tr>
+                <tr><td id="n-exist-id" hidden style="color: red">This is not a valid ID!</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <!--  Preview section -->
+        <div id="topic-model-preview" hidden class="table-responsive-sm">
+            <script id="topic-model-spec-template" type="text/x-handlebars-template">
+                <table class="table">
+                    <tbody>
+                    <tr>
+                        <td class="">Topic model ID</td>
+                        <td class="align-items-center"> {{tmID}} </td>
+                    </tr>
+                    <tr>
+                        <td class="">Topic model name</td>
+                        <td class="align-items-center"> {{tmName}} </td>
+                    </tr>
+                    <tr>
+                        <td class="">Number of topics</td>
+                        <td class="align-items-center"> {{tmNumTopics}} </td>
+                    </tr>
+                    <tr>
+                        <td class="">Status</td>
+                        <td class="align-items-center"> {{tmStatus}} </td>
+                    </tr>
+                    <tr><td class=""><b>Previews</b></td></tr>
+                    {{#each tmPreviews}}
+                    <tr>
+                        <td><label>{{name}}</label></td>
+                        <td>
+                            <label>Keywords</label>
+                            <ul>
+                                {{#each keywords}}
+                                <li>{{this}}</li>
+                                {{/each}}
+                            </ul>
+                        </td>
+                        <td>
+                            <label>Examples</label>
+                            <ul>
+                                {{#each examples}}
+                                <li>{{this}}</li>
+                                {{/each}}
+                            </ul>
+                        </td>
+                    </tr>
+                    {{/each}}
+                    </tbody>
+                </table>
+            </script>
+        </div>
+        <div id="prev-specific-fields" hidden class="table-responsive-sm">
+            <table class="table">
+                <tbody>
+                <tr>
+                    <td>Enter topic names (please enter names in order separated by commas)</td>
+                    <td class="align-items-center"><input id="topic-names" type="text" class="input-group-sm"></td>
+                    <td><button id="topic-names-submit">Submit</button></td>
+                </tr>
+                <tr><td id="wrong-names" hidden style="color: red">Please enter the same number of names as there are topics!</td></tr>
+                <tr>
+                    <td>
+                        <button id="keywords-submit">Download Keywords</button>
+                        <label id="no-keywords" hidden style="color: red">This topic model does not have keywords!</label>
+                    </td>
+                    <td>
+                        <button id="proportions-submit">Download Topic Proportions</button>
+                        <label id="no-proportions" hidden style="color: red">This topic model does not have topic proportions!</label>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+<footer class="page-footer font-small">
+    <!-- Copyright -->
+    <div class="footer-copyright text-center">© 2020 All Rights Reversed </div>
+    <!-- Copyright -->
+</footer>
+
+
+</body>
+
+</html>
