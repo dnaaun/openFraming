@@ -12,14 +12,19 @@ $(".other-policy").on("click", function(){
 
 
 var stateClassifier_id='';
+var stateStatus='';
 var email='';
 var testName='';
+var testId='';
 
 
 // GET POST
 //
 
-const endpoint = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api/"
+// const endpoint = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api/"
+const endpoint = "http://www.openframing.org/api/"
+// const endpoint = "http://localhost/api/"
+
 
 async function getFraming() {
 	// console.log("asdfdas");
@@ -32,7 +37,7 @@ async function getFraming() {
  }
    
 async function postFraming() {
-	console.log("POST");
+	console.log("postFraming");
 	// let name = $("input[name='policyissue']:checked").val();
 
 
@@ -74,9 +79,10 @@ async function postFraming() {
 
 	// console.log(name);
 	
-
+	var endpointPOST = endpoint + 'classifiers/'
 	await axios
-		.post('http://ec2-3-90-135-165.compute-1.amazonaws.com/api/classifiers/', {
+		
+		.post(endpointPOST, {
 			name: name,
 			category_names: arrayCategoryNames
 		})
@@ -86,7 +92,7 @@ async function postFraming() {
 			stateClassifier_id = classifier_id
 			// return classifier_id
 		})
-		.catch(err => console.error(err));
+		.catch(err => console.error(err))
 
 	// var classifier_id = res.data["classifier_id"]
 	// console.log(classifier_id);
@@ -109,24 +115,12 @@ function checkClassifier(classifier_id) {
 
 async function upTrainingFile() {
 
-	// http://ec2-3-90-135-165.compute-1.amazonaws.com/api/classifiers/
 	var endpointUploadTraining = endpoint + 'classifiers/' + stateClassifier_id + '/training/file'
-	// var file = $('#annotatedsamplefile2');
-	// let formData = new FormData(file[0]);
-	// // console.log(fileName.val());
-	// console.log(formData);
 
 	var formData = new FormData();
 	var imagefile = document.querySelector('#annotatedsamplefile1');
-	formData.append("image", imagefile.files[0]);
+	formData.append("file", imagefile.files[0]);
 	console.log(imagefile.files[0])
-	// var form = $('#annotatedsamplefile2');
-	// let formData = new FormData(form[0]);
-	// axios.post('upload_file', formData, {
-	// 	headers: {
-	// 		"Access-Control-Allow-Origin": "*"
-	// 	}
-	// })
 
 	await axios
 		.post(endpointUploadTraining, formData, {
@@ -135,22 +129,113 @@ async function upTrainingFile() {
 			}
 		})
 	    .then(res => {
-	        console.log({res});
+			console.log(res);
+			
 		})
 		.catch(err => {
 	        console.error({err});
 	    });
 }
 
+
+
+async function checkClassifier() {
+	// var a = 3
+
+	var endpointCheckClassifier = endpoint + 'classifiers/' + stateClassifier_id
+
+	await axios
+		.get(endpointCheckClassifier)
+		.then(res => {
+			var stateStatus = res.data["status"]
+			// console.log(stateStatus)
+			if (stateStatus == "training") {
+				console.log(stateStatus);
+				// postTestName();
+			} else if (stateStatus == "completed") {
+				clearInterval(i);
+				afterTraining();
+			}
+
+
+		})
+
+		.catch(err => {
+			console.error({err});
+		});
+}
+
+var i = null;
+async function looping() {
+	i = setInterval(function(){
+		checkClassifier();
+	}, 5000);
+}
+
+
+
+async function getFraming() {
+	console.log("getFraming");
+	var endpointGET = endpoint + 'classifiers/'
+	await axios
+	   .get(endpointGET)
+	   .then(res => console.log(res))
+	   .catch(err => console.error(err));
+	
+ }
+
+
+
+async function postTestName() {
+	console.log("postTestName");
+	var endpointPostTestName = endpoint + 'classifiers/' + stateClassifier_id + '/test_sets/'
+	// var endpointPostTestName = endpoint + 'classifiers/' + 40 + '/test_sets/'
+	console.log(endpointPostTestName);
+	console.log(testName);
+	await axios
+		.post(endpointPostTestName, {
+			test_set_name: testName
+		})
+		.then(res => console.log(res))
+		.catch(err => console.error(err))
+	// getTestId();
+}
+
+async function getTestId() {
+	console.log("getTestId");
+	var endpointGetTestId = endpoint + 'classifiers/' + stateClassifier_id + '/test_sets/'
+	await axios
+		
+
+		.get(endpointGetTestId)
+		.then(res => {
+			// console.log(res);
+			// console.log(res.data);
+			// console.log(res.data.length);
+			var i;
+			for (i = 0; i < res.data.length; i++) {
+				console.log(res.data[i]["test_set_name"]);
+				if (testName == res.data[i]["test_set_name"]) {
+					testId = res.data[i]["test_set_id"]
+					console.log(testId);
+				}
+			}
+
+
+		})
+		.catch(err => console.error(err));
+	// upTestingFile();
+}
+
 async function upTestingFile() {
+	console.log("upTestingFile");
 
-
-	var endpointUploadTraining = endpoint + 'classifiers/' + stateClassifier_id + '/training/file'
+	var endpointUploadTraining = endpoint + 'classifiers/' + stateClassifier_id + '/test_sets/' + testId + '/file'
 
 
 	var formData = new FormData();
 	var imagefile = document.querySelector('#annotatedsamplefile2');
-	formData.append("image", imagefile.files[0]);
+	formData.append("file", imagefile.files[0]);
 	console.log(imagefile.files[0])
 
 	await axios
@@ -164,31 +249,103 @@ async function upTestingFile() {
 		})
 		.catch(err => {
 	        console.error({err});
-	    });
+		});
+	// getPred();
 }
+
+var i = null;
+var stopper = false
+async function loopingTesting() {
+	
+	i = setInterval(function(){
+		// checkTesting();
+		console.log(stopper);
+		if (stopper == false) {
+			checkTesting();
+			
+		} else if (stopper == true) {
+			clearInterval(i);
+		}
+		
+	}, 5000);
+}
+
+async function checkTesting() {
+	// var a = 3
+
+	var endpointCheckTesting = endpoint + 'classifiers/' + stateClassifier_id + '/test_sets/' + testId
+
+	await axios
+		.get(endpointCheckTesting)
+		.then(res => {
+			// var stateStatus = res.data["status"]
+			// console.log(stateStatus)
+			// console.log(res);
+			// console.log(res.data);
+			// console.log(res.data[testId-1]);
+			// console.log(res.data[testId-1]["status"]);
+			statusTesting = res.data["status"]
+			if (statusTesting == "completed") {
+				stopper = true
+				console.log(stopper);
+				getPred()
+				
+				
+			} else {
+				console.log("Please wait");
+			}
+
+		})
+
+		.catch(err => {
+			console.error({err})
+		})
+}
+
+async function getPred() {
+	console.log("getPred");
+	var endpointGetPred = endpoint + 'classifiers/' + stateClassifier_id + '/test_sets/' + testId + '/predictions'
+	await axios
+		
+
+		.get(endpointGetPred)
+		.then(res => console.log(res))
+		.catch(err => console.error(err))
+}
+
+
+
+
 
 var fileName = $('input[type="file"]').change(function(e){
 	var fileName = e.target.files[0].name;
 	console.log('The file "' + fileName +  '" has been selected.');
 }); // collect file name after uploaded
 
-// var fileName = $('input[type="file"]').change(function(e){
-// 	var fileName = e.target.files[0].name;
-// 	console.log('The file "' + fileName +  '" has been selected.');
-// }); // collect file name after uploaded
 
-// var fileName = $('input[type="file"]').change(function(e){
-// 	var fileName = e.target.files[0].name;
-// 	console.log('The file "' + fileName +  '" has been selected.');
-// });
+async function initTraining() {
+	await postFraming();
+	await getFraming();
+	await upTrainingFile();
+	await looping();
+}
 
-// async.parallel([
-//     function(){ ... },
-//     function(){ ... }
-// ], callback);
+
+async function afterTraining() {
+	await postTestName();
+	await getTestId();
+	await upTestingFile();
+	await loopingTesting();
+	// await checkTesting();
+	// await getPred();
+}
+
 
 $('#performAnalysis').click(async function(){
-	testName = $("input[name='policyissue']:checked").val();
+	// testName = $("input[name='#other_text']:checked").val();
+	testName = document.getElementById("other_text").value;
+	initTraining();
+	// other_text
 	// $.when($.when(step1()).then(step2)).then(step3);
 	// console.log($('#email').val()); // take email
 	 // Creates a classifier.
@@ -200,10 +357,24 @@ $('#performAnalysis').click(async function(){
 	// postFraming(getFraming);
 	// getFraming();
 	// getFraming(postFraming());
+
+
+
+	// stateClassifier_id = 45;
+	// afterTraining();
+
+
+
+	// await postTestName();
+	// await getTestId();
+	// await upTestingFile();
+	// await checkTesting();
+	// await loopingTesting();
+	// await getPred();
+
 	
-	await postFraming();
-	await getFraming();
-	await upTrainingFile();
+	
+
 	// await upTestingFile();
 	// checkClassifier(id);
 
@@ -217,28 +388,6 @@ $('#performAnalysis').click(async function(){
 	// init();
 	// upTrainingFile();
 
-
-	// Get details about one classifier.
-	// GET /classifiers/<classifier_id:int></classifier_id>
-
-	// Upload training data for a classifier and start training.
-	// POST /classifiers/<classifier_id:int>/training/file
-
-	// Lists all test sets for a classifier.
-	// GET /classifiers/<classifier_id:int>/test_sets/
-
-	// Create a test set.
-	// POST /classifiers/<classifier_id:int>/test_sets/
-
-	// Get details about one test set.
-	// GET /classifiers/<classifier_id:int>/test_sets/<test_set_id:int>
-
-
-	// Upload test set and start inference.
-	// POST /classifiers/<classifier_id:int>/test_sets/<test_set_id:int>/file
-
-	// Download predictions on test set.
-	// GET /classifiers/<classifier_id:int>/test_sets/<test_set_id:int>/predictions
 
 
 
