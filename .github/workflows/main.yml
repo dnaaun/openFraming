@@ -13,16 +13,23 @@ on:
 jobs:
   unittest:
     # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-lates
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@v2
+      - name: Check versions of everything
+        run: |
+          docker --version;
+          docker-compose --version;
+          tar --version;
+          gzip --version
+        
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
     
-    - name: Do docker-compose build 
-      run: docker-compose -f docker-compose-testing.yml build
+      - name: Do docker-compose build 
+        run: docker-compose -f docker-compose-testing.yml build
     
-    - name: Do docker-compose up 
-      run: docker-compose -f docker-compose-testing.yml up --abort-on-container-exit
+      - name: Do docker-compose up
+        run: docker-compose -f docker-compose-testing.yml up --abort-on-container-exit
    
