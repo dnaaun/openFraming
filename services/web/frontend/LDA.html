@@ -15,43 +15,13 @@
   <script src="js/bootstrap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
   <script src="js/main.js"></script>
-
-  <script id="topic-model-template" type="text/x-handlebars-template">
-    <div class="container bg-light pt-2">
-      <div class="table-responsive-sm">
-        <table class="table">
-          <tbody>
-          <tr>
-            <td class="">Topic model name</td>
-            <td class="align-items-center">{{topic_model_name}}</td>
-          </tr>
-            <tr>
-              <td class="">Number of topics</td>
-              <td class="align-items-center">{{num_topics}}</td>
-            </tr>
-            <tr>
-              <td>Training status</td>
-              <td class="text-danger">{{status}} </td>
-            </tr>
-            <tr>
-              <td class="w-50">Topic names</td>
-              <td>{{topic_names}}</td>
-            </tr>
-            <tr>
-              <td>Download the LDA topic discovery results</td>
-              <td>THERE WILL BE A BUTTON HERE</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </script>
+  <script src="js/lda.js"></script>
 </head>
 
 <body class="container">
   <header>
   </header>
+<!--  header navbar -->
   <nav class="navbar navbar-expand-lg navbar-light bg-dark">
     <a class="navbar-brand" href="#" style="" contenteditable="true"><a href="OpenFraming.html" target="_blank" ><img src="images/light.png" height="40" class="d-inline-block align-top" alt=""></a></a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -77,6 +47,7 @@
       </form>
     </div>
   </nav>
+  <!--  LDA section -->
   <div id="all_topic_models" class="wrapper bg-light">
     <div class="container">
       <div class="row d-flex align-items-start bg-light py-3 pt-3">
@@ -86,35 +57,35 @@
       </div>
 
     </div>
-    <div class="container bg-light pt-2">
-      <div class="table-responsive-sm">
-        <table class="table">
-          <tbody>
-          <tr>
-            <td class="">Topic model name</td>
-            <td class="align-items-center"><input type="text" placeholder="Corona News Coverage" class="input-group-sm"></td>
-          </tr>
-            <tr>
-              <td class="">Number of topics</td>
-              <td class="align-items-center"><input type="text" placeholder="7" class="input-group-sm"></td>
-            </tr>
-            <tr>
-              <td>Training status</td>
-              <td class="text-danger">Not started! Upload the training file here. <input type="file" name="ldatrainingfile" id="ldatrainingfile" accept=".xlsx, .xls, .csv">
-              </td>
-            </tr>
-            <tr>
-              <td class="w-50">Topic names</td>
-              <td>First upload the training file to start the training</td>
-            </tr>
-            <tr>
-              <td>Download the LDA topic discovery results</td>
-              <td>Training has not started yet!</td>
-            </tr>
-          </tbody>
-        </table>
+    <!--  Topic model inputs -->
+    <script id="topic-model-template" type="text/x-handlebars-template">
+      <div class="container bg-light pt-2">
+        <div class="table-responsive-sm">
+          <table class="table">
+            <tbody>
+              <tr>
+                <td class="">Topic model name</td>
+                <td class="align-items-center"><input id="topic-model-name" type="text" placeholder="Corona News Coverage" class="input-group-sm" value="{{topicModelName}}"></td>
+              </tr>
+              <tr>
+                <td class="">Number of topics</td>
+                <td class="align-items-center"><input id="num-topics" type="text" placeholder="7" class="input-group-sm" value="{{numTopics}}"></td>
+              </tr>
+              <tr>
+                <td>Upload training file</td>
+                <td class="text-danger"><input type="file" name="ldatrainingfile" id="ldatrainingfile" accept=".xlsx, .xls, .csv"></td>
+              </tr>
+              <tr>
+                <td><button id="topic-model-submit">Submit</button></td>
+              </tr>
+              <tr><td id="no-name" hidden style="color: red">Please enter a name!</td></tr>
+              <tr><td id="no-number" hidden style="color: red">Please enter a number of topics!</td></tr>
+              <tr><td id="no-file" hidden style="color: red">Please upload a file!</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </script>
   </div>
 
   <footer class="page-footer font-small">

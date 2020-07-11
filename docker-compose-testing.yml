@@ -1,0 +1,25 @@
+version: '3.3'
+
+services:
+  web:
+    image: testing_openframing_web_image
+    build:
+      context: ./services/web
+    command: [ "python", "-m", "unittest", "-f" ]
+    volumes:
+      - project_data_volume:/home/app/project_data_directory
+      - transformers_cache_volume:/home/app/transformers_cache_directory
+    depends_on:
+      - redis
+    environment: # Pass down from .env file
+      - REDIS_HOST
+      - REDIS_PORT
+  redis:
+    image: redis:6.0.5-alpine
+    command: "redis-server --port ${REDIS_PORT}"
+    expose:
+      - "${REDIS_PORT}"
+
+volumes:
+  project_data_volume:
+  transformers_cache_volume:

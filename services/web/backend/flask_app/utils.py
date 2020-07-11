@@ -5,7 +5,7 @@ import mimetypes
 import typing as T
 from pathlib import Path
 
-import pandas as pd
+import pandas as pd  # type: ignore
 from flask import current_app
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
@@ -191,7 +191,12 @@ class Validate:
         Raises:
             BadRequest:
         """
-        table: T.List[T.List[str]]
+
+        # Something in the combination of the Python version used (3.8.3), and the fact
+        # that it is containerized(run inside Docker) neccesitates this.
+        mimetypes.add_type(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".xlsx"
+        )
 
         file_type = mimetypes.guess_extension(file_.mimetype)
         if not file_type:
@@ -207,7 +212,7 @@ class Validate:
                 raise BadRequest("The uploaded spreadsheet could not be parsed.")
             else:
                 df = df.astype(str)
-                table = df.to_numpy().tolist()  # type: ignore
+                table: T.List[T.List[str]] = df.to_numpy().tolist()  # type: ignore
         elif file_type in [".csv", ".txt"]:
             try:
                 # TODO: Check if the file size is too large
@@ -222,6 +227,12 @@ class Validate:
                 # strip blanks
                 table = [[cell.strip() for cell in row] for row in table]
                 text_stream.close()
+        else:
+            raise BadRequest(
+                f"File type {file_type} was not understood as a valid spreadhseet type,"
+                "please upload one of the following file formats: "
+                + ", ".join(Settings.SUPPORTED_NON_CSV_FORMATS | {".csv"})
+            )
 
         return table
 

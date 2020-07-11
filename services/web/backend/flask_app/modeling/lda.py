@@ -9,6 +9,7 @@ import pandas as pd  # type: ignore
 import typing_extensions as TT
 from gensim import corpora  # type: ignore
 from gensim import models
+from gensim.models import CoherenceModel  # type: ignore
 from nltk.corpus import stopwords  # type: ignore
 from nltk.stem.wordnet import WordNetLemmatizer  # type: ignore
 
@@ -81,19 +82,11 @@ class Corpus(object):
 
         suffix = file_path.suffix.strip(".")
 
-        if suffix in EXCEL_EXTENSIONS:
-            doc_reader = pd.read_excel  # type: ignore[attr-defined]
-        elif suffix in CSV_EXTENSIONS:
+        if suffix in CSV_EXTENSIONS:
 
             def doc_reader(b: str) -> pd.DataFrame:
                 # dtype=object: Disable converting to non text column
                 return pd.read_csv(b, dtype=object, na_filter=False)
-
-        elif suffix in CSV_EXTENSIONS:
-
-            def doc_reader(b: str) -> pd.DataFrame:
-                # dtype=object: Disable converting to non text column
-                return pd.read_csv(b, dtype=object, sep="\t", na_filter=False)
 
         else:
             raise ValueError(
@@ -316,6 +309,12 @@ class LDAModeler(object):
             random_seed=1,
             iterations=self.iterations,
         )
+
+        coherence_model = CoherenceModel(
+            model=self.lda_model, corpus=self.corpus_bow, coherence="u_mass"
+        )
+        coherence = coherence_model.get_coherence()
+
         topic_keywords: T.List[T.List[str]] = []
         for idx, topic in self.lda_model.show_topics(
             num_topics=num_topics, num_words=num_keywords, formatted=False
@@ -338,8 +337,6 @@ class LDAModeler(object):
         extra_df_columns_wanted: T.List[str] = [],
     ) -> bool:
 
-        topic_keyword_writer = pd.ExcelWriter(fname_keywords)  # type: ignore[attr-defined]
-        doc_topic_writer = pd.ExcelWriter(fname_topics_by_doc)  # type: ignore[attr-defined]
         self.num_topics = num_topics
         topic_keywords, topic_proportions, topics_by_doc = self.model_topics(
             self.num_topics, num_keywords
@@ -359,7 +356,7 @@ class LDAModeler(object):
         topic_dfs.append(topic_keywords_df.T)
 
         full_topic_df = pd.concat(topic_dfs)
-        full_topic_df.to_excel(topic_keyword_writer)  # type: ignore
+        full_topic_df.to_csv(fname_keywords)  # type: ignore
 
         doc_topics = np.matrix(
             [[m[1] for m in mat] for mat in topics_by_doc]
@@ -374,10 +371,7 @@ class LDAModeler(object):
         for c in range(self.num_topics):
             doc_topic_df[TOPIC_PROBA_PREFIX + str(c)] = doc_topics[:, c]  # type: ignore
         doc_topic_df[Settings.MOST_LIKELY_TOPIC_COL] = doc_max
-        doc_topic_df.to_excel(doc_topic_writer)
-
-        topic_keyword_writer.save()
-        doc_topic_writer.save()
+        doc_topic_df.to_csv(fname_topics_by_doc)
 
         return True
 

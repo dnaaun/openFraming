@@ -25,7 +25,9 @@ class ClassifierMixin(RQWorkerMixin, AppMixin):
         super().setUp()
         # Create a classifer in the database
         self._clsf = db.Classifier.create(
-            name="test_classifier", category_names=["up", "down"]
+            notify_at_email="davidat@bu.edu",
+            name="test_classifier",
+            category_names=["up", "down"],
         )
         utils.Files.classifier_dir(self._clsf.classifier_id, ensure_exists=True)
 
@@ -56,6 +58,7 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
                 classifier_id=self._clsf.classifier_id,
                 classifier_name=self._clsf.name,
                 category_names=self._clsf.category_names,
+                notify_at_email=self._clsf.notify_at_email,
                 status="not_begun",
                 trained_by_openFraming=False,
                 metrics=None,
@@ -75,6 +78,7 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
                 classifier_id=self._clsf.classifier_id,
                 classifier_name=self._clsf.name,
                 category_names=self._clsf.category_names,
+                notify_at_email=self._clsf.notify_at_email,
                 status="not_begun",
                 trained_by_openFraming=False,
                 metrics=None,
@@ -105,6 +109,7 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
                 classifier_id=self._clsf.classifier_id,
                 classifier_name=self._clsf.name,
                 category_names=self._clsf.category_names,
+                notify_at_email=self._clsf.notify_at_email,
                 status="training",
                 trained_by_openFraming=False,
                 metrics=None,
@@ -204,13 +209,14 @@ class TestClassifiersTrainingFile(ClassifierMixin):
             # Do the queued work
             assert self._burst_workers("classifiers")
 
-            expected_classifier_status = dict(
+            expected_classifier_status = ClassifierStatusJson(
                 classifier_id=self._clsf.classifier_id,
                 classifier_name=self._clsf.name,
                 category_names=self._clsf.category_names,
+                notify_at_email=self._clsf.notify_at_email,
                 status="completed",
                 trained_by_openFraming=False,
-                # metrics is missing, on purpose
+                metrics=None,
             )
 
             file_upload_url = API_URL_PREFIX + "/classifiers/"
@@ -222,14 +228,15 @@ class TestClassifiersTrainingFile(ClassifierMixin):
             assert isinstance(resp_json, list)
             clsf_status = resp_json[0]
 
-            metrics = clsf_status.pop("metrics")
-            self.assertDictEqual(clsf_status, expected_classifier_status)
+            for key in expected_classifier_status:
+                if key != "metrics":
+                    self.assertEqual(expected_classifier_status[key], clsf_status[key])  # type: ignore[misc]
 
+            metrics = clsf_status.pop("metrics")
             self.assertSetEqual(
                 {"macro_f1_score", "accuracy", "macro_precision", "macro_recall",},
                 set(metrics.keys()),
             )
-
             self.assertSetEqual(set(map(type, metrics.values())), {float})
 
         with self.subTest("get all test sets"):
@@ -238,7 +245,10 @@ class TestClassifiersTrainingFile(ClassifierMixin):
             )
 
             test_set_name = "my first test set ever!"
-            req_json = {"test_set_name": test_set_name}
+            req_json = {
+                "test_set_name": test_set_name,
+                "notify_at_email": "davidat@bu.edu",
+            }
 
             resp = client.post(main_test_sets_url, json=req_json)
 
@@ -252,6 +262,7 @@ class TestClassifiersTrainingFile(ClassifierMixin):
             # Assert the right response was returned
             resp_json = resp.get_json()
             expected_json = ClassifierTestSetStatusJson(
+                notify_at_email=created_test_set.notify_at_email,
                 test_set_id=created_test_set.id_,
                 classifier_id=self._clsf.classifier_id,
                 test_set_name=test_set_name,
