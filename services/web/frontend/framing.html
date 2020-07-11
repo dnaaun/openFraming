@@ -8,6 +8,7 @@
     <link href="css/main.css" rel="stylesheet">
     <link href="css/custom_theme.css" rel="stylesheet">
     <link href="theme.scss" rel="stylesheet">
+    
     <!--<link href="fontawesome-free-5.13.0-web/css/fontawesome.css" rel="stylesheet">-->
 </head>
 
@@ -49,8 +50,9 @@
             </div>
         </div>
     </div>
-    <div class="wrapper pb-0 bg-light">
-        <div class="container">
+    <div class="wrapper pb-0 bg-light" id="hideAllStep">
+
+        <div class="container"  id="hideStep1">
             <div class="row">
                 <div class="col-md-12 bg-secondary">
                     <h4 class="bg-secondary text-white pl-0 pt-1">Step 1: Select Policy Issue</h4>
@@ -100,7 +102,8 @@
                 </div>
             </div>
         </div>
-        <div class="container other-option">
+
+        <div class="container other-option" id="hideStep1_1">
             <div class="row">
                 <div class="col-md-12"><label for="category_names">If you chose 'Other' for policy issue, please enter the frames for issue framing classification with comma separated values. Here you see the frame name examples for <i><b>Gun
                                 Violence</b></i> issue.</label></div>
@@ -109,7 +112,8 @@
                 <div class="col-md-12">
                     <div class="form-group"><textarea class="form-control" id="category_names" rows="3"
                             placeholder="gun rights,gun control,politics,mental health,school/public space safety,race/ethnicity,public opinion,society/culture,economic consequences"></textarea><span style="color: red;" id="commaerror">Please
-                            separate the frame names with a comma</span></div>
+                            separate the frame names with a comma</span>
+                    </div>
                 </div>
             </div>
             <div class="row">
@@ -120,7 +124,7 @@
             </div>
         </div>
 
-        <div class="container">
+        <div class="container" id="hideStep2">
 
             <div class="row">
                 <div class="col-md-12 bg-secondary">
@@ -148,34 +152,66 @@
 
 
         
-        <div class="container">
+        <div class="container" id="hideStep3">
             <div class="row">
                 <div class="col-md-12 bg-secondary">
                     <h4 class="bg-secondary text-white pl-0 pt-1">Step 3: Enter Email</h4>
                 </div>
             </div>
-        </div>
-        <div class="container">
-            <div class="row">
-                <div class="col-md-12 pt-2 py-2 step3"><label data-error="wrong" data-success="right">Enter your email</label>
-                    <div class="form-group">
-                        <div class="form-group"><input type="email" class="col-3 form-control validate purple-border email" id="email" placeholder="john.doe@example.com"></div>
+        
+            <!-- <div class="container"> -->
+                <div class="row">
+                    <div class="col-md-12 pt-2 py-2 step3"><label data-error="wrong" data-success="right">Enter your email</label>
+                        <div class="form-group">
+                            <div class="form-group"><input type="email" class="col-3 form-control validate purple-border email" id="email" placeholder="john.doe@example.com"></div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12 bg-secondary">
-                    <h4 class="bg-secondary text-white pl-0 pt-1">Final Step: Perform Analysis</h4>
+                <div class="row">
+                    <div class="col-md-12 bg-secondary">
+                        <h4 class="bg-secondary text-white pl-0 pt-1">Final Step: Perform Analysis</h4>
+                    </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12 py-3">
-                    <!-- <a class="btn btn-secondary text-white" href="#">Perform Analysis</a> -->
-                    <button type="button" class="btn btn-secondary text-white" id="performAnalysis" value="test">Perform Analysis</button>
+                <div class="row">
+                    <div class="col-md-12 py-3">
+                        <!-- <a class="btn btn-secondary text-white" href="#">Perform Analysis</a> -->
+                        <button type="button" class="btn btn-secondary text-white" id="performAnalysis" value="test">Perform Analysis</button>
+                    </div>
                 </div>
-            </div>
+            <!-- </div> -->
         </div>
+
+        <div class="container con-width" id="result">
+            <div class="row progress">
+              <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" id="progressBar" style="width:0%"></div>
+            </div>
+      
+      
+            <div class="row">
+              <div class="col-md-12 bg-light">
+                <h4 class="py-3" id="result-status">Your data is being processed. Please wait a couple of minutes...</h4>
+              </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group"><textarea class="form-control" id="result_text" rows="3"
+                            placeholder="The result will be shown here."></textarea>
+                            <!-- <span style="color: red;" id=""></span> -->
+                    </div>
+                    <button type="button" class="btn btn-secondary text-white disabled" id="download-button">Download</button>
+                    <!-- <button type="button" class="btn btn-outline-primary disabled">Primary</button> -->
+                </div>
+            </div>
+
+        </div>
+
+
+
     </div>
+
+
+
     <footer class="page-footer font-small">
         <!-- Copyright -->
         <div class="footer-copyright text-center">© 2020 All Rights Reversed </div>

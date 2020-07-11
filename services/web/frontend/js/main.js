@@ -1,3 +1,4 @@
+$('#result').hide();
 $(".other-option").hide();
 
 $(".form-check-inline").on("click", function(){
@@ -11,19 +12,22 @@ $(".other-policy").on("click", function(){
 });
 
 
+
+
 var stateClassifier_id='';
 var stateStatus='';
 var email='';
 var testName='';
 var testId='';
+var resultText='';
 
 
 // GET POST
 //
 
 // const endpoint = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api/"
-const endpoint = "http://www.openframing.org/api/"
-// const endpoint = "http://localhost/api/"
+// const endpoint = "http://www.openframing.org/api/"
+const endpoint = "http://localhost/api/"
 
 
 async function getFraming() {
@@ -311,7 +315,14 @@ async function getPred() {
 		
 
 		.get(endpointGetPred)
-		.then(res => console.log(res))
+		.then(res => {
+			console.log(res)
+			$('#progressBar').addClass("w-100");
+			$('#progressBar').removeClass("progress-bar-striped progress-bar-animated")
+			resultText = res.data;
+			showresult();
+			$('#download-button').removeClass("disabled")
+		})
 		.catch(err => console.error(err))
 }
 
@@ -326,81 +337,44 @@ var fileName = $('input[type="file"]').change(function(e){
 
 
 async function initTraining() {
-	await postFraming();
+	await postFraming(); // return classifier id
 	await getFraming();
+	$('#progressBar').addClass("w-25");
 	await upTrainingFile();
 	await looping();
 }
 
-
 async function afterTraining() {
-	await postTestName();
+	$('#progressBar').addClass("w-75");
+	await postTestName(); // return test set id
 	await getTestId();
 	await upTestingFile();
 	await loopingTesting();
+
 	// await checkTesting();
 	// await getPred();
+}
+async function showresult() {
+	$('#result-status').text("Completed! Here's the result.");
+	document.getElementById('result_text').value = resultText;
 }
 
 
 $('#performAnalysis').click(async function(){
-	// testName = $("input[name='#other_text']:checked").val();
+
+	$('#hideStep1').hide();
+	$('#hideStep1_1').hide();
+	$('#hideStep2').hide();
+	$('#hideStep3').hide();
+
+	$('#result').fadeIn();
+	
+
 	email = document.getElementById("email").value;
 	testName = document.getElementById("other_text").value;
-	initTraining();
-	// other_text
-	// $.when($.when(step1()).then(step2)).then(step3);
-	// console.log($('#email').val()); // take email
-	 // Creates a classifier.
-	 // List all classifiers.
-	 // Get details about one classifier.
-	// var class_id = postFraming();
-	// getFraming();
-	// console.log(class_id);
-	// postFraming(getFraming);
-	// getFraming();
-	// getFraming(postFraming());
-
-
-
-	// stateClassifier_id = 45;
-	// afterTraining();
-
-
-
-	// await postTestName();
-	// await getTestId();
-	// await upTestingFile();
-	// await checkTesting();
-	// await loopingTesting();
-	// await getPred();
-
-	
+	await initTraining();
 	
 
-	// await upTestingFile();
-	// checkClassifier(id);
-
-	// async function init() {
-		
-	// 	await postFraming();
-	// 	await getFraming();
-	// 	// checkClassifier();
-	// }
-
-	// init();
-	// upTrainingFile();
-
-
-
-
-	
-
-
-	
-
-
-	
 
  });
  
