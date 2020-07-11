@@ -9,7 +9,7 @@ import pandas as pd  # type: ignore
 import typing_extensions as TT
 from gensim import corpora  # type: ignore
 from gensim import models
-from gensim.models import CoherenceModel
+from gensim.models import CoherenceModel  # type: ignore
 from nltk.corpus import stopwords  # type: ignore
 from nltk.stem.wordnet import WordNetLemmatizer  # type: ignore
 
