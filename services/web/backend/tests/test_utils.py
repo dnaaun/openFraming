@@ -1,3 +1,4 @@
+import logging
 import mimetypes
 import unittest
 
@@ -8,6 +9,9 @@ from tests.common import TESTING_FILES_DIR
 from werkzeug.exceptions import BadRequest
 
 from flask_app import utils
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class TestValidate(AppMixin):
@@ -29,6 +33,7 @@ class TestValidate(AppMixin):
                     ):
                         uploaded_file = request.files["file"]
                         if file_path.stem == "valid":
+                            logger.info(f"about to guess for {file_path}")
                             table = utils.Validate.spreadsheet_and_get_table(
                                 uploaded_file
                             )
