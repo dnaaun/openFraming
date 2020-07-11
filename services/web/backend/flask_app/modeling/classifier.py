@@ -54,16 +54,10 @@ class ClassificationDataset(Dataset):  # type: ignore
         content_column: column name of the content to be read
         label_column: column name where the labels can be found
         """
-        suffix = dset_filename.split(".")[-1]
-        if suffix in EXCEL_EXTENSIONS:
-            # TODO: Remove this because we will always convert to CSV even if the user
-            # uploads Excel.
-            doc_reader = pd.read_excel  # type: ignore
-        elif suffix in CSV_EXTENSIONS:
+        suffix = dset_filename.split(".")[-1]  # type: ignore
+
+        if suffix in CSV_EXTENSIONS:
             doc_reader = lambda b: pd.read_csv(b, dtype=object)
-        elif suffix in TSV_EXTENSIONS:
-            # TODO: Same thing as above. We'll convert to CSV (not TSV)
-            doc_reader = lambda b: pd.read_csv(b, sep="\t")
         else:
             raise ValueError(
                 f"The file {dset_filename} doesn't have a recognized extension."

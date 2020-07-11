@@ -249,7 +249,9 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
             self.assertTrue(fname_topics_by_doc.exists())
 
             # Inspect the content of the keywords file
-            fname_keywords_df = pd.read_excel(fname_keywords, index_col=0, header=0)
+            fname_keywords_df = pd.read_csv(
+                fname_keywords, dtype=object, index_col=0, header=0
+            )
             expected_fname_keywords_index = pd.Index(
                 [f"word_{i}" for i in range(Settings.DEFAULT_NUM_KEYWORDS_TO_GENERATE)]
                 + [Settings.TOPIC_PROPORTIONS_ROW]
@@ -258,15 +260,15 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
                 fname_keywords_df.index, expected_fname_keywords_index
             )
             expected_fname_keywords_columns = pd.Index(
-                range(self._topic_mdl.num_topics)
+                str(i) for i in range(self._topic_mdl.num_topics)
             )
             pd.testing.assert_index_equal(
                 fname_keywords_df.columns, expected_fname_keywords_columns
             )
 
             # Inspect the fname_topics_by_doc file
-            fname_topics_by_doc_df = pd.read_excel(
-                fname_topics_by_doc, index_col=0, header=0
+            fname_topics_by_doc_df = pd.read_csv(
+                fname_topics_by_doc, dtype=object, index_col=0, header=0
             )
             num_examples = len(self._valid_training_table) - 1  # -1 for the header
             expected_fname_topics_by_doc_index = pd.Index(range(num_examples))
