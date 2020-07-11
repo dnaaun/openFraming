@@ -315,28 +315,6 @@ function render_one_topic_mdl(data, textStatus, jqxhr) {
 
 $(function(){
 
-	//
-	// HANDLEBARS STARTS HERE
-	// 
-	var BASE_URL = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api";
-	var GET_ONE_TOPIC_MDL_URL = BASE_URL + "/topic_models/<TOPIC_MODEL_ID>";
-
-	var one_topic_mdl_url = make_url(GET_ONE_TOPIC_MDL_URL, [ ["<TOPIC_MODEL_ID>", "2"] ]) 
-	$.ajax({
-		url: one_topic_mdl_url,
-		type: 'GET',
-		dataType: 'json',
-		success: render_one_topic_mdl,
-		error: handle_ajax_error
-	})
-	
-
-	
-	//
-	// HANDLEBARS ENDS HERE
-	//
-
-
 
 	$("#otherradiobutton").on('click', function () {
 
