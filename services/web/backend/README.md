@@ -68,6 +68,9 @@ Empty.
      # create another classifier and start trainiing again.
      "status": One_of("not_begun", "training", "error_encountered", "completed"),
 
+     # The email address to use to notify the user when training completes
+     "notify_at_email": str,
+
      # If the "status" is "completed" above, then "metrics" will indicate the performance
      # of the classifier on a development set.
      # Otherwise, it will be NULL.
@@ -99,7 +102,8 @@ the new classifier and what the categories should be.
 ```python
 {
   "classifier_name": str,
-  "category_names": [str, ...]
+  "category_names": [str, ...],
+  "notify_at_email": str
 }
 ```
 
@@ -147,6 +151,7 @@ Empty.
   "provided_by_openFraming": bool,
   "category_names": [str, ...],
   "status": One_of("not_begun", "training", "error_encountered", "completed")
+  "notify_at_email": str,
   "metrics": One_of(
      NULL,
      {
@@ -197,6 +202,7 @@ headers are mandatory as well.
   "classifier_name": str,
   "provided_by_openFraming": False,
   "category_names": [str, ...],
+  "notify_at_email": str,
 
   # The classifier just began training.
   "status": "training",
@@ -228,7 +234,13 @@ Empty.
     # The id of this test set. Like with classifier_id in the /classifiers/
     # endpoint, it is used  used to identifyNote here the status will always be not_begun because t
     "test_set_id": int,
+
+    # For a gun violence classifier, might be something like
+    # "Gun violence related headlinesfrom 2020", or "Gun violence related headlines from California"
     "test_set_name": str,
+
+    # The email address to notify the user at when inference on this test set finishes
+    "notify_at_email": str,
 
     # The status here indicates whether inference on this test set has begun, is
     # in progress, or has completed.
@@ -249,9 +261,8 @@ set. Note that we don't upload test data using this endpoint.
 ### Request body
 ```python
 { 
-  # For a gun violence classifier, might be something like
-  # "Gun violence related headlinesfrom 2020", or "Gun violence related headlines from California"
-  "test_set_name": str, 
+  "test_set_name": str,
+  "notify_at_email": str
 }
 ```
 
@@ -262,6 +273,7 @@ set. Note that we don't upload test data using this endpoint.
   "classifier_id": int,
   "test_set_id": int,
   "test_set_name": str,
+  "notify_at_email": str,
 
   # No test data is uploaded yet.
   "status": "not_begun"
@@ -289,6 +301,7 @@ Empty.
   "classifier_id": int,
   "test_set_id": int
   "test_set_name": str,
+  "notify_at_email": str,
   "inference_status": One_of("not_begun", "predicting", "completed")
 }
 ```
@@ -330,6 +343,7 @@ A CSV/Excel file with the following format. The header row is necessary.
   "classifier_id": int,
   "test_set_id": int,
   "test_set_name": str,
+  "notify_at_email": str,
 
   # We just began predicting on this test set
   "status": "predicting"
@@ -385,6 +399,9 @@ Empty.
     # be NULL.
     "topic_names": One_of(NULL, [str, ...])
 
+    # The email address to send a notification to when training this topic model finishes
+    "notify_at_email": str,
+
     # "training" indicates the topic model is training currently. "topics_to_be_named"
     # indicates the topic model finished training, but the topics have not been named yet by the
     # user. "completed" indicates the topic model finished training, and the user assigned names to the topics.
@@ -411,7 +428,11 @@ Empty.
   "topic_model_name": str,
 
   # Number of topics to discover using the topic model.
-  "num_topics": int
+  "num_topics": int,
+
+  # The email address to notify the user at training this topic model finishes
+  "notify_at_email": str
+
 }
 ```
 
@@ -423,6 +444,7 @@ Empty.
   "topic_model_name": str,
   "num_topics": int,
   "topic_names": NULL, 
+  "notify_at_email": str
   "status": "not_begun"
  }
 ```
@@ -446,6 +468,7 @@ Empty.
   "topic_model_name": str,
   "num_topics": int,
   "topic_names": One_of(NULL, [str, ...]),
+  "notify_at_email": str,
   "status": One_of("not_begun", "training", "error_encountered", "topics_to_be_named", "completed")
 }
 ```
@@ -476,6 +499,7 @@ file format is identical to the file format required by the
   "topic_model_name": str,
   "num_topics": int,
   "topic_names": NULL,
+  "notify_at_email": str,
   "status":  "training"
 }
 ```
@@ -502,6 +526,7 @@ Empty.
   "topic_model_id": int 
   "topic_model_name": str,
   "num_topics": int,
+  "notify_at_email": str,
 
   "topic_names": One_of(NULL, [str, ...]),
 
@@ -557,6 +582,7 @@ human readable names to the topic.
      "topic_model_name": str,
      "num_topics": int,
      "topic_names": [str, ...],
+     "notify_at_email": str,
      "status": "completed"
 }
 ```

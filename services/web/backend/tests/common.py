@@ -118,7 +118,7 @@ class RQWorkerMixin(unittest.TestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self._redis_conn = Redis()
+        self._redis_conn = Redis(host=Settings.REDIS_HOST, port=Settings.REDIS_PORT)
 
     def _burst_workers(self, queue_name: str) -> bool:
         queue = Queue(queue_name, connection=self._redis_conn)

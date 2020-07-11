@@ -136,11 +136,21 @@ class Classifier(BaseModel):
         dev_set: The dev set for classififer.
     """
 
+    @classmethod
+    def create(  # type: ignore[override]
+        cls, name: str, category_names: T.List[str], notify_at_email: str
+    ) -> "Classifier":
+        """Mypy can't type check creation wihtout this."""
+        return super(Classifier, cls).create(
+            name=name, category_names=category_names, notify_at_email=notify_at_email
+        )
+
     classifier_id: int = pw.AutoField(primary_key=True)  # type: ignore
     name: str = pw.TextField()  # type: ignore
     category_names: T.List[str] = ListField()  # type: ignore
     trained_by_openFraming: bool = pw.BooleanField(default=False)  # type: ignore
     train_set: T.Optional[LabeledSet] = pw.ForeignKeyField(LabeledSet, null=True)  # type: ignore
+    notify_at_email: str = pw.TextField()  # type: ignore
     dev_set: T.Optional[LabeledSet] = pw.ForeignKeyField(LabeledSet, null=True)  # type: ignore
 
     test_sets: T.Iterable["TestSet"]  # provided by backref on TestSet
@@ -158,6 +168,12 @@ class TestSet(BaseModel):
         error_encountered: Whether error was encontered during inference.
     """
 
+    @classmethod
+    def create(cls, name: str, classifier: Classifier, notify_at_email: str) -> "TestSet":  # type: ignore[override]
+        return super(TestSet, cls).create(
+            name=name, classifier=classifier, notify_at_email=notify_at_email
+        )
+
     # TODO: The primary key here should be composite of classifier and id field.
     # Right now, we have checks in app.py to make sure a certain classifier id/test set
     # id combo exists, but that's not good design at all.
@@ -165,6 +181,7 @@ class TestSet(BaseModel):
     classifier: Classifier = pw.ForeignKeyField(Classifier, backref="test_sets")  # type: ignore
 
     name: str = pw.CharField()  # type: ignore
+    notify_at_email: str = pw.TextField()  # type: ignore
     inference_began: bool = pw.BooleanField(default=False)  # type: ignore
     error_encountered: bool = pw.BooleanField(default=False)  # type: ignore
     inference_completed: bool = pw.BooleanField(default=False)  # type: ignore
@@ -179,11 +196,20 @@ class LDASet(BaseModel):
 class TopicModel(BaseModel):
     """."""
 
+    @classmethod
+    def create(  # type: ignore[override]
+        cls, name: str, num_topics: int, notify_at_email: str
+    ) -> "TopicModel":
+        return super(TopicModel, cls).create(
+            name=name, num_topics=num_topics, notify_at_email=notify_at_email
+        )
+
     id_: int = pw.AutoField()
     name: str = pw.CharField()
     num_topics: int = pw.IntegerField()
     topic_names: T.List[str] = ListField(null=True)  # type: ignore
     lda_set: T.Optional[LDASet] = pw.ForeignKeyField(LDASet, null=True)  # type: ignore
+    notify_at_email: str = pw.TextField()  # type: ignore
 
     # NOTE: The below is ONLY a type annotation.
     # The actual attribute is made available using "backreferences" in peewee
@@ -206,7 +232,7 @@ F = T.TypeVar("F", bound=T.Callable[..., T.Any])
 
 def needs_database_init(func: F) -> F:
     """A decorator for connecting to the database first. When doing queued jobs, 
-       we're in a different process, so there's no database connection yet. 
+       we're in a different process(in the OS sense), so there's no database connection yet. 
     """
 
     # This functools.wraps is SUPER IMPORTANT because pickling the decorated function

@@ -1,6 +1,7 @@
 """All the flask api endpoints."""
 import csv
 import logging
+import re
 import typing as T
 from collections import Counter
 from pathlib import Path
@@ -12,13 +13,7 @@ from flask import current_app
 from flask import Flask
 from flask import Response
 from flask import send_file
-from flask_app import db
-from flask_app import utils
-from flask_app.modeling.classifier import ClassifierMetrics
-from flask_app.modeling.enqueue_jobs import Scheduler
-from flask_app.settings import needs_settings_init
-from flask_app.settings import Settings
-from flask_app.version import Version
+from flask_cors import CORS  # type: ignore
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
 from flask_restful import Resource
@@ -29,6 +24,14 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
 from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import NotFound
+
+from flask_app import db
+from flask_app import utils
+from flask_app.modeling.classifier import ClassifierMetrics
+from flask_app.modeling.enqueue_jobs import Scheduler
+from flask_app.settings import needs_settings_init
+from flask_app.settings import Settings
+from flask_app.version import Version
 
 API_URL_PREFIX = "/api"
 
@@ -47,6 +50,9 @@ class AlreadyExists(HTTPException):
 
     code = 403
     description = "The resource already exists."
+
+
+email_expr = re.compile(r"\"?([-a-zA-Z0-9.`?{}]+@\w+\.\w+)\"?")
 
 
 class BaseResource(Resource):
@@ -76,6 +82,15 @@ class BaseResource(Resource):
             raise ValueError("can't contain commas.")
         return val
 
+    @staticmethod
+    def _validate_email(val: T.Any) -> str:
+        if not isinstance(val, str):
+            raise ValueError("must be str")
+        elif re.match(email_expr, val):
+            return val
+        else:
+            raise ValueError("Not a valid email.")
+
 
 class ClassifierStatusJson(TypedDict):
     classifier_id: int
@@ -83,8 +98,8 @@ class ClassifierStatusJson(TypedDict):
     category_names: T.List[str]
     trained_by_openFraming: bool
     status: TT.Literal["not_begun", "training", "error_encountered", "completed"]
+    notify_at_email: str
     metrics: T.Optional[ClassifierMetrics]
-    # TODO: Update backend README to reflect API change for line above.
 
 
 class ClassifierRelatedResource(BaseResource):
@@ -123,6 +138,7 @@ class ClassifierRelatedResource(BaseResource):
                 "classifier_name": clsf.name,
                 "trained_by_openFraming": clsf.trained_by_openFraming,
                 "category_names": category_names,
+                "notify_at_email": clsf.notify_at_email,
                 "status": status,
                 "metrics": metrics,
             }
@@ -149,26 +165,20 @@ class Classifiers(ClassifierRelatedResource):
         """Set up request parser."""
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument(name="name", type=str, required=True)
-
+        self.reqparse.add_argument(
+            name="notify_at_email", type=self._validate_email, required=True
+        )
         self.reqparse.add_argument(
             name="category_names",
             type=self._validate_serializable_list_value,
             action="append",
             required=True,
-            help="",
+            help="The category names must be a list of strings.",
         )
 
     def post(self) -> ClassifierStatusJson:
-        """Create a classifier.
+        """Create a classifier."""
 
-        req_body:
-            json:
-                {
-                    "name": str,
-                    "category_names": T.List[str]
-                }
-
-        """
         args = self.reqparse.parse_args()
         if (
             len(args["category_names"]) < 2
@@ -178,7 +188,10 @@ class Classifiers(ClassifierRelatedResource):
 
         category_names = args["category_names"]
         name = args["name"]
-        clsf = db.Classifier.create(name=name, category_names=category_names)
+        notify_at_email = args["notify_at_email"]
+        clsf = db.Classifier.create(
+            name=name, category_names=category_names, notify_at_email=notify_at_email
+        )
         clsf.save()
         utils.Files.classifier_dir(classifier_id=clsf.classifier_id, ensure_exists=True)
         return self._classifier_status(clsf)
@@ -331,6 +344,7 @@ class ClassifierTestSetStatusJson(TypedDict):
     classifier_id: int
     test_set_id: int
     test_set_name: str
+    notify_at_email: str
     status: TT.Literal["not_begun", "predicting", "error_encountered", "completed"]
 
 
@@ -352,6 +366,7 @@ class ClassifierTestSetRelatedResource(ClassifierRelatedResource):
             classifier_id=test_set.classifier.classifier_id,
             test_set_id=test_set.id_,
             test_set_name=test_set.name,
+            notify_at_email=test_set.notify_at_email,
             status=status,
         )
 
@@ -376,6 +391,9 @@ class ClassifiersTestSets(ClassifierTestSetRelatedResource):
         """Set up request parser."""
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument(name="test_set_name", type=str, required=True)
+        self.reqparse.add_argument(
+            name="notify_at_email", type=self._validate_email, required=True
+        )
 
     def get(self, classifier_id: int) -> T.List[ClassifierTestSetStatusJson]:
         clsf = get_object_or_404(
@@ -385,19 +403,9 @@ class ClassifiersTestSets(ClassifierTestSetRelatedResource):
         return [self._test_set_status(test_set) for test_set in clsf.test_sets]
 
     def post(self, classifier_id: int) -> ClassifierTestSetStatusJson:
-        """Create a test set
-
-        Body:
-            {
-                "test_set_name": str,
-            }
-
-        Raises:
-            BadRequest
-            NotFound
-        """
         args = self.reqparse.parse_args()
         test_set_name: str = args["test_set_name"]
+        notify_at_email: str = args["notify_at_email"]
 
         try:
             classifier = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
@@ -412,8 +420,9 @@ class ClassifiersTestSets(ClassifierTestSetRelatedResource):
             assert not classifier.dev_set.training_or_inference_completed
             raise BadRequest("This classifier's training has not been completed yet.")
 
-        test_set = db.TestSet(classifier=classifier, name=test_set_name)
-        test_set.save()
+        test_set = db.TestSet.create(
+            classifier=classifier, name=test_set_name, notify_at_email=notify_at_email
+        )
 
         # Create directory for test set
         utils.Files.classifier_test_set_dir(
@@ -543,6 +552,7 @@ class TopicModelStatusJson(TypedDict):
     topic_model_name: str
     num_topics: int
     topic_names: T.Optional[T.List[str]]
+    notify_at_email: str
     status: TT.Literal[
         "not_begun", "training", "topics_to_be_named", "error_encountered", "completed"
     ]
@@ -590,6 +600,7 @@ class TopicModelRelatedResource(BaseResource):
             topic_model_id=topic_mdl.id_,
             num_topics=topic_mdl.num_topics,
             topic_names=topic_names,
+            notify_at_email=topic_mdl.notify_at_email,
             status=status,
         )
 
@@ -630,21 +641,17 @@ class TopicModels(TopicModelRelatedResource):
         self.reqparse.add_argument(
             name="num_topics", type=greater_than_1, required=True
         )
+        self.reqparse.add_argument(
+            name="notify_at_email", type=self._validate_email, required=True
+        )
 
     def post(self) -> TopicModelStatusJson:
-        """Create a classifier.
-
-        req_body:
-            json:
-                {
-                    "topic_model_name": str,
-                    "num_topics": int,
-                } 
-
-        """
+        """Create a classifier."""
         args = self.reqparse.parse_args()
         topic_mdl = db.TopicModel.create(
-            name=args["topic_model_name"], num_topics=args["num_topics"]
+            name=args["topic_model_name"],
+            num_topics=args["num_topics"],
+            notify_at_email=args["notify_at_email"],
         )
         topic_mdl.save()
         utils.Files.topic_model_dir(id_=topic_mdl.id_, ensure_exists=True)
@@ -796,6 +803,7 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
                 "topic_model_name": topic_mdl_status_json["topic_model_name"],
                 "num_topics": topic_mdl_status_json["num_topics"],
                 "topic_names": topic_mdl_status_json["topic_names"],
+                "notify_at_email": topic_mdl.notify_at_email,
                 "status": topic_mdl_status_json["status"],
                 "topic_previews": [
                     OneTopicPreviewJson({"examples": examples, "keywords": keywords})
@@ -882,6 +890,12 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
         app = Flask(__name__, static_url_path="/", static_folder="../../frontend")
     else:
         app = Flask(__name__)
+
+    # Allow Cross Origin ajax
+    # PS: I'm not sure if this actually works in adding CORS headres appropriately.
+    # There's proably some interaction wiht Ngnix that I haven't figured out yet.
+    # I'll remove it in production, so no worries.
+    CORS(app)
 
     # Create project root if necessary
     if not Settings.PROJECT_DATA_DIRECTORY.exists():
