@@ -22,8 +22,8 @@ var testId='';
 //
 
 // const endpoint = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api/"
-const endpoint = "http://www.openframing.org/api/"
-// const endpoint = "http://localhost/api/"
+// const endpoint = "http://www.openframing.org/api/"
+const endpoint = "http://localhost/api/"
 
 
 async function getFraming() {
