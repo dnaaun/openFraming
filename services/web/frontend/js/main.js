@@ -22,8 +22,8 @@ var testId='';
 //
 
 // const endpoint = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api/"
-// const endpoint = "http://www.openframing.org/api/"
-const endpoint = "http://localhost/api/"
+const endpoint = "http://www.openframing.org/api/"
+// const endpoint = "http://localhost/api/"
 
 
 async function getFraming() {
@@ -84,7 +84,8 @@ async function postFraming() {
 		
 		.post(endpointPOST, {
 			name: name,
-			category_names: arrayCategoryNames
+			category_names: arrayCategoryNames,
+			notify_at_email: email
 		})
 		.then(res => {
 			var classifier_id = res.data["classifier_id"]
@@ -194,7 +195,8 @@ async function postTestName() {
 	console.log(testName);
 	await axios
 		.post(endpointPostTestName, {
-			test_set_name: testName
+			test_set_name: testName,
+			notify_at_email: email
 		})
 		.then(res => console.log(res))
 		.catch(err => console.error(err))
@@ -343,6 +345,7 @@ async function afterTraining() {
 
 $('#performAnalysis').click(async function(){
 	// testName = $("input[name='#other_text']:checked").val();
+	email = document.getElementById("email").value;
 	testName = document.getElementById("other_text").value;
 	initTraining();
 	// other_text
