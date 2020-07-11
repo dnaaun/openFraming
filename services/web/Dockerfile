@@ -137,9 +137,14 @@ RUN mkdir $HOME
 
 RUN python -m nltk.downloader -d $HOME/nltk_data/ stopwords wordnet
 
-# Prepare mallet installation
-ADD mallet-2.0.8.tar.gz $HOME/
 ENV MALLET_BIN_DIRECTORY=$HOME/mallet-2.0.8/bin
+# Prepare mallet installation
+# ADD doesn't work sometimes(not sure why), so we're doing a tar xf
+COPY mallet-2.0.8.tar.gz . 
+RUN tar -C $HOME -xf mallet-2.0.8.tar.gz; \
+	rm mallet-2.0.8.tar.gz; \
+	ls $MALLET_BIN_DIRECTORY/mallet # Check the mallet executable is there
+
 # Prepare project data directory, this is actually a volume 
 # Handled by docker-compose.yml
 ENV PROJECT_DATA_DIRECTORY=$HOME/project_data_directory
