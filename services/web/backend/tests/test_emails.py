@@ -47,7 +47,6 @@ class TestEmails(AppMixin, unittest.TestCase):
                 topic_model_preview_url="http://www.openframing.org/DOESNTEXISTYET",
             )
         except Exception as e:
-            print(e)
             print(vars(e))
             raise (e)
 
