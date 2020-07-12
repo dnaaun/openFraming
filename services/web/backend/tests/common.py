@@ -3,6 +3,7 @@ import functools
 import io
 import logging
 import os
+import pdb  # type: ignore
 import shutil
 import sys
 import tempfile
@@ -12,7 +13,6 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-import ipdb  # type: ignore
 from flask import current_app
 from flask import Response
 from flask_app import db
@@ -47,7 +47,7 @@ def make_csv_file(table: T.List[T.List[str]]) -> io.BytesIO:
 
 
 def debug_on(*exceptions: T.Type[Exception]) -> T.Callable[[F], F]:
-    """Decorator to go to ipdb prompt on exceptions."""
+    """Decorator to go to pdb prompt on exceptions."""
     # From stackoverflow.
     if not exceptions:
         exceptions = (Exception,)
@@ -60,7 +60,7 @@ def debug_on(*exceptions: T.Type[Exception]) -> T.Callable[[F], F]:
             except exceptions:
                 info = sys.exc_info()
                 traceback.print_exception(*info)
-                ipdb.post_mortem(info[2])
+                pdb.post_mortem(info[2])
 
         return wrapper  # type: ignore
 

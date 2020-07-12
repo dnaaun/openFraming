@@ -315,25 +315,41 @@ class TestClassifiersTrainingFile(ClassifierMixin):
             )
             self.assertTrue(test_set_predictions_file.exists())
 
-            # Assert test set results make sense
-            with test_set_predictions_file.open() as f:
-                reader = csv.reader(f)
-                rows = list(reader)
-            self.assertListEqual(
-                rows[0],
-                [f"{Settings.CONTENT_COL}", f"{Settings.PREDICTED_LABEL_COL}",],
-            )
-            examples, predicted_labels = zip(*rows[1:])
-            (expected_examples,) = zip(*valid_test_file_table[1:])
-            self.assertSequenceEqual(examples, expected_examples)
-            self.assertTrue(set(predicted_labels) <= {"up", "down"})
-
-            # Assert the test set is reported as "completed" now
-            resp = client.get(one_test_set_url)
-            self._assert_response_success(resp, main_test_sets_url)
+            with current_app.test_client() as client:
+                # Assert the test set is reported as "completed" now
+                resp = client.get(one_test_set_url)
+                self._assert_response_success(resp, main_test_sets_url)
 
             resp_json = resp.get_json()
             self.assertEqual(resp_json["status"], "completed")
+
+        with self.subTest("Download prediction in all supported formats."):
+            for file_type_with_dot in Settings.SUPPORTED_NON_CSV_FORMATS | {".csv"}:
+                file_type = file_type_with_dot.strip(".")
+                predictions_url = url_for(
+                    "classifierstesetspredictions",
+                    file_type=file_type,
+                    _external=False,
+                    _method="GET",
+                )
+
+                with current_app.test_client() as client:
+                    resp = client.get(predictions_url)
+                    breakpoint()
+                # Assert test set results make sense
+                with adsf.open() as f:
+                    reader = csv.reader(f)
+                    rows = list(reader)
+                self.assertListEqual(
+                    rows[0],
+                    [f"{Settings.CONTENT_COL}", f"{Settings.PREDICTED_LABEL_COL}",],
+                )
+                examples, predicted_labels = zip(*rows[1:])
+                (expected_examples,) = zip(*valid_test_file_table[1:])
+                self.assertSequenceEqual(examples, expected_examples)
+                self.assertTrue(set(predicted_labels) <= {"up", "down"})
+
+            resp = client.get(predictions_url)
 
         # TODO: Figure out a way to easily mock a "trained classifier."
         # this will allow to break this giagantic function down into smaller ones,
