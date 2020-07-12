@@ -138,7 +138,7 @@ class Files:
         | word_19     | black              | ...                 | mueller             |
         | proportions | 0.0864685341429144 | ...                 | 0.07952367977703813 |
         """
-        return cls.topic_model_dir(id_) / "keywords.xlsx"
+        return cls.topic_model_dir(id_) / "keywords.csv"
 
     @classmethod
     def topic_model_topics_by_doc_file(cls, id_: int) -> Path:
@@ -170,7 +170,7 @@ class Files:
 | 17 | 18 | “I hope that this is real,” Lauren Boebert said of the deep-state conspiracy theory.  | ['hope', 'real', 'lauren', 'boebert', 'said', 'deepstate', 'conspiracy', 'theory']                        | 0.1052631578947369  | 6                 |
 | 18 | 19 | U.S. Buys Virtually All Of Coronavirus Drug Remdesivir In The World                   | ['buy', 'virtually', 'coronavirus', 'drug', 'remdesivir', 'world']                                        | 0.08928571428571429 | 6                 | 
 	"""
-        return cls.topic_model_dir(id_) / "topics_by_doc.xlsx"
+        return cls.topic_model_dir(id_) / "topics_by_doc.csv"
 
 
 class Validate:

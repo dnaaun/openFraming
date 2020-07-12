@@ -4,9 +4,11 @@ import shutil
 import unittest
 from unittest import mock
 
+import pandas as pd  # type: ignore
 from flask import current_app
 from flask import url_for
 from tests.common import AppMixin
+from tests.common import debug_on  # noqa: 401
 from tests.common import make_csv_file
 from tests.common import RQWorkerMixin
 from tests.common import TESTING_FILES_DIR
@@ -180,7 +182,7 @@ class TestClassifiersTrainingFile(ClassifierMixin):
 
         with current_app.test_client() as client:
             get_clsf_url = url_for(
-                "oneclassifier", classifier_id=self._clsf.classifier_id, _external=False
+                "OneClassifier", classifier_id=self._clsf.classifier_id, _external=False
             )
             resp = client.get(get_clsf_url)
             self._assert_response_success(resp)
@@ -270,86 +272,96 @@ class TestClassifiersTrainingFile(ClassifierMixin):
             )
             self.assertDictEqual(resp_json, dict(expected_json))
 
-        with self.subTest("get one test set"):
-            # Test the single-entity endpoint
-            one_test_set_url = (
-                API_URL_PREFIX
-                + f"/classifiers/{self._clsf.classifier_id}/test_sets/{created_test_set.id_}"
-            )
-
-            one_test_set_resp = client.get(one_test_set_url)
-            self._assert_response_success(one_test_set_resp, one_test_set_url)
-            self.assertDictEqual(one_test_set_resp.get_json(), dict(expected_json))
-
-            file_upload_url = (
-                API_URL_PREFIX
-                + f"/classifiers/{self._clsf.classifier_id}/test_sets/{created_test_set.id_}/file"
-            )
-            valid_test_file_table = [
-                [f"{Settings.CONTENT_COL}"],
-                ["galaxies"],
-                ["ocean"],
-                ["directions?"],
-            ]
-
-        with self.subTest("upload test set and trigger prediction"):
-            file_to_upload = make_csv_file(valid_test_file_table)
-            resp = client.post(
-                file_upload_url, data={"file": (file_to_upload, "test.csv")}
-            )
-            self._assert_response_success(resp, file_upload_url)
-            # Assert status changed to predicting
-            expected_json = resp.get_json()
-            self.assertEqual(expected_json.get("status"), "predicting")
-            # Assert file was created
-            test_set_file = utils.Files.classifier_test_set_file(
-                self._clsf.classifier_id, created_test_set.id_
-            )
-            self.assertTrue(test_set_file.exists())
-
-        with self.subTest("do prediction task and complete test set"):
-            assert self._burst_workers("classifiers")
-            # Assert the test results
-            test_set_predictions_file = utils.Files.classifier_test_set_predictions_file(
-                self._clsf.classifier_id, created_test_set.id_
-            )
-            self.assertTrue(test_set_predictions_file.exists())
-
-            with current_app.test_client() as client:
-                # Assert the test set is reported as "completed" now
-                resp = client.get(one_test_set_url)
-                self._assert_response_success(resp, main_test_sets_url)
-
-            resp_json = resp.get_json()
-            self.assertEqual(resp_json["status"], "completed")
-
-        with self.subTest("Download prediction in all supported formats."):
-            for file_type_with_dot in Settings.SUPPORTED_NON_CSV_FORMATS | {".csv"}:
-                file_type = file_type_with_dot.strip(".")
-                predictions_url = url_for(
-                    "classifierstesetspredictions",
-                    file_type=file_type,
-                    _external=False,
-                    _method="GET",
+            with self.subTest("get one test set"):
+                # Test the single-entity endpoint
+                one_test_set_url = (
+                    API_URL_PREFIX
+                    + f"/classifiers/{self._clsf.classifier_id}/test_sets/{created_test_set.id_}"
                 )
+
+                one_test_set_resp = client.get(one_test_set_url)
+                self._assert_response_success(one_test_set_resp, one_test_set_url)
+                self.assertDictEqual(one_test_set_resp.get_json(), dict(expected_json))
+
+                file_upload_url = (
+                    API_URL_PREFIX
+                    + f"/classifiers/{self._clsf.classifier_id}/test_sets/{created_test_set.id_}/file"
+                )
+                valid_test_file_table = [
+                    [f"{Settings.CONTENT_COL}"],
+                    ["galaxies"],
+                    ["ocean"],
+                    ["directions?"],
+                ]
+
+            with self.subTest("upload test set and trigger prediction"):
+                file_to_upload = make_csv_file(valid_test_file_table)
+                resp = client.post(
+                    file_upload_url, data={"file": (file_to_upload, "test.csv")}
+                )
+                self._assert_response_success(resp, file_upload_url)
+                # Assert status changed to predicting
+                expected_json = resp.get_json()
+                self.assertEqual(expected_json.get("status"), "predicting")
+                # Assert file was created
+                test_set_file = utils.Files.classifier_test_set_file(
+                    self._clsf.classifier_id, created_test_set.id_
+                )
+                self.assertTrue(test_set_file.exists())
+
+            with self.subTest("do prediction task and complete test set"):
+                assert self._burst_workers("classifiers")
+                # Assert the test results
+                test_set_predictions_file = utils.Files.classifier_test_set_predictions_file(
+                    self._clsf.classifier_id, created_test_set.id_
+                )
+                self.assertTrue(test_set_predictions_file.exists())
 
                 with current_app.test_client() as client:
-                    resp = client.get(predictions_url)
-                    breakpoint()
-                # Assert test set results make sense
-                with adsf.open() as f:
-                    reader = csv.reader(f)
-                    rows = list(reader)
-                self.assertListEqual(
-                    rows[0],
-                    [f"{Settings.CONTENT_COL}", f"{Settings.PREDICTED_LABEL_COL}",],
-                )
-                examples, predicted_labels = zip(*rows[1:])
-                (expected_examples,) = zip(*valid_test_file_table[1:])
-                self.assertSequenceEqual(examples, expected_examples)
-                self.assertTrue(set(predicted_labels) <= {"up", "down"})
+                    # Assert the test set is reported as "completed" now
+                    resp = client.get(one_test_set_url)
+                    self._assert_response_success(resp, main_test_sets_url)
 
-            resp = client.get(predictions_url)
+                resp_json = resp.get_json()
+                self.assertEqual(resp_json["status"], "completed")
+
+            with self.subTest("test if predictions downloadable in various formats."):
+                # Test downloading predictions
+                for file_type_with_dot in Settings.SUPPORTED_NON_CSV_FORMATS | {".csv"}:
+                    with self.subTest(f"format : {file_type_with_dot}"):
+                        file_type = file_type_with_dot.strip(".")
+                        predictions_url = url_for(
+                            "ClassifiersTestSetsPredictions",
+                            classifier_id=self._clsf.classifier_id,
+                            test_set_id=created_test_set.id_,
+                            file_type=file_type,
+                            _external=False,
+                            _method="GET",
+                        )
+
+                        with current_app.test_client() as client:
+                            resp = client.get(predictions_url)
+                        # Assert test set results make sense
+                        predictions_df = self._df_from_bytes(
+                            resp.data, file_type_with_dot, header=0, index_col=None  # type: ignore[arg-type]
+                        )
+                        pd.testing.assert_index_equal(
+                            predictions_df.columns,
+                            pd.Index(
+                                [Settings.CONTENT_COL, Settings.PREDICTED_LABEL_COL,]
+                            ),
+                        )
+                        expected_examples_series = pd.Series(
+                            list(zip(*valid_test_file_table[1:]))[0], name="Example"
+                        )
+                        pd.testing.assert_series_equal(
+                            predictions_df[Settings.CONTENT_COL],
+                            expected_examples_series,
+                        )
+                        self.assertTrue(
+                            set(predictions_df[Settings.PREDICTED_LABEL_COL].unique())
+                            <= {"up", "down"}
+                        )
 
         # TODO: Figure out a way to easily mock a "trained classifier."
         # this will allow to break this giagantic function down into smaller ones,

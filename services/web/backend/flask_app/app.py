@@ -55,22 +55,26 @@ class SupportSpreadsheetFileType(object):
     def _get_cached_version_with_file_type(
         self, file_path: Path, file_type: TT.Literal[".xlsx", ".xls", ".csv"]
     ) -> Path:
+        assert file_type[0] == ".", "file type needs to have a dot in the beginning."
         assert (
             file_path.suffix == ".csv"
         ), "We're only using CSV as the internal file format."
 
         if file_type == file_path.suffix:
             return file_path
-        else:
+        elif file_type in Settings.SUPPORTED_NON_CSV_FORMATS:
             file_path_with_type = file_path.parent / (file_path.stem + file_type)
-            df = pd.read_csv(
-                file_path, dtype=object, header=None, index_col=False, na_filter=False
-            )
+            with file_path.open() as f:
+                df = pd.read_csv(
+                    f, dtype=object, header=None, index_col=False, na_filter=False
+                )
 
             excel_writer = pd.ExcelWriter(file_path_with_type)
-            df.to_excel(excel_writer)
+            df.to_excel(excel_writer, index=False, header=False)
             excel_writer.save()
             return file_path_with_type
+        else:
+            raise RuntimeError("Unknown/malformed file type passed")
 
 
 class UnprocessableEntity(HTTPException):
@@ -490,7 +494,7 @@ class ClassifiersTestSetsPredictions(
 
     def __init__(self) -> None:
         self.reqparse = reqparse.RequestParser()
-        super(SupportSpreadsheetFileType, self).__init__()
+        SupportSpreadsheetFileType.__init__(self)
 
     def get(self, classifier_id: int, test_set_id: int) -> Response:
         test_set = get_object_or_404(db.TestSet, db.TestSet.id_ == test_set_id)
@@ -510,12 +514,12 @@ class ClassifiersTestSetsPredictions(
             )
 
             args = self.reqparse.parse_args()
-            file_type = args["file_type"]
+            file_type_with_dot = "." + args["file_type"]
 
             test_file_with_file_type = self._get_cached_version_with_file_type(
-                test_file, file_type=file_type
+                test_file, file_type=file_type_with_dot
             )
-            name_for_file = f"Classifier_{test_set.classifier.name}-test_set_{test_set.name}{file_type}"
+            name_for_file = f"Classifier_{test_set.classifier.name}-test_set_{test_set.name}{file_type_with_dot}"
             return send_file(
                 test_file_with_file_type,
                 as_attachment=True,
@@ -810,12 +814,9 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         utils.Validate.table_has_no_empty_cells(table)
 
         table_headers, table_data = table[0], table[1:]
-        # add the ID column to the table, necessary because of how the
-        # flask_app.modeling.lda.LDAModeler is coded up right now.
+        # Add the ID column to the table
         table_headers = [Settings.ID_COL] + table_headers
-        table_data = [
-            [str(row_num)] + row for row_num, row in enumerate(table_data, start=1)
-        ]
+        table_data = [[str(row_num)] + row for row_num, row in enumerate(table_data)]
 
         if len(table_data) < Settings.MINIMUM_LDA_EXAMPLES:
             raise BadRequest(
@@ -905,9 +906,7 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
         # what the file is supposed to look like.
         keywords_file_path = utils.Files.topic_model_keywords_file(topic_mdl.id_)
 
-        keywords_df = pd.read_excel(  # type:ignore[attr-defined]
-            keywords_file_path, index_col=0, header=0
-        )
+        keywords_df = pd.read_csv(keywords_file_path, index_col=0, header=0)
         keywords_df = keywords_df.iloc[:-1]  # Remove the "probabilities" row
         return keywords_df.T.values.tolist()  # type: ignore[no-any-return]
 
@@ -927,7 +926,7 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
         # Look at the documentation at utils.Files.topic_model_topics_by_doc_file() for
         # what the file is supposed to look like.
         topics_by_doc_path = utils.Files.topic_model_topics_by_doc_file(topic_mdl.id_)
-        topics_by_doc_df = pd.read_excel(topics_by_doc_path, index_col=0, header=0)  # type: ignore[attr-defined]
+        topics_by_doc_df = pd.read_csv(topics_by_doc_path, index_col=0, header=0)  # type: ignore[attr-defined]
         bool_mask_topic_most_likely_examples: T.List[pd.Series[str]] = [
             topics_by_doc_df[Settings.MOST_LIKELY_TOPIC_COL] == topic_num
             for topic_num in range(topic_mdl.num_topics)
@@ -944,12 +943,12 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
         return examples_per_topic
 
 
-class TopicModelsTopicsKeywords(TopicModelRelatedResource, SupportSpreadsheetFileType):
-    url = "/topic_models/<int:topic_model_id>/topics/keywords"
+class TopicModelsKeywords(TopicModelRelatedResource, SupportSpreadsheetFileType):
+    url = "/topic_models/<int:topic_model_id>/keywords"
 
     def __init__(self) -> None:
         self.reqparse = reqparse.RequestParser()
-        super(SupportSpreadsheetFileType, self).__init__()
+        SupportSpreadsheetFileType.__init__(self)
 
     def get(self, topic_model_id: int) -> Response:
         topic_model = get_object_or_404(
@@ -964,11 +963,13 @@ class TopicModelsTopicsKeywords(TopicModelRelatedResource, SupportSpreadsheetFil
         else:
             args = self.reqparse.parse_args()
             keywords_file = utils.Files.topic_model_keywords_file(topic_model_id)
-            file_type = args["file_type"]
+            file_type_with_dot = "." + args["file_type"]
             keywords_file_with_type = self._get_cached_version_with_file_type(
-                keywords_file, file_type
+                keywords_file, file_type_with_dot
             )
-            name_for_file = f"Topic_model_{topic_model.name}-keywords{file_type}"
+            name_for_file = (
+                f"Topic_model_{topic_model.name}-keywords{file_type_with_dot}"
+            )
             return send_file(
                 keywords_file_with_type,
                 as_attachment=True,
@@ -976,14 +977,12 @@ class TopicModelsTopicsKeywords(TopicModelRelatedResource, SupportSpreadsheetFil
             )
 
 
-class TopicModelsTopicsTopicsByDoc(
-    TopicModelRelatedResource, SupportSpreadsheetFileType
-):
-    url = "/topic_models/<int:topic_model_id>/topics/topics_by_doc"
+class TopicModelsTopicsByDoc(TopicModelRelatedResource, SupportSpreadsheetFileType):
+    url = "/topic_models/<int:topic_model_id>/topics_by_doc"
 
     def __init__(self) -> None:
         self.reqparse = reqparse.RequestParser()
-        super(SupportSpreadsheetFileType, self).__init__()
+        SupportSpreadsheetFileType.__init__(self)
 
     def get(self, topic_model_id: int) -> Response:
         topic_model = get_object_or_404(
@@ -1000,11 +999,13 @@ class TopicModelsTopicsTopicsByDoc(
             topics_by_doc_file = utils.Files.topic_model_topics_by_doc_file(
                 topic_model_id
             )
-            file_type = args["file_type"]
+            file_type_with_dot = "." + args["file_type"]
             topics_by_doc_with_file_type = self._get_cached_version_with_file_type(
-                topics_by_doc_file, file_type
+                topics_by_doc_file, file_type_with_dot
             )
-            name_for_file = f"Topic_model_{topic_model.name}-keywords{file_type}"
+            name_for_file = (
+                f"Topic_model_{topic_model.name}-keywords{file_type_with_dot}"
+            )
             return send_file(
                 topics_by_doc_with_file_type,
                 as_attachment=True,
@@ -1031,6 +1032,8 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
 
     # Usually, we'd read this from app.config, but we need it to create app.config ...
     app = Flask(__name__)
+
+    app.config["SERVER_NAME"] = Settings.SERVER_NAME
 
     # Create project root if necessary
     if not Settings.PROJECT_DATA_DIRECTORY.exists():
@@ -1080,15 +1083,16 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
         TopicModelsTrainingFile,
         TopicModelsTopicsNames,
         TopicModelsTopicsPreview,
-        TopicModelsTopicsTopicsByDoc,
-        TopicModelsTopicsKeywords,
+        TopicModelsTopicsByDoc,
+        TopicModelsKeywords,
     )
+
     for resource_cls in lsresource_cls:
         assert (
             resource_cls.url[0] == "/"
         ), f"{resource_cls.__name__}.url must start with a /"
         url = API_URL_PREFIX + resource_cls.url
         # the "endpoint" makes it easier to use url_for() in unit testing
-        api.add_resource(resource_cls, url, endpoint=resource_cls.__name__.lower())
+        api.add_resource(resource_cls, url, endpoint=resource_cls.__name__)
 
     return app

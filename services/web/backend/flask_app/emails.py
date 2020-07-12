@@ -68,7 +68,7 @@ BODY: {body}
     def send(self, mail: Mail) -> FakeResponse:
         """Log email sent."""
         logging_string_fmt = self.logging_string_fmt
-        if Settings.SENDGRID_API_KEY is not None:
+        if Settings.SENDGRID_API_KEY:
             logging_string_fmt += "SENDGRID_API_KEY was set, so this email was (most likely) actually sent."
         else:
             logging_string_fmt += (
@@ -156,7 +156,7 @@ class Emailer:
             LogSendGridAPIClient()
         )  # Print to console no matter what
 
-        if Settings.SENDGRID_API_KEY is not None:
+        if Settings.SENDGRID_API_KEY:
             self._sg_clients.append(
                 SendGridAPIClient(api_key=Settings.SENDGRID_API_KEY)
             )
@@ -215,7 +215,7 @@ class Emailer:
         template = _email_templates[email_template_name]
         html_content = template["html_content"].format(**template_values)
         message = Mail(
-            from_email=Settings.SENDGRID_FROM_EMAIL,
+            from_email=Settings.SENDGRID_FROM_EMAIL or "NOSENDERSET",
             to_emails=to_email,
             subject=template["subject"],
             html_content=html_content,

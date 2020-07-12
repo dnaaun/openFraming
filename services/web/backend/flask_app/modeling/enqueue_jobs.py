@@ -2,10 +2,12 @@ import logging
 import typing as T
 
 import typing_extensions as TT
+from flask import url_for
 from redis import Redis
 from rq import Queue  # type: ignore
 
 from flask_app import db
+from flask_app import emails
 from flask_app.modeling.classifier import ClassifierModel
 from flask_app.modeling.lda import Corpus
 from flask_app.modeling.lda import LDAModeler
@@ -76,6 +78,19 @@ def do_classifier_related_task(
             test_set.error_encountered = True
         else:
             test_set.inference_completed = True
+            emailer = emails.Emailer()
+            emailer.send_email(
+                email_template_name="classifier_inference_finished",
+                to_email=test_set.notify_at_email,
+                classifier_name=test_set.classifier.name,
+                predictions_url=url_for(
+                    "ClassifiersTestSetsPredictions",
+                    classifier_id=test_set.classifier.classifier_id,
+                    test_set_id=test_set.id_,
+                    file_type=Settings.DEFAULT_FILE_FORMAT.strip("."),
+                    _method="GET",
+                ),
+            )
         finally:
             test_set.save()
 
@@ -107,6 +122,13 @@ def do_classifier_related_task(
             clsf.dev_set.training_or_inference_completed = True
             clsf.dev_set.metrics = db.Metrics(**metrics)
             clsf.dev_set.metrics.save()
+            emailer = emails.Emailer()
+            emailer.send_email(
+                email_template_name="classifier_training_finished",
+                to_email=clsf.notify_at_email,
+                classifier_name=clsf.name,
+            )
+
         finally:
             clsf.dev_set.save()
             clsf.train_set.save()
@@ -118,6 +140,7 @@ def do_topic_model_related_task(task_args: TopicModelTrainingTaskArgs) -> None:
     topic_mdl = db.TopicModel.get(db.TopicModel.id_ == task_args["topic_model_id"])
     assert topic_mdl.lda_set is not None
     try:
+        print(Settings.__dict__.keys())
         corpus = Corpus(
             file_name=task_args["training_file"],
             content_column_name=Settings.CONTENT_COL,
@@ -138,6 +161,14 @@ def do_topic_model_related_task(task_args: TopicModelTrainingTaskArgs) -> None:
             fname_topics_by_doc=task_args["fname_topics_by_doc"],
         )
         topic_mdl.lda_set.lda_completed = True
+        emailer = emails.Emailer()
+        emailer.send_email(
+            email_template_name="topic_model_training_finished",
+            to_email=topic_mdl.notify_at_email,
+            topic_model_name=topic_mdl.name,
+            topic_model_preview_url="http://NOTDONEYET",  # TODO:
+        )
+
     finally:
         topic_mdl.lda_set.save()
 
