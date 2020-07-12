@@ -20,16 +20,7 @@ RUN pip wheel \
 
 ### Stage two #####
 FROM python:3.8-slim-buster
-
-# create the app user
-RUN groupadd -r app -g 999 &&  useradd -r -g app  -u 999 app
-
-## install dependencies
-COPY --from=builder /usr/src/app/wheels /wheels
-RUN pip install --no-cache /wheels/*
-RUN python -m nltk.downloader stopwords wordnet
-
-### Copied from Docker's Openjdk Dockerfile #####
+#################### Copied from Docker's Openjdk Dockerfile ##########################
 RUN set -eux; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
@@ -121,7 +112,19 @@ RUN set -eux; \
 # basic smoke test
 	javac --version; \
 	java --version
-#### OpenJDK Done ####
+######################## OpenJDK Done #############################
+#
+# create directory for the app user
+ENV HOME=/home/app
+RUN mkdir $HOME
+
+
+ENV MALLET_BIN_DIRECTORY=$HOME/mallet-2.0.8/bin
+# Prepare mallet installation
+ADD http://mallet.cs.umass.edu/dist/mallet-2.0.8.tar.gz .
+RUN tar -C $HOME -xf mallet-2.0.8.tar.gz; \
+	rm mallet-2.0.8.tar.gz; \
+	ls $MALLET_BIN_DIRECTORY/mallet # Check the mallet executable is there
 
 
 RUN set -eux; \
@@ -131,15 +134,15 @@ RUN set -eux; \
 	# verify that the binary works
 	gosu nobody true
 
-# create directory for the app user
-ENV HOME=/home/app
-RUN mkdir $HOME
+# create the app user
+RUN groupadd -r app -g 999 &&  useradd -r -g app  -u 999 app
 
-RUN python -m nltk.downloader -d $HOME/nltk_data/ stopwords wordnet
+## install dependencies
+COPY --from=builder /usr/src/app/wheels /wheels
+RUN pip install --no-cache /wheels/*; \
+	rm -rf /wheels
+RUN python -m nltk.downloader stopwords wordnet
 
-# Prepare mallet installation
-ADD mallet-2.0.8.tar.gz $HOME/
-ENV MALLET_BIN_DIRECTORY=$HOME/mallet-2.0.8/bin
 # Prepare project data directory, this is actually a volume 
 # Handled by docker-compose.yml
 ENV PROJECT_DATA_DIRECTORY=$HOME/project_data_directory

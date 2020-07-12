@@ -18,8 +18,6 @@ from transformers.tokenization_utils import PreTrainedTokenizer
 from transformers.trainer_utils import PredictionOutput
 
 from flask_app.modeling.lda import CSV_EXTENSIONS
-from flask_app.modeling.lda import EXCEL_EXTENSIONS
-from flask_app.modeling.lda import TSV_EXTENSIONS
 from flask_app.settings import Settings
 
 ClassifierMetrics = TT.TypedDict(
@@ -54,16 +52,10 @@ class ClassificationDataset(Dataset):  # type: ignore
         content_column: column name of the content to be read
         label_column: column name where the labels can be found
         """
-        suffix = dset_filename.split(".")[-1]
-        if suffix in EXCEL_EXTENSIONS:
-            # TODO: Remove this because we will always convert to CSV even if the user
-            # uploads Excel.
-            doc_reader = pd.read_excel  # type: ignore
-        elif suffix in CSV_EXTENSIONS:
+        suffix = dset_filename.split(".")[-1]  # type: ignore
+
+        if suffix in CSV_EXTENSIONS:
             doc_reader = lambda b: pd.read_csv(b, dtype=object)
-        elif suffix in TSV_EXTENSIONS:
-            # TODO: Same thing as above. We'll convert to CSV (not TSV)
-            doc_reader = lambda b: pd.read_csv(b, sep="\t")
         else:
             raise ValueError(
                 f"The file {dset_filename} doesn't have a recognized extension."
@@ -72,7 +64,7 @@ class ClassificationDataset(Dataset):  # type: ignore
         self.labels = labels
         self.label_map = label_map
         self.tokenizer = tokenizer
-        df = doc_reader(dset_filename)
+        df = doc_reader(dset_filename)  # type: ignore
         self.len_dset = len(df)
 
         self.content_series = df[
