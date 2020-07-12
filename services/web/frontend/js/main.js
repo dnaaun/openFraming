@@ -26,8 +26,8 @@ var resultText='';
 //
 
 // const endpoint = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api/"
-// const endpoint = "http://www.openframing.org/api/"
-const endpoint = "http://localhost/api/"
+const endpoint = "http://www.openframing.org/api/"
+// const endpoint = "http://localhost/api/"
 
 
 async function getFraming() {
@@ -354,6 +354,19 @@ async function afterTraining() {
 	// await checkTesting();
 	// await getPred();
 }
+
+async function noTraining() {
+	$('#progressBar').addClass("w-75");
+	await postTestName(); // return test set id
+	await getTestId();
+	await upTestingFile();
+	await loopingTesting();
+
+	// await checkTesting();
+	// await getPred();
+}
+
+
 async function showresult() {
 	$('#result-status').text("Completed! Here's the result.");
 	document.getElementById('result_text').value = resultText;
@@ -369,10 +382,19 @@ $('#performAnalysis').click(async function(){
 
 	$('#result').fadeIn();
 	
-
 	email = document.getElementById("email").value;
 	testName = document.getElementById("other_text").value;
-	await initTraining();
+	policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
+
+	if (policyIssue == "gunviolence") {
+		stateClassifier_id = 1;
+		testName = policyIssue;
+		noTraining();
+	} else if (policyIssue == "other") {
+		await initTraining();
+	}
+
+	
 	
 
 
