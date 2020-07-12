@@ -19,6 +19,7 @@ class SettingsFromOutside(T.NamedTuple):
     REDIS_PORT: int
     SENDGRID_API_KEY: T.Optional[str]
     SENDGRID_FROM_EMAIL: T.Optional[str]
+    SERVER_NAME: str
 
 
 class Settings:
@@ -45,6 +46,7 @@ class Settings:
 
     # File format related
     SUPPORTED_NON_CSV_FORMATS: T.Set[str] = {".xls", ".xlsx"}
+    DEFAULT_FILE_FORMAT = ".xlsx"
 
     # These depend on envionment varialbes
     PROJECT_DATA_DIRECTORY: Path
@@ -55,11 +57,13 @@ class Settings:
     REDIS_PORT: int
     SENDGRID_API_KEY: T.Optional[str]
     SENDGRID_FROM_EMAIL: T.Optional[str]
+    SERVER_NAME: str
 
     _initialized_already = False
 
-    def __repr__(self) -> str:
-        return str({name: val for name, val in vars(self).items() if not callable(val)})
+    @classmethod
+    def repr(cls) -> str:
+        return str({name: val for name, val in vars(cls).items() if not callable(val)})
 
     @classmethod
     def is_initialized_already(cls) -> bool:
@@ -77,6 +81,7 @@ class Settings:
                 REDIS_PORT=int(os.environ["REDIS_PORT"]),
                 SENDGRID_API_KEY=os.environ.get("SENDGRID_API_KEY", None),
                 SENDGRID_FROM_EMAIL=os.environ.get("SENDGRID_FROM_EMAIL", None),
+                SERVER_NAME=os.environ["SERVER_NAME"],
             )
             if bool(settings_tup.SENDGRID_FROM_EMAIL) != bool(
                 settings_tup.SENDGRID_FROM_EMAIL
@@ -114,6 +119,7 @@ class Settings:
         cls.REDIS_PORT = settings_tup.REDIS_PORT
         cls.SENDGRID_API_KEY = settings_tup.SENDGRID_API_KEY
         cls.SENDGRID_FROM_EMAIL = settings_tup.SENDGRID_FROM_EMAIL
+        cls.SERVER_NAME = settings_tup.SERVER_NAME
         cls._initialized_already = True
 
         if cls.SENDGRID_API_KEY is None:
