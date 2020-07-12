@@ -13,9 +13,11 @@ services:
       - transformers_cache_volume:/home/app/transformers_cache_directory
     depends_on:
       - redis
-    environment: # Pass down from .env file
+    environment: # Pass down from .env file, and from the environment
       - REDIS_HOST
       - REDIS_PORT
+      - SENDGRID_API_KEY
+      - SENDGRID_FROM_EMAIL
   nginx:
     build: ./services/nginx
     restart: always
@@ -45,6 +47,8 @@ services:
     environment: # Pass down from .env file
       - REDIS_HOST
       - REDIS_PORT
+      - SENDGRID_API_KEY
+      - SENDGRID_FROM_EMAIL
       # We need to pass them here, in addition to `command` above, because the 
       # worker will import settings.py, which needs them to be set.
 
@@ -60,6 +64,8 @@ services:
     environment: 
       - REDIS_HOST
       - REDIS_PORT
+      - SENDGRID_API_KEY
+      - SENDGRID_FROM_EMAIL
       # We need to pass them here, in addition to `command` above, because the 
       # worker will import settings.py, which needs them to be set.
 

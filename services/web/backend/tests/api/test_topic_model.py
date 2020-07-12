@@ -1,4 +1,5 @@
 import csv
+import io
 import shutil
 import unittest
 from unittest import mock
@@ -72,7 +73,7 @@ class TopicModelMixin(RQWorkerMixin, AppMixin):
         # What we expect to see after upload file being processed in the backend
         self._expected_training_table = [[Settings.ID_COL, Settings.CONTENT_COL]] + [
             [str(row_num), cell]
-            for row_num, (cell,) in enumerate(self._valid_training_table[1:], start=1)
+            for row_num, (cell,) in enumerate(self._valid_training_table[1:])
         ]
 
 
@@ -83,11 +84,11 @@ class TrainedTopicModelMixin(TopicModelMixin):
         # Copy files
         with current_app.app_context():
             shutil.copy(
-                TESTING_FILES_DIR / "keywords.xlsx",
+                TESTING_FILES_DIR / "topic_models" / "keywords.csv",
                 utils.Files.topic_model_keywords_file(self._topic_mdl.id_),
             )
             shutil.copy(
-                TESTING_FILES_DIR / "topics_by_doc.xlsx",
+                TESTING_FILES_DIR / "topic_models" / "topics_by_doc.csv",
                 utils.Files.topic_model_topics_by_doc_file(self._topic_mdl.id_),
             )
         self._topic_mdl.lda_set = db.LDASet()
@@ -248,40 +249,6 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
             self.assertTrue(fname_keywords.exists())
             self.assertTrue(fname_topics_by_doc.exists())
 
-            # Inspect the content of the keywords file
-            fname_keywords_df = pd.read_excel(fname_keywords, index_col=0, header=0)
-            expected_fname_keywords_index = pd.Index(
-                [f"word_{i}" for i in range(Settings.DEFAULT_NUM_KEYWORDS_TO_GENERATE)]
-                + [Settings.TOPIC_PROPORTIONS_ROW]
-            )
-            pd.testing.assert_index_equal(
-                fname_keywords_df.index, expected_fname_keywords_index
-            )
-            expected_fname_keywords_columns = pd.Index(
-                range(self._topic_mdl.num_topics)
-            )
-            pd.testing.assert_index_equal(
-                fname_keywords_df.columns, expected_fname_keywords_columns
-            )
-
-            # Inspect the fname_topics_by_doc file
-            fname_topics_by_doc_df = pd.read_excel(
-                fname_topics_by_doc, index_col=0, header=0
-            )
-            num_examples = len(self._valid_training_table) - 1  # -1 for the header
-            expected_fname_topics_by_doc_index = pd.Index(range(num_examples))
-            pd.testing.assert_index_equal(
-                fname_topics_by_doc_df.index, expected_fname_topics_by_doc_index
-            )
-            expected_fname_topics_by_doc_columns = pd.Index(
-                [Settings.ID_COL, Settings.CONTENT_COL, Settings.STEMMED_CONTENT_COL]
-                + [f"proba_topic_{i}" for i in range(self._topic_mdl.num_topics)]
-                + [Settings.MOST_LIKELY_TOPIC_COL]
-            )
-            pd.testing.assert_index_equal(
-                fname_topics_by_doc_df.columns, expected_fname_topics_by_doc_columns,
-            )
-
         with self.subTest("get request after training finished"):
             single_topic_mdl_url = (
                 API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}"
@@ -293,6 +260,80 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
             resp_json: Json = resp.get_json()
             assert isinstance(resp_json, dict)
             self.assertEqual(resp_json["status"], "completed")
+
+        with self.subTest("get results of lda"):
+            # Inspect the content of the keywords file
+            expected_keywords_df_index = pd.Index(
+                [f"word_{i}" for i in range(Settings.DEFAULT_NUM_KEYWORDS_TO_GENERATE)]
+                + [Settings.TOPIC_PROPORTIONS_ROW]
+            )
+            expected_keywords_df_columns = pd.Index(
+                [f"{i}" for i in range(self._topic_mdl.num_topics)]
+            )
+            num_examples = len(self._valid_training_table) - 1  # -1 for the header
+
+            expected_topics_by_doc_index = pd.Index(
+                [f"{i}" for i in range(num_examples)], name="Id",
+            )
+            expected_topics_by_doc_columns = pd.Index(
+                [Settings.CONTENT_COL, Settings.STEMMED_CONTENT_COL,]
+                + [f"proba_topic_{i}" for i in range(self._topic_mdl.num_topics)]
+                + [Settings.MOST_LIKELY_TOPIC_COL]
+            )
+
+            for file_type_with_dot in Settings.SUPPORTED_NON_CSV_FORMATS | {".csv"}:
+
+                file_type = file_type_with_dot.strip(".")
+                with self.subTest(
+                    f"get topic modeling results: keywords: {file_type_with_dot}"
+                ):
+                    keywords_url = url_for(
+                        "TopicModelsKeywords",
+                        topic_model_id=self._topic_mdl.id_,
+                        file_type=file_type,
+                        _method="GET",
+                    )
+
+                    with current_app.test_client() as client:
+                        resp = client.get(keywords_url)
+
+                    keywords_df = self._df_from_bytes(
+                        resp.data, file_type_with_dot, header=0, index_col=0  # type: ignore[arg-type]
+                    )
+                    keywords_df.index.name = None  # It doesn't matter
+                    pd.testing.assert_index_equal(
+                        keywords_df.index, expected_keywords_df_index
+                    )
+
+                    pd.testing.assert_index_equal(
+                        keywords_df.columns, expected_keywords_df_columns
+                    )
+                with self.subTest(
+                    f"get topic modeling results: topics_by_doc: {file_type_with_dot}"
+                ):
+
+                    topics_by_doc_url = url_for(
+                        "TopicModelsTopicsByDoc",
+                        topic_model_id=self._topic_mdl.id_,
+                        file_type=file_type,
+                        _method="GET",
+                    )
+
+                    with current_app.test_client() as client:
+                        resp = client.get(topics_by_doc_url)
+
+                    # Inspect the fname_topics_by_doc file
+                    topics_by_doc_df = self._df_from_bytes(
+                        resp.data, file_type_with_dot, header=0, index_col=0  # type: ignore[arg-type]
+                    )
+
+                    pd.testing.assert_index_equal(
+                        topics_by_doc_df.index, expected_topics_by_doc_index
+                    )
+
+                    pd.testing.assert_index_equal(
+                        topics_by_doc_df.columns, expected_topics_by_doc_columns,
+                    )
 
 
 class TestTopicModelsTopicsNames(TrainedTopicModelMixin, unittest.TestCase):
@@ -404,7 +445,7 @@ class TestTopicModelsTopicsPreview(TrainedTopicModelMixin, unittest.TestCase):
         self._topic_mdl = self._topic_mdl.refresh()
         self.assertEqual(self._topic_mdl.lda_set.error_encountered, True)  # type: ignore[union-attr]
         client = current_app.test_client()
-        resp = client.get(url_for("onetopicmodel", topic_model_id=self._topic_mdl.id_))
+        resp = client.get(url_for("OneTopicModel", topic_model_id=self._topic_mdl.id_))
         self._assert_response_success(resp)
 
         self.assertEqual(resp.get_json()["status"], "error_encountered")

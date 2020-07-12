@@ -14,6 +14,9 @@ services:
     environment: # Pass down from .env file
       - REDIS_HOST
       - REDIS_PORT
+      - SENDGRID_API_KEY
+      - SENDGRID_FROM_EMAIL
+      - SERVER_NAME=localhost
   redis:
     image: redis:6.0.5-alpine
     command: "redis-server --port ${REDIS_PORT}"

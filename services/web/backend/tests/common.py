@@ -3,6 +3,7 @@ import functools
 import io
 import logging
 import os
+import pdb  # type: ignore
 import shutil
 import sys
 import tempfile
@@ -12,16 +13,17 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-import ipdb  # type: ignore
+import pandas as pd  # type: ignore
+import typing_extensions as TT
 from flask import current_app
 from flask import Response
+from flask_app import db
+from flask_app import settings
+from flask_app.app import create_app
+from flask_app.settings import Settings
 from redis import Redis
 from rq import Queue
 from rq import Worker
-
-from flask_app import db
-from flask_app.app import create_app
-from flask_app.settings import Settings
 
 F = T.TypeVar("F", bound=T.Callable[..., T.Any])
 
@@ -47,7 +49,7 @@ def make_csv_file(table: T.List[T.List[str]]) -> io.BytesIO:
 
 
 def debug_on(*exceptions: T.Type[Exception]) -> T.Callable[[F], F]:
-    """Decorator to go to ipdb prompt on exceptions."""
+    """Decorator to go to pdb prompt on exceptions."""
     # From stackoverflow.
     if not exceptions:
         exceptions = (Exception,)
@@ -60,7 +62,7 @@ def debug_on(*exceptions: T.Type[Exception]) -> T.Callable[[F], F]:
             except exceptions:
                 info = sys.exc_info()
                 traceback.print_exception(*info)
-                ipdb.post_mortem(info[2])
+                pdb.post_mortem(info[2])
 
         return wrapper  # type: ignore
 
@@ -80,11 +82,11 @@ class AppMixin(unittest.TestCase):
             {"PROJECT_DATA_DIRECTORY": tempfile.mkdtemp(prefix="project_data_")},
         ):
             app = create_app(logging_level=logging.DEBUG)
-        app.config["SERVER_NAME"] = "testing_server:5000"  # Required for url_for
         app.config["TESTING"] = True
         app.config["DEBUG"] = True
 
         # simulate `with app:`
+
         self._app_context = app.app_context()
         self._app_context.push()
 
@@ -112,12 +114,33 @@ class AppMixin(unittest.TestCase):
                 )
             )
 
+    @staticmethod
+    def _df_from_bytes(
+        bytes_: bytes,
+        file_type: TT.Literal[".csv", ".xlsx", ".xls"],
+        header: T.Optional[int] = None,
+        index_col: T.Optional[int] = None,
+    ) -> pd.DataFrame:
+        pass
+        file_ = io.BytesIO(bytes_)
+        if file_type == ".csv":
+            df = pd.read_csv(file_, header=header, dtype=object)
+        else:
+            df = pd.read_excel(file_, header=header, dtype=object)
+            df = df.astype(str)
+        if (
+            index_col is not None
+        ):  # We don't pass index_col to read_csv/excel to avoid auto conversion(pandas being too heplful)
+            df.set_index(df.columns[index_col], inplace=True)
+        return df
+
 
 class RQWorkerMixin(unittest.TestCase):
     """Allow spawning RQ workers with burst=True."""
 
     def setUp(self) -> None:
         super().setUp()
+        settings.ensure_settings_initialized()
         self._redis_conn = Redis(host=Settings.REDIS_HOST, port=Settings.REDIS_PORT)
 
     def _burst_workers(self, queue_name: str) -> bool:
