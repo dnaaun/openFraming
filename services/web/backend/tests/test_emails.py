@@ -1,4 +1,3 @@
-import os
 import typing as T
 import unittest
 
@@ -20,7 +19,6 @@ logger.setLevel(logging.DEBUG)
 
 class TestEmails(AppMixin, unittest.TestCase):
     def setUp(self) -> None:
-        print("\n".join(sorted(os.environ.keys())))
         super().setUp()
         self._emailer = emails.Emailer()
 
@@ -48,6 +46,7 @@ class TestEmails(AppMixin, unittest.TestCase):
         except Exception as e:
             print(e)
             print(vars(e))
+            raise (e)
 
     def tearDown(self) -> None:
         super().tearDown()
