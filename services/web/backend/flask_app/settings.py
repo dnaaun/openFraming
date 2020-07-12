@@ -5,7 +5,6 @@ import os
 import typing as T
 from pathlib import Path
 
-import typing_extensions as TT
 
 logger = logging.getLogger(__name__)
 
@@ -79,10 +78,12 @@ class Settings:
                 SENDGRID_API_KEY=os.environ.get("SENDGRID_API_KEY", None),
                 SENDGRID_FROM_EMAIL=os.environ.get("SENDGRID_FROM_EMAIL", None),
             )
-            assert not (
-                bool(settings_tup.SENDGRID_FROM_EMAIL)
-                ^ bool(settings_tup.SENDGRID_FROM_EMAIL)
-            ), "Either both need to be set, or both need to be not set."
+            if bool(settings_tup.SENDGRID_FROM_EMAIL) != bool(
+                settings_tup.SENDGRID_FROM_EMAIL
+            ):
+                raise RuntimeError(
+                    "Either both need to be set, or both need to be not set."
+                )
             cls.initialize_from_tup(settings_tup)
         except KeyError as e:
             logger.critical("You did not define one or more environment variable(s).")
