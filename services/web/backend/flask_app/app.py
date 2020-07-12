@@ -13,7 +13,6 @@ from flask import current_app
 from flask import Flask
 from flask import Response
 from flask import send_file
-from flask_cors import CORS  # type: ignore
 from flask_restful import Api  # type: ignore
 from flask_restful import reqparse
 from flask_restful import Resource
@@ -870,7 +869,7 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
 
 # We will initialize database manually in here, so we are not going to do
 # db.may_need_database_init
-@needs_settings_init(from_env=True)
+@needs_settings_init()
 def create_app(logging_level: int = logging.WARNING) -> Flask:
     """App factory to for easier testing. 
     Creates:
@@ -886,20 +885,14 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
     logger.setLevel(logging_level)
 
     # Usually, we'd read this from app.config, but we need it to create app.config ...
-    if Settings.FLASK_ENV == "development":
-        app = Flask(__name__, static_url_path="/", static_folder="../../frontend")
-    else:
-        app = Flask(__name__)
-
-    # Allow Cross Origin ajax
-    # PS: I'm not sure if this actually works in adding CORS headres appropriately.
-    # There's proably some interaction wiht Ngnix that I haven't figured out yet.
-    # I'll remove it in production, so no worries.
-    CORS(app)
+    app = Flask(__name__)
 
     # Create project root if necessary
     if not Settings.PROJECT_DATA_DIRECTORY.exists():
-        Settings.PROJECT_DATA_DIRECTORY.mkdir(exist_ok=True)
+        Settings.PROJECT_DATA_DIRECTORY.mkdir()
+        utils.Files.supervised_dir(ensure_exists=True)
+        utils.Files.unsupervised_dir(ensure_exists=True)
+
     Version.ensure_project_data_dir_version_safe()
 
     # Create database tables if the SQLITE file is going to be new
@@ -928,13 +921,6 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
             db.database_proxy.close()
 
     api = Api(app)
-    # `utils.Files` uses flask.current_app. Since we're not
-    # handling a request just yet, we need this.
-    with app.app_context():
-        # Create the project data directory
-        # In the future, this hould be disabled.
-        utils.Files.supervised_dir(ensure_exists=True)
-        utils.Files.unsupervised_dir(ensure_exists=True)
 
     lsresource_cls: T.Tuple[T.Type[BaseResource], ...] = (
         Classifiers,

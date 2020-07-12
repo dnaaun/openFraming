@@ -15,13 +15,13 @@ from unittest import mock
 import ipdb  # type: ignore
 from flask import current_app
 from flask import Response
+from flask_app import db
+from flask_app import settings
+from flask_app.app import create_app
+from flask_app.settings import Settings
 from redis import Redis
 from rq import Queue
 from rq import Worker
-
-from flask_app import db
-from flask_app.app import create_app
-from flask_app.settings import Settings
 
 F = T.TypeVar("F", bound=T.Callable[..., T.Any])
 
@@ -85,6 +85,7 @@ class AppMixin(unittest.TestCase):
         app.config["DEBUG"] = True
 
         # simulate `with app:`
+
         self._app_context = app.app_context()
         self._app_context.push()
 
@@ -118,6 +119,7 @@ class RQWorkerMixin(unittest.TestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        settings.ensure_settings_initialized()
         self._redis_conn = Redis(host=Settings.REDIS_HOST, port=Settings.REDIS_PORT)
 
     def _burst_workers(self, queue_name: str) -> bool:

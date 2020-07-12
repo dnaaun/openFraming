@@ -18,8 +18,6 @@ from transformers.tokenization_utils import PreTrainedTokenizer
 from transformers.trainer_utils import PredictionOutput
 
 from flask_app.modeling.lda import CSV_EXTENSIONS
-from flask_app.modeling.lda import EXCEL_EXTENSIONS
-from flask_app.modeling.lda import TSV_EXTENSIONS
 from flask_app.settings import Settings
 
 ClassifierMetrics = TT.TypedDict(
@@ -66,7 +64,7 @@ class ClassificationDataset(Dataset):  # type: ignore
         self.labels = labels
         self.label_map = label_map
         self.tokenizer = tokenizer
-        df = doc_reader(dset_filename)
+        df = doc_reader(dset_filename)  # type: ignore
         self.len_dset = len(df)
 
         self.content_series = df[

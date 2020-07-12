@@ -4,7 +4,6 @@ import functools
 import typing as T
 
 import peewee as pw
-
 from flask_app.settings import needs_settings_init
 from flask_app.settings import Settings
 
@@ -238,7 +237,7 @@ def needs_database_init(func: F) -> F:
     # This functools.wraps is SUPER IMPORTANT because pickling the decorated function
     # fails without it, which is necessary for RQ.
     @functools.wraps(func)
-    @needs_settings_init(from_env=True)
+    @needs_settings_init()
     def wrapper(*args: T.Any, **kwargs: T.Any) -> T.Any:
         database = pw.SqliteDatabase(str(Settings.DATABASE_FILE))
         database_proxy.initialize(database)
