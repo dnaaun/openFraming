@@ -32,3 +32,15 @@ docker-compose up
 ```
 
  You might have to type `sudo` here as well. 
+
+# Emails
+If you want to send actual emails through Sendgrid with this system(as opposed to just
+printing the emails that would be sent to the console),  please set the environment
+variables:
+
+```bash
+export SENDGRID_API_KEY=     # An API key from Sendgrid
+export SENGRID_FROM_EMAIL=   # An email address to put in the "from" field. Note that
+			     # you'll have to verify this email in Sendgrid as a 
+			     # "Sender". 
+```
