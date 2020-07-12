@@ -47,6 +47,13 @@ input:invalid {
     box-shadow: 0 0 5px 1px red;
 }
 
+.btn-primary, .btn-primary:hover, .btn-primary:active, .btn-primary:visited {
+    background-color: #8064A2 !important;
+}
+.btn-primary:hover{
+    background-color: black !important;
+}
+
 .step2 {
     padding: 15px 20px 8px 20px;
 }
@@ -57,6 +64,12 @@ input:invalid {
 
 .other-policy {
     padding: 10px 0;
+}
+.progress-bar {
+    background-color: #0275d8 !important;
+}
+.con-width {
+    /* height: 100px; */
 }
 
 #submitbutton:disabled {
