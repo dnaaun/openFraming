@@ -16,7 +16,7 @@ from flask_app import db
 from flask_app import utils
 from flask_app.app import API_URL_PREFIX
 from flask_app.app import TopicModelStatusJson
-from flask_app.modeling.enqueue_jobs import Scheduler
+from flask_app.modeling.queue_manager import QueueManager
 from flask_app.settings import Settings
 from flask_app.utils import Json
 
@@ -173,9 +173,9 @@ class TestTopicModels(TopicModelMixin, unittest.TestCase):
 
 class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
     def test_post(self) -> None:
-        # Mock the scheduler
-        scheduler: Scheduler = current_app.scheduler
-        scheduler.add_topic_model_training: mock.MagicMock = mock.MagicMock(return_value=None)  # type: ignore
+        # Mock the QueueManager
+        queue_manager: QueueManager = current_app.queue_manager
+        queue_manager.add_topic_model_training: mock.MagicMock = mock.MagicMock(return_value=None)  # type: ignore
         fname_keywords = utils.Files.topic_model_keywords_file(self._topic_mdl.id_)
         fname_topics_by_doc = utils.Files.topic_model_topics_by_doc_file(
             self._topic_mdl.id_
@@ -201,8 +201,8 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
         # The created training file should  have an ID column prepended
         self.assertSequenceEqual(created_training_table, self._expected_training_table)
 
-        # Asssert the scheduler was called with the right arguments
-        scheduler.add_topic_model_training.assert_called_with(
+        # Asssert the queue manager was called with the right arguments
+        queue_manager.add_topic_model_training.assert_called_with(
             mallet_bin_directory=str(Settings.MALLET_BIN_DIRECTORY),
             topic_model_id=self._topic_mdl.id_,
             training_file=str(training_file_path),
@@ -214,7 +214,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
     def test_training(self) -> None:
 
         # Get some variables
-        scheduler: Scheduler = current_app.scheduler
+        queue_manager: QueueManager = current_app.queue_manager
         training_file_path = utils.Files.topic_model_training_file(self._topic_mdl.id_)
         fname_keywords = utils.Files.topic_model_keywords_file(self._topic_mdl.id_)
         fname_topics_by_doc = utils.Files.topic_model_topics_by_doc_file(
@@ -233,7 +233,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
             writer.writerows(self._expected_training_table)
 
         # Start the training
-        scheduler.add_topic_model_training(
+        queue_manager.add_topic_model_training(
             mallet_bin_directory=str(Settings.MALLET_BIN_DIRECTORY),
             topic_model_id=self._topic_mdl.id_,
             training_file=str(training_file_path),
@@ -296,6 +296,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
 
                     with current_app.test_client() as client:
                         resp = client.get(keywords_url)
+                    self._assert_response_success(resp, keywords_url)
 
                     keywords_df = self._df_from_bytes(
                         resp.data, file_type_with_dot, header=0, index_col=0  # type: ignore[arg-type]
@@ -321,6 +322,8 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
 
                     with current_app.test_client() as client:
                         resp = client.get(topics_by_doc_url)
+
+                    self._assert_response_success(resp, topics_by_doc_url)
 
                     # Inspect the fname_topics_by_doc file
                     topics_by_doc_df = self._df_from_bytes(
@@ -413,7 +416,7 @@ class TestTopicModelsTopicsPreview(TrainedTopicModelMixin, unittest.TestCase):
     def test_error_during_training(self) -> None:
 
         # Get some variables
-        scheduler: Scheduler = current_app.scheduler
+        queue_manager: QueueManager = current_app.queue_manager
         training_file_path = utils.Files.topic_model_training_file(self._topic_mdl.id_)
         fname_keywords = utils.Files.topic_model_keywords_file(self._topic_mdl.id_)
         fname_topics_by_doc = utils.Files.topic_model_topics_by_doc_file(
@@ -431,7 +434,7 @@ class TestTopicModelsTopicsPreview(TrainedTopicModelMixin, unittest.TestCase):
         # how to raise an error in another process(see other NOTE in test_classifier.py)
 
         # Start the training
-        scheduler.add_topic_model_training(
+        queue_manager.add_topic_model_training(
             mallet_bin_directory=str(Settings.MALLET_BIN_DIRECTORY),
             topic_model_id=self._topic_mdl.id_,
             training_file=str(training_file_path),

@@ -1,5 +1,6 @@
 """All the flask api endpoints."""
 import csv
+import functools
 import logging
 import re
 import typing as T
@@ -11,6 +12,7 @@ import peewee as pw
 import typing_extensions as TT
 from flask import current_app
 from flask import Flask
+from flask import has_app_context
 from flask import Response
 from flask import send_file
 from flask_restful import Api  # type: ignore
@@ -27,7 +29,7 @@ from werkzeug.exceptions import NotFound
 from flask_app import db
 from flask_app import utils
 from flask_app.modeling.classifier import ClassifierMetrics
-from flask_app.modeling.enqueue_jobs import Scheduler
+from flask_app.modeling.queue_manager import QueueManager
 from flask_app.settings import needs_settings_init
 from flask_app.settings import Settings
 from flask_app.version import Version
@@ -312,11 +314,11 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         # Refresh classifier
         classifier = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
 
-        model_scheduler: Scheduler = current_app.scheduler
+        queue_manager: QueueManager = current_app.queue_manager
 
         # TODO: Add a check to make sure model training didn't start already and crashed
 
-        model_scheduler.add_classifier_training(
+        queue_manager.add_classifier_training(
             classifier_id=classifier.classifier_id,
             labels=classifier.category_names,
             model_path=Settings.TRANSFORMERS_MODEL,
@@ -570,7 +572,7 @@ class ClassifiersTestSetsFile(ClassifierTestSetRelatedResource):
         test_set.inference_began = True
         test_set.save()
 
-        model_scheduler: Scheduler = current_app.scheduler
+        queue_manager: QueueManager = current_app.queue_manager
 
         # TODO: Add a check to make sure model training didn't start already and crashed
 
@@ -579,7 +581,7 @@ class ClassifiersTestSetsFile(ClassifierTestSetRelatedResource):
         )
         model_path = utils.Files.classifier_output_dir(classifier_id)
 
-        model_scheduler.add_classifier_prediction(
+        queue_manager.add_classifier_prediction(
             test_set_id=test_set_id,
             labels=test_set.classifier.category_names,
             model_path=str(model_path),
@@ -773,9 +775,9 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         train_file = utils.Files.topic_model_training_file(id_)
         self._write_headers_and_data_to_csv(table_headers, table_data, train_file)
 
-        scheduler: Scheduler = current_app.scheduler
+        queue_manager: QueueManager = current_app.queue_manager
 
-        scheduler.add_topic_model_training(
+        queue_manager.add_topic_model_training(
             topic_model_id=topic_mdl.id_,
             training_file=str(train_file),
             num_topics=topic_mdl.num_topics,
@@ -1055,7 +1057,7 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
         db.database_proxy.initialize(database)
         logger.info("SQLITE file found. Not creating tables")
 
-    app.scheduler = Scheduler()
+    app.queue_manager = QueueManager()
 
     @app.before_request
     def _db_connect() -> None:
@@ -1096,3 +1098,28 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
         api.add_resource(resource_cls, url, endpoint=resource_cls.__name__)
 
     return app
+
+
+F = T.TypeVar("F", bound=T.Callable[..., T.Any])
+
+
+def needs_app_context(func: F) -> F:
+    """Decorator to ensure flask.current_app is set.
+
+    Note that create_app itself @db.needs_database_init, which itself
+    @settings.needs_settings_init(), so we're all set after calling this.
+    """
+    functools.wraps(func)
+
+    def wrapper(*args: T.Any, **kwargs: T.Any) -> T.Any:
+        ctx: T.Optional[T.Any] = None
+        if not has_app_context():  # type: ignore[no-untyped-call]
+            app = create_app()
+            ctx = app.app_context()
+            ctx.push()
+        res = func(*args, **kwargs)
+        if ctx is not None:
+            ctx.pop()
+        return res
+
+    return T.cast(F, wrapper)
