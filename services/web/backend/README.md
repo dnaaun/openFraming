@@ -372,7 +372,7 @@ A CSV/Excel file with the predictions.
 
 
 ### Status
-In progress.
+Done.
 
 
 
@@ -610,7 +610,7 @@ In progress.
 
 ## Download topic proportions for each example.
 ### Endpoint
-`GET /topic_models/<topic_model_id:int>/keywords`
+`GET /topic_models/<topic_model_id:int>/topics_by_doc`
 
 ### Request parameters
 1. `file_type`: Optional. Can be:`csv`, `xlsx`.

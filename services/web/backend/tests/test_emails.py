@@ -4,6 +4,7 @@ import unittest
 from flask import url_for
 from tests.common import AppMixin
 
+import flask_app
 from flask_app import emails
 
 if T.TYPE_CHECKING:
@@ -29,7 +30,9 @@ class TestEmails(AppMixin, unittest.TestCase):
                 to_email="davidat@bu.edu",
                 classifier_name="test_email.py_Classifier",
                 predictions_url=url_for(
-                    "classifierstestsetspredictions", classifier_id=0, test_set_id=0
+                    flask_app.app.ClassifiersTestSetsPredictions.__name__,
+                    classifier_id=0,
+                    test_set_id=0,
                 ),
             )
             self._emailer.send_email(

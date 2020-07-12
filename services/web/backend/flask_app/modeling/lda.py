@@ -9,11 +9,12 @@ import pandas as pd  # type: ignore
 import typing_extensions as TT
 from gensim import corpora  # type: ignore
 from gensim import models
-from gensim.models import CoherenceModel  # type: ignore
 from nltk.corpus import stopwords  # type: ignore
 from nltk.stem.wordnet import WordNetLemmatizer  # type: ignore
 
 from flask_app.settings import Settings
+
+# from gensim.models import CoherenceModel  # type: ignore
 
 
 EXCEL_EXTENSIONS = {"xlsx", "xls"}
@@ -310,10 +311,11 @@ class LDAModeler(object):
             iterations=self.iterations,
         )
 
-        coherence_model = CoherenceModel(
-            model=self.lda_model, corpus=self.corpus_bow, coherence="u_mass"
-        )
-        coherence = coherence_model.get_coherence()
+        # TODO: Integrate this to database.
+        # coherence_model = CoherenceModel(
+        # model=self.lda_model, corpus=self.corpus_bow, coherence="u_mass"
+        # )
+        # coherence = coherence_model.get_coherence()
 
         topic_keywords: T.List[T.List[str]] = []
         for idx, topic in self.lda_model.show_topics(
@@ -348,30 +350,33 @@ class LDAModeler(object):
                 topic_keywords[i][w_idx] for i in range(len(topic_keywords))
             ]
         topic_keywords_df[Settings.TOPIC_PROPORTIONS_ROW] = topic_proportions
+        assert len(topic_keywords_df.index) == num_topics
+        topic_keywords_df.index = pd.Index(
+            range(num_topics)
+        )  # For now, just keep the topic indices, we'll do naming in the backend/(not modeling code)
 
-        topic_dfs = []
-        # n_articles = ["n = " + str(len(self.corpus_bow))]
-        # topic_dfs.append(pd.Series(n_articles))  # number of articles
-        # topic_dfs.append(pd.Series(["\n"]))
-        topic_dfs.append(topic_keywords_df.T)
-
-        full_topic_df = pd.concat(topic_dfs)
-        full_topic_df.to_csv(fname_keywords)  # type: ignore
+        topic_keywords_df.T.to_csv(fname_keywords, index=True)  # type: ignore
 
         doc_topics = np.matrix(
             [[m[1] for m in mat] for mat in topics_by_doc]
         )  # create document --> topic proba matrix
-        doc_max = [np.argmax(r) for r in doc_topics]  # type: ignore
         doc_topic_df = self.content.df_docs[
             [self.content.id_column_name]
             + extra_df_columns_wanted
             + [self.content.content_column_name]
             + [Settings.STEMMED_CONTENT_COL]
         ]
+
         for c in range(self.num_topics):
-            doc_topic_df[TOPIC_PROBA_PREFIX + str(c)] = doc_topics[:, c]  # type: ignore
-        doc_topic_df[Settings.MOST_LIKELY_TOPIC_COL] = doc_max
-        doc_topic_df.to_csv(fname_topics_by_doc)
+            doc_topic_df[TOPIC_PROBA_PREFIX + str(c)] = doc_topics[:, c]
+        doc_topic_df.set_index(self.content.id_column_name, inplace=True)
+
+        # Again, just keep the indices of the topic indices here (as opposed to doing
+        # something like "topic_0") because we'll be naming them in app.py.
+        most_likely_topic_per_doc = [np.argmax(r) for r in doc_topics]
+
+        doc_topic_df[Settings.MOST_LIKELY_TOPIC_COL] = most_likely_topic_per_doc
+        doc_topic_df.to_csv(fname_topics_by_doc, index=True)
 
         return True
 

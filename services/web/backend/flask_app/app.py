@@ -37,6 +37,46 @@ API_URL_PREFIX = "/api"
 logger = logging.getLogger(__name__)
 
 
+class HasReqParseProtocol(T.Protocol):
+    reqparse: reqparse.RequestParser
+
+
+class SupportSpreadsheetFileType(object):
+    def __init__(self: HasReqParseProtocol) -> None:
+        super().__init__()  # type: ignore[misc]
+        choices = [
+            file_type.strip(".")
+            for file_type in Settings.SUPPORTED_NON_CSV_FORMATS | {".csv"}
+        ]
+        self.reqparse.add_argument(
+            "file_type", type=str, choices=choices, location="args", default=".xlsx"
+        )
+
+    def _get_cached_version_with_file_type(
+        self, file_path: Path, file_type: TT.Literal[".xlsx", ".xls", ".csv"]
+    ) -> Path:
+        assert file_type[0] == ".", "file type needs to have a dot in the beginning."
+        assert (
+            file_path.suffix == ".csv"
+        ), "We're only using CSV as the internal file format."
+
+        if file_type == file_path.suffix:
+            return file_path
+        elif file_type in Settings.SUPPORTED_NON_CSV_FORMATS:
+            file_path_with_type = file_path.parent / (file_path.stem + file_type)
+            with file_path.open() as f:
+                df = pd.read_csv(
+                    f, dtype=object, header=None, index_col=False, na_filter=False
+                )
+
+            excel_writer = pd.ExcelWriter(file_path_with_type)
+            df.to_excel(excel_writer, index=False, header=False)
+            excel_writer.save()
+            return file_path_with_type
+        else:
+            raise RuntimeError("Unknown/malformed file type passed")
+
+
 class UnprocessableEntity(HTTPException):
     """."""
 
@@ -52,6 +92,11 @@ class AlreadyExists(HTTPException):
 
 
 email_expr = re.compile(r"\"?([-a-zA-Z0-9.`?{}]+@\w+\.\w+)\"?")
+
+
+class ResourceProtocol(T.Protocol):
+
+    url: str  # Our own addition
 
 
 class BaseResource(Resource):
@@ -163,15 +208,21 @@ class Classifiers(ClassifierRelatedResource):
     def __init__(self) -> None:
         """Set up request parser."""
         self.reqparse = reqparse.RequestParser()
-        self.reqparse.add_argument(name="name", type=str, required=True)
         self.reqparse.add_argument(
-            name="notify_at_email", type=self._validate_email, required=True
+            name="name", type=str, required=True, location="json"
+        )
+        self.reqparse.add_argument(
+            name="notify_at_email",
+            type=self._validate_email,
+            required=True,
+            location="json",
         )
         self.reqparse.add_argument(
             name="category_names",
             type=self._validate_serializable_list_value,
             action="append",
             required=True,
+            location="json",
             help="The category names must be a list of strings.",
         )
 
@@ -389,9 +440,14 @@ class ClassifiersTestSets(ClassifierTestSetRelatedResource):
     def __init__(self) -> None:
         """Set up request parser."""
         self.reqparse = reqparse.RequestParser()
-        self.reqparse.add_argument(name="test_set_name", type=str, required=True)
         self.reqparse.add_argument(
-            name="notify_at_email", type=self._validate_email, required=True
+            name="test_set_name", type=str, required=True, location="json"
+        )
+        self.reqparse.add_argument(
+            name="notify_at_email",
+            type=self._validate_email,
+            required=True,
+            location="json",
         )
 
     def get(self, classifier_id: int) -> T.List[ClassifierTestSetStatusJson]:
@@ -431,26 +487,43 @@ class ClassifiersTestSets(ClassifierTestSetRelatedResource):
         return self._test_set_status(test_set)
 
 
-class ClassifiersTestSetsPredictions(ClassifierTestSetRelatedResource):
+class ClassifiersTestSetsPredictions(
+    ClassifierTestSetRelatedResource, SupportSpreadsheetFileType
+):
     url = "/classifiers/<int:classifier_id>/test_sets/<int:test_set_id>/predictions"
+
+    def __init__(self) -> None:
+        self.reqparse = reqparse.RequestParser()
+        SupportSpreadsheetFileType.__init__(self)
 
     def get(self, classifier_id: int, test_set_id: int) -> Response:
         test_set = get_object_or_404(db.TestSet, db.TestSet.id_ == test_set_id)
         if test_set.classifier.classifier_id != classifier_id:
-            raise NotFound("The test set id was not found.")
+            raise NotFound(
+                "Please check the classifier id and the test set id. They don't match."
+            )
         if not test_set.inference_began:
             raise BadRequest(
                 "No data has been uploaded to the test set yet. Please upload test data first."
             )
         if not test_set.inference_completed:
-            raise BadRequest("Inference on this test set has not been completed yet")
+            raise BadRequest("Inference on this test set has not been completed yet.")
         else:
             test_file = utils.Files.classifier_test_set_predictions_file(
                 classifier_id, test_set_id
             )
-            name_for_file = f"Classifier_{test_set.classifier.name}-test_set_{test_set.name}{test_file.suffix}"
+
+            args = self.reqparse.parse_args()
+            file_type_with_dot = "." + args["file_type"]
+
+            test_file_with_file_type = self._get_cached_version_with_file_type(
+                test_file, file_type=file_type_with_dot
+            )
+            name_for_file = f"Classifier_{test_set.classifier.name}-test_set_{test_set.name}{file_type_with_dot}"
             return send_file(
-                test_file, as_attachment=True, attachment_filename=name_for_file
+                test_file_with_file_type,
+                as_attachment=True,
+                attachment_filename=name_for_file,
             )
 
 
@@ -482,7 +555,9 @@ class ClassifiersTestSetsFile(ClassifierTestSetRelatedResource):
 
         test_set = get_object_or_404(db.TestSet, db.TestSet.id_ == test_set_id)
         if test_set.classifier.classifier_id != classifier_id:
-            raise NotFound("The test set id was not found.")
+            raise NotFound(
+                "Please check the classifier id and test set id. They don't match."
+            )
 
         if test_set.inference_began:
             raise AlreadyExists("The file for this test set has already been uploaded.")
@@ -629,7 +704,9 @@ class TopicModels(TopicModelRelatedResource):
     def __init__(self) -> None:
         """Set up request parser."""
         self.reqparse = reqparse.RequestParser()
-        self.reqparse.add_argument(name="topic_model_name", type=str, required=True)
+        self.reqparse.add_argument(
+            name="topic_model_name", type=str, required=True, location="json"
+        )
 
         def greater_than_1(x: T.Any) -> int:
             int_x = int(x)
@@ -638,10 +715,13 @@ class TopicModels(TopicModelRelatedResource):
             return int_x
 
         self.reqparse.add_argument(
-            name="num_topics", type=greater_than_1, required=True
+            name="num_topics", type=greater_than_1, required=True, location="json"
         )
         self.reqparse.add_argument(
-            name="notify_at_email", type=self._validate_email, required=True
+            name="notify_at_email",
+            type=self._validate_email,
+            required=True,
+            location="json",
         )
 
     def post(self) -> TopicModelStatusJson:
@@ -682,7 +762,7 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         try:
             topic_mdl = db.TopicModel.get(db.TopicModel.id_ == id_)
         except db.TopicModel.DoesNotExist:
-            raise NotFound("topic model not found.")
+            raise NotFound("The topic model was not found.")
 
         if topic_mdl.lda_set is not None:
             raise AlreadyExists("This topic model already has a training set.")
@@ -734,12 +814,9 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         utils.Validate.table_has_no_empty_cells(table)
 
         table_headers, table_data = table[0], table[1:]
-        # add the ID column to the table, necessary because of how the
-        # flask_app.modeling.lda.LDAModeler is coded up right now.
+        # Add the ID column to the table
         table_headers = [Settings.ID_COL] + table_headers
-        table_data = [
-            [str(row_num)] + row for row_num, row in enumerate(table_data, start=1)
-        ]
+        table_data = [[str(row_num)] + row for row_num, row in enumerate(table_data)]
 
         if len(table_data) < Settings.MINIMUM_LDA_EXAMPLES:
             raise BadRequest(
@@ -761,6 +838,7 @@ class TopicModelsTopicsNames(TopicModelRelatedResource):
             type=self._validate_serializable_list_value,
             action="append",
             required=True,
+            location="json",
             help="",
         )
 
@@ -828,9 +906,7 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
         # what the file is supposed to look like.
         keywords_file_path = utils.Files.topic_model_keywords_file(topic_mdl.id_)
 
-        keywords_df = pd.read_excel(  # type:ignore[attr-defined]
-            keywords_file_path, index_col=0, header=0
-        )
+        keywords_df = pd.read_csv(keywords_file_path, index_col=0, header=0)
         keywords_df = keywords_df.iloc[:-1]  # Remove the "probabilities" row
         return keywords_df.T.values.tolist()  # type: ignore[no-any-return]
 
@@ -850,7 +926,7 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
         # Look at the documentation at utils.Files.topic_model_topics_by_doc_file() for
         # what the file is supposed to look like.
         topics_by_doc_path = utils.Files.topic_model_topics_by_doc_file(topic_mdl.id_)
-        topics_by_doc_df = pd.read_excel(topics_by_doc_path, index_col=0, header=0)  # type: ignore[attr-defined]
+        topics_by_doc_df = pd.read_csv(topics_by_doc_path, index_col=0, header=0)  # type: ignore[attr-defined]
         bool_mask_topic_most_likely_examples: T.List[pd.Series[str]] = [
             topics_by_doc_df[Settings.MOST_LIKELY_TOPIC_COL] == topic_num
             for topic_num in range(topic_mdl.num_topics)
@@ -865,6 +941,76 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
         ]
 
         return examples_per_topic
+
+
+class TopicModelsKeywords(TopicModelRelatedResource, SupportSpreadsheetFileType):
+    url = "/topic_models/<int:topic_model_id>/keywords"
+
+    def __init__(self) -> None:
+        self.reqparse = reqparse.RequestParser()
+        SupportSpreadsheetFileType.__init__(self)
+
+    def get(self, topic_model_id: int) -> Response:
+        topic_model = get_object_or_404(
+            db.TopicModel, db.TopicModel.id_ == topic_model_id
+        )
+        if topic_model.lda_set is None:
+            raise NotFound(
+                "A training set has not been uploaded to this topic model yet. Please upload training data first."
+            )
+        if not topic_model.lda_set.lda_completed:
+            raise BadRequest("Training this topic model has not been completed yet.")
+        else:
+            args = self.reqparse.parse_args()
+            keywords_file = utils.Files.topic_model_keywords_file(topic_model_id)
+            file_type_with_dot = "." + args["file_type"]
+            keywords_file_with_type = self._get_cached_version_with_file_type(
+                keywords_file, file_type_with_dot
+            )
+            name_for_file = (
+                f"Topic_model_{topic_model.name}-keywords{file_type_with_dot}"
+            )
+            return send_file(
+                keywords_file_with_type,
+                as_attachment=True,
+                attachment_filename=name_for_file,
+            )
+
+
+class TopicModelsTopicsByDoc(TopicModelRelatedResource, SupportSpreadsheetFileType):
+    url = "/topic_models/<int:topic_model_id>/topics_by_doc"
+
+    def __init__(self) -> None:
+        self.reqparse = reqparse.RequestParser()
+        SupportSpreadsheetFileType.__init__(self)
+
+    def get(self, topic_model_id: int) -> Response:
+        topic_model = get_object_or_404(
+            db.TopicModel, db.TopicModel.id_ == topic_model_id
+        )
+        if topic_model.lda_set is None:
+            raise NotFound(
+                "A training set has not been uploaded to this topic model yet. Please upload training data first."
+            )
+        if not topic_model.lda_set.lda_completed:
+            raise BadRequest("Training this topic model has not been completed yet.")
+        else:
+            args = self.reqparse.parse_args()
+            topics_by_doc_file = utils.Files.topic_model_topics_by_doc_file(
+                topic_model_id
+            )
+            file_type_with_dot = "." + args["file_type"]
+            topics_by_doc_with_file_type = self._get_cached_version_with_file_type(
+                topics_by_doc_file, file_type_with_dot
+            )
+            name_for_file = (
+                f"Topic_model_{topic_model.name}-keywords{file_type_with_dot}"
+            )
+            return send_file(
+                topics_by_doc_with_file_type,
+                as_attachment=True,
+                attachment_filename=name_for_file,
+            )
 
 
 # We will initialize database manually in here, so we are not going to do
@@ -886,6 +1032,8 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
 
     # Usually, we'd read this from app.config, but we need it to create app.config ...
     app = Flask(__name__)
+
+    app.config["SERVER_NAME"] = Settings.SERVER_NAME
 
     # Create project root if necessary
     if not Settings.PROJECT_DATA_DIRECTORY.exists():
@@ -922,7 +1070,7 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
 
     api = Api(app)
 
-    lsresource_cls: T.Tuple[T.Type[BaseResource], ...] = (
+    lsresource_cls: T.Tuple[T.Type[ResourceProtocol], ...] = (
         Classifiers,
         OneClassifier,
         ClassifiersTrainingFile,
@@ -935,13 +1083,16 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
         TopicModelsTrainingFile,
         TopicModelsTopicsNames,
         TopicModelsTopicsPreview,
+        TopicModelsTopicsByDoc,
+        TopicModelsKeywords,
     )
+
     for resource_cls in lsresource_cls:
         assert (
             resource_cls.url[0] == "/"
         ), f"{resource_cls.__name__}.url must start with a /"
         url = API_URL_PREFIX + resource_cls.url
         # the "endpoint" makes it easier to use url_for() in unit testing
-        api.add_resource(resource_cls, url, endpoint=resource_cls.__name__.lower())
+        api.add_resource(resource_cls, url, endpoint=resource_cls.__name__)
 
     return app
