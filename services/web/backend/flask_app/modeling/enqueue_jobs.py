@@ -2,13 +2,14 @@ import logging
 import typing as T
 
 import typing_extensions as TT
+from redis import Redis
+from rq import Queue  # type: ignore
+
 from flask_app import db
 from flask_app.modeling.classifier import ClassifierModel
 from flask_app.modeling.lda import Corpus
 from flask_app.modeling.lda import LDAModeler
 from flask_app.settings import Settings
-from redis import Redis
-from rq import Queue  # type: ignore
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
