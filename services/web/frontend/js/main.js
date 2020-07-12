@@ -372,33 +372,49 @@ async function showresult() {
 	document.getElementById('result_text').value = resultText;
 }
 
+var stateImage2=false;
+var stateEmail=false;
 
-$('#performAnalysis').click(async function(){
+function validateEmail(email) {
+	var emailReg = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/;
+	return emailReg.test(email);
+  }
 
-	$('#hideStep1').hide();
-	$('#hideStep1_1').hide();
-	$('#hideStep2').hide();
-	$('#hideStep3').hide();
-
-	$('#result').fadeIn();
-	
-	email = document.getElementById("email").value;
-	testName = document.getElementById("other_text").value;
-	policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
-
-	if (policyIssue == "gunviolence") {
-		stateClassifier_id = 1;
-		testName = policyIssue;
-		noTraining();
-	} else if (policyIssue == "other") {
-		await initTraining();
-	}
-
-	
-	
+var emailAddress = $("#email");
 
 
- });
+
+$('#annotatedsamplefile2').on("change", function(){ 
+	$('#performAnalysis').click(async function(){
+
+		if(!validateEmail(emailAddress)) { 
+			/* do stuff here */ 
+			console.log(emailAddress)
+			$('#hideStep1').hide();
+			$('#hideStep1_1').hide();
+			$('#hideStep2').hide();
+			$('#hideStep3').hide();
+			
+			$('#result').fadeIn();
+			
+			email = document.getElementById("email").value;
+			testName = document.getElementById("other_text").value;
+			policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
+		
+			if (policyIssue == "gunviolence") {
+				stateClassifier_id = 1;
+				testName = policyIssue;
+				noTraining();
+			} else if (policyIssue == "other") {
+				await initTraining();
+			}
+		}
+
+
+	 });
+});
+
+
  
 
 
