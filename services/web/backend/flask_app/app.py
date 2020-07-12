@@ -51,7 +51,7 @@ class SupportSpreadsheetFileType(object):
             for file_type in Settings.SUPPORTED_NON_CSV_FORMATS | {".csv"}
         ]
         self.reqparse.add_argument(
-            "file_type", type=str, choices=choices, location="args", default=".xlsx"
+            "file_type", type=str, choices=choices, location="args", default="xlsx"
         )
 
     def _get_cached_version_with_file_type(
@@ -76,7 +76,7 @@ class SupportSpreadsheetFileType(object):
             excel_writer.save()
             return file_path_with_type
         else:
-            raise RuntimeError("Unknown/malformed file type passed")
+            raise RuntimeError("Unknown/malformed file type passed: " + file_type)
 
 
 class UnprocessableEntity(HTTPException):
