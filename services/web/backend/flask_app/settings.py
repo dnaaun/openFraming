@@ -5,23 +5,24 @@ import os
 import typing as T
 from pathlib import Path
 
-import typing_extensions as TT
 
 logger = logging.getLogger(__name__)
 
 
-class SettingsFromOutside(TT.TypedDict):
+class SettingsFromOutside(T.NamedTuple):
     """These settings must be set using enviornmetn variables."""
 
     PROJECT_DATA_DIRECTORY: str
     TRANSFORMERS_CACHE_DIRECTORY: T.Optional[str]
     MALLET_BIN_DIRECTORY: str
-    FLASK_ENV: TT.Literal["development", "production"]
     REDIS_HOST: str
     REDIS_PORT: int
+    SENDGRID_API_KEY: T.Optional[str]
+    SENDGRID_FROM_EMAIL: T.Optional[str]
 
 
 class Settings:
+    ###### Very internal ####
     # Used by  both classifiers and lda models
     CONTENT_COL = "Example"
     PREDICTED_LABEL_COL = "Predicted category"
@@ -40,18 +41,25 @@ class Settings:
     MINIMUM_LDA_EXAMPLES = 20
     DEFAULT_NUM_KEYWORDS_TO_GENERATE = 20
     MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW = 10
+    ###### End of: very internal ####
 
+    # File format related
+    SUPPORTED_NON_CSV_FORMATS: T.Set[str] = {".xls", ".xlsx"}
+
+    # These depend on envionment varialbes
     PROJECT_DATA_DIRECTORY: Path
     TRANSFORMERS_CACHE_DIRECTORY: Path
     DATABASE_FILE: Path
     MALLET_BIN_DIRECTORY: Path
-    FLASK_ENV: TT.Literal["development", "production"]
     REDIS_HOST: str
     REDIS_PORT: int
-
-    SUPPORTED_NON_CSV_FORMATS: T.Set[str] = {".xls", ".xlsx"}
+    SENDGRID_API_KEY: T.Optional[str]
+    SENDGRID_FROM_EMAIL: T.Optional[str]
 
     _initialized_already = False
+
+    def __repr__(self) -> str:
+        return str({name: val for name, val in vars(self).items() if not callable(val)})
 
     @classmethod
     def is_initialized_already(cls) -> bool:
@@ -60,23 +68,23 @@ class Settings:
     @classmethod
     def initialize_from_env(cls) -> None:
         try:
-            any_flask_env = os.environ["FLASK_ENV"]
-            assert any_flask_env in ["production", "development"]
-            flask_env: TT.Literal["production", "development"] = any_flask_env  # type: ignore[assignment]
 
-            settings_dict = SettingsFromOutside(
-                {
-                    "PROJECT_DATA_DIRECTORY": os.environ["PROJECT_DATA_DIRECTORY"],
-                    "TRANSFORMERS_CACHE_DIRECTORY": os.environ[
-                        "TRANSFORMERS_CACHE_DIRECTORY"
-                    ],
-                    "MALLET_BIN_DIRECTORY": os.environ["MALLET_BIN_DIRECTORY"],
-                    "FLASK_ENV": flask_env,
-                    "REDIS_HOST": os.environ["REDIS_HOST"],
-                    "REDIS_PORT": int(os.environ["REDIS_PORT"]),
-                }
+            settings_tup = SettingsFromOutside(
+                PROJECT_DATA_DIRECTORY=os.environ["PROJECT_DATA_DIRECTORY"],
+                TRANSFORMERS_CACHE_DIRECTORY=os.environ["TRANSFORMERS_CACHE_DIRECTORY"],
+                MALLET_BIN_DIRECTORY=os.environ["MALLET_BIN_DIRECTORY"],
+                REDIS_HOST=os.environ["REDIS_HOST"],
+                REDIS_PORT=int(os.environ["REDIS_PORT"]),
+                SENDGRID_API_KEY=os.environ.get("SENDGRID_API_KEY", None),
+                SENDGRID_FROM_EMAIL=os.environ.get("SENDGRID_FROM_EMAIL", None),
             )
-            cls.initialize_from_dict(settings_dict)
+            if bool(settings_tup.SENDGRID_FROM_EMAIL) != bool(
+                settings_tup.SENDGRID_FROM_EMAIL
+            ):
+                raise RuntimeError(
+                    "Either both need to be set, or both need to be not set."
+                )
+            cls.initialize_from_tup(settings_tup)
         except KeyError as e:
             logger.critical("You did not define one or more environment variable(s).")
             raise e
@@ -85,41 +93,40 @@ class Settings:
             raise e
 
     @classmethod
-    def initialize_from_dict(cls, settings_dict: SettingsFromOutside) -> None:
+    def initialize_from_tup(cls, settings_tup: SettingsFromOutside) -> None:
         if cls._initialized_already:
             raise RuntimeError("Settings already initialized.")
-        cls.PROJECT_DATA_DIRECTORY = Path(settings_dict["PROJECT_DATA_DIRECTORY"])
-        if settings_dict["TRANSFORMERS_CACHE_DIRECTORY"] not in [None, ""]:
+        cls.PROJECT_DATA_DIRECTORY = Path(settings_tup.PROJECT_DATA_DIRECTORY)
+        if settings_tup.TRANSFORMERS_CACHE_DIRECTORY not in [None, ""]:
             assert (
-                settings_dict["TRANSFORMERS_CACHE_DIRECTORY"] is not None
+                settings_tup.TRANSFORMERS_CACHE_DIRECTORY is not None
             )  # Make mypy happy
             cls.TRANSFORMERS_CACHE_DIRECTORY = Path(
-                settings_dict["TRANSFORMERS_CACHE_DIRECTORY"]
+                settings_tup.TRANSFORMERS_CACHE_DIRECTORY
             )
         else:
             cls.TRANSFORMERS_CACHE_DIRECTORY = (
                 Path(cls.PROJECT_DATA_DIRECTORY) / "transformers_cache"
             )
         cls.DATABASE_FILE = Path(cls.PROJECT_DATA_DIRECTORY) / "sqlite.db"
-        cls.MALLET_BIN_DIRECTORY = Path(settings_dict["MALLET_BIN_DIRECTORY"])
-        cls.FLASK_ENV = settings_dict["FLASK_ENV"]
-        cls.REDIS_HOST = settings_dict["REDIS_HOST"]
-        cls.REDIS_PORT = settings_dict["REDIS_PORT"]
+        cls.MALLET_BIN_DIRECTORY = Path(settings_tup.MALLET_BIN_DIRECTORY)
+        cls.REDIS_HOST = settings_tup.REDIS_HOST
+        cls.REDIS_PORT = settings_tup.REDIS_PORT
+        cls.SENDGRID_API_KEY = settings_tup.SENDGRID_API_KEY
+        cls.SENDGRID_FROM_EMAIL = settings_tup.SENDGRID_FROM_EMAIL
         cls._initialized_already = True
+
+        if cls.SENDGRID_API_KEY is None:
+            logger.info(
+                "Env variable SENDGRID_API_KEY was None, "
+                "emails will not actually be sent, just printed to the console."
+            )
 
     @classmethod
     def deinitialize(cls) -> None:
         """ONLY FOR UNIT TESTING. DO NOT USE OTHERWISE TO CAUSE LESS CONFUSION."""
 
-        for attr in [
-            "PROJECT_DATA_DIRECTORY",
-            "TRANSFORMERS_CACHE_DIRECTORY",
-            "DATABASE_FILE",
-            "MALLET_BIN_DIRECTORY",
-            "FLASK_ENV",
-            "REDIS_HOST",
-            "REDIS_PORT",
-        ]:
+        for attr in SettingsFromOutside._fields:
             if hasattr(cls, attr):
                 delattr(cls, attr)
         cls._initialized_already = False
@@ -128,29 +135,28 @@ class Settings:
 F = T.TypeVar("F", bound=T.Callable[..., T.Any])
 
 
-@T.overload
-def needs_settings_init(*, from_env: bool = True) -> T.Callable[[F], F]:
-    ...
+# TODO: Ugly. Why have a decorator, *and* non decorator way of doing things?
+def ensure_settings_initialized(
+    from_tup: T.Optional[SettingsFromOutside] = None,
+) -> None:
+    """Ensures initalization, by either reading from env, or from dict."""
+    if Settings.is_initialized_already():
+        return
+    if from_tup is None:
+        Settings.initialize_from_env()
+    else:
+        assert from_tup is not None
+        Settings.initialize_from_tup(from_tup)
 
 
-@T.overload
 def needs_settings_init(
-    *, from_dict: T.Optional[SettingsFromOutside] = None
-) -> T.Callable[[F], F]:
-    ...
-
-
-def needs_settings_init(
-    *, from_env: bool = True, from_dict: T.Optional[SettingsFromOutside] = None,
+    *, from_tup: T.Optional[SettingsFromOutside] = None,
 ) -> T.Callable[[F], F]:
     """A second-order decorator to make sure settings are initialized.
 
     Args:
-        from_env: Initialize settings from environment.
-        from_dict: A dictionary to iniitalize settings from. 
+        from_tup: A dictionary to iniitalize settings from. 
     """
-
-    assert from_env ^ (from_dict is not None)
 
     def decorator(func: F) -> F:
 
@@ -158,12 +164,7 @@ def needs_settings_init(
         # fails without it, which is necessary for RQ
         @functools.wraps(func)  # type: ignore[no-redef]
         def wrapper(*args: T.Any, **kwargs: T.Any) -> T.Any:
-            if not Settings.is_initialized_already():
-                if from_env:
-                    Settings.initialize_from_env()
-                else:
-                    assert from_dict is not None
-                    Settings.initialize_from_dict(from_dict)
+            ensure_settings_initialized(from_tup=from_tup)
             return func(*args, **kwargs)
 
         return T.cast(F, wrapper)
