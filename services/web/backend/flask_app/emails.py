@@ -222,4 +222,9 @@ class Emailer:
         )
 
         for sg_client in self._sg_clients:
-            sg_client.send(message)
+            try:
+                sg_client.send(message)
+            except Exception as e:
+                logger.critical("Coudn't send email: " + str(vars(e)))
+
+
