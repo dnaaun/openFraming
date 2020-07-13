@@ -2,7 +2,7 @@ $(function() {
     ///////////////
     // CONSTANTS //
     ///////////////
-    const BASE_URL = "http://www.openframing.org/api";
+    const BASE_URL = "http://" + window.location.host + "/api";
     // const BASE_URL = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api";
 
     //////////////////
@@ -48,7 +48,8 @@ $(function() {
                 url: POST_TOPIC_MODEL,
                 type: 'POST',
                 dataType: 'json',
-                data: postData,
+                contentType: 'application/json',
+                data: JSON.stringify(postData),
                 success: function (data) {
                     console.log('success in topic model POST');
 
