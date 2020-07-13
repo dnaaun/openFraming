@@ -21,6 +21,7 @@ var email='';
 var testName='';
 var testId='';
 var resultText='';
+var downloadURL='';
 
 
 // GET POST
@@ -225,10 +226,10 @@ async function getTestId() {
 			// console.log(res.data.length);
 			var i;
 			for (i = 0; i < res.data.length; i++) {
-				console.log(res.data[i]["test_set_name"]);
+				// console.log(res.data[i]["test_set_name"]);
 				if (testName == res.data[i]["test_set_name"]) {
 					testId = res.data[i]["test_set_id"]
-					console.log(testId);
+					// console.log(testId);
 				}
 			}
 
@@ -265,12 +266,12 @@ async function upTestingFile() {
 }
 
 var i = null;
-var stopper = false
+var stopper = false;
 async function loopingTesting() {
 	
 	i = setInterval(function(){
 		// checkTesting();
-		console.log(stopper);
+		// console.log(stopper);
 		if (stopper == false) {
 			checkTesting();
 			
@@ -297,7 +298,7 @@ async function checkTesting() {
 			// console.log(res.data[testId-1]["status"]);
 			statusTesting = res.data["status"]
 			if (statusTesting == "completed") {
-				stopper = true
+				stopper = true;
 				console.log(stopper);
 				getPred()
 				
@@ -316,6 +317,7 @@ async function checkTesting() {
 async function getPred() {
 	console.log("getPred");
 	var endpointGetPred = endpoint + 'classifiers/' + stateClassifier_id + '/test_sets/' + testId + '/predictions?file_type=csv';
+	downloadURL = endpointGetPred;
 	await axios
 		
 
@@ -375,7 +377,19 @@ async function noTraining() {
 async function showresult() {
 	$('#result-status').text("Completed! Here's the result.");
 	document.getElementById('result_text').value = resultText;
+	$('#download-button').click(function() {
+		window.location = downloadURL;
+	  });
+	// download();
 }
+
+
+// function download() {
+// 	var blob = new Blob([resultText], {
+// 		type: "text/plain;charset=utf-8;",
+// 	});
+// 	saveAs(blob, "thing.txt");
+// }
 
 var stateImage2=false;
 var stateEmail=false;
@@ -415,7 +429,7 @@ $('#annotatedsamplefile2').on("change", function(){
 			policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
 		
 			if (policyIssue == "gunviolence") {
-				stateClassifier_id = 1;
+				stateClassifier_id = 7;
 				testName = policyIssue;
 				noTraining();
 			} else if (policyIssue == "other") {
