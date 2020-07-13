@@ -1,3 +1,4 @@
+//jshint esversion:8
 $('#result').hide();
 $(".other-option").hide();
 
@@ -32,12 +33,11 @@ const endpoint = "http://www.openframing.org/api/"
 
 async function getFraming() {
 	// console.log("asdfdas");
-	var endpointGET = endpoint + 'classifiers/'
+	var endpointGET = endpoint + 'classifiers/';
 	await axios
 	   .get(endpointGET)
 	   .then(res => console.log(res))
-	   .catch(err => console.error(err));
-	
+	   .catch(err => console.error(err))
  }
    
 async function postFraming() {
@@ -46,44 +46,47 @@ async function postFraming() {
 
 
 
-	// let name = document.getElementById("other_text").value;
-	let name = $("input[name='policyissue']:checked").val();
+	
+	var name = $("input[name='policyissue']:checked").val();
+	if (name =="other") {
+		name = document.getElementById("other_text").value;
+	}
 
-	if (name === "gunviolence") {
-		console.log("gunviolence")
-		var arrayCategoryNames = ["gun_topic1", "gun_topic2"]
-		console.log(arrayCategoryNames)
-	} else if (name === "immigration") {
-		console.log("immigration")
-		var arrayCategoryNames = ["immigration1", "immigration2"]
-		console.log(arrayCategoryNames)
-	} else if (name === "tobocco") {
-		console.log("tobocco")
-		var arrayCategoryNames = ["tobocco1", "tobocco2"]
-		console.log(arrayCategoryNames)
-	} else if (name === "samesexmarriage") {
-		console.log("samesexmarriage")
-		var arrayCategoryNames = ["samesexmarriage1", "samesexmarriage2"]
-		console.log(arrayCategoryNames)
-	} else if (name === "covid19") {
-		console.log("covid19")
-		var arrayCategoryNames = ["covid19_1", "covid19_2"]
-		console.log(arrayCategoryNames)
-	} else if (name === "climatechange") {
-		console.log("climatechange")
-		var arrayCategoryNames = ["climatechange1", "climatechange2"]
-		console.log(arrayCategoryNames)
-	} else if (name === "other") {
-		console.log("other")
-		var stringCategoryNames = document.getElementById("category_names").value;
-		var arrayCategoryNames = stringCategoryNames.split(',');
-		console.log(arrayCategoryNames)
-	} 
+	// if (name === "gunviolence") {
+	// 	console.log("gunviolence")
+	// 	var arrayCategoryNames = ["gun_topic1", "gun_topic2"]
+	// 	console.log(arrayCategoryNames)
+	// } else if (name === "immigration") {
+	// 	console.log("immigration")
+	// 	var arrayCategoryNames = ["immigration1", "immigration2"]
+	// 	console.log(arrayCategoryNames)
+	// } else if (name === "tobocco") {
+	// 	console.log("tobocco")
+	// 	var arrayCategoryNames = ["tobocco1", "tobocco2"]
+	// 	console.log(arrayCategoryNames)
+	// } else if (name === "samesexmarriage") {
+	// 	console.log("samesexmarriage")
+	// 	var arrayCategoryNames = ["samesexmarriage1", "samesexmarriage2"]
+	// 	console.log(arrayCategoryNames)
+	// } else if (name === "covid19") {
+	// 	console.log("covid19")
+	// 	var arrayCategoryNames = ["covid19_1", "covid19_2"]
+	// 	console.log(arrayCategoryNames)
+	// } else if (name === "climatechange") {
+	// 	console.log("climatechange")
+	// 	var arrayCategoryNames = ["climatechange1", "climatechange2"]
+	// 	console.log(arrayCategoryNames)
+	// } else if (name === "other") {
+	// 	console.log("other")
+	// 	var stringCategoryNames = document.getElementById("category_names").value;
+	// 	var arrayCategoryNames = stringCategoryNames.split(',');
+	// 	console.log(arrayCategoryNames)
+	// } 
 
 
 	// console.log(name);
 	
-	var endpointPOST = endpoint + 'classifiers/'
+	var endpointPOST = endpoint + 'classifiers/';
 	await axios
 		
 		.post(endpointPOST, {
@@ -92,9 +95,9 @@ async function postFraming() {
 			notify_at_email: email
 		})
 		.then(res => {
-			var classifier_id = res.data["classifier_id"]
+			var classifier_id = res.data["classifier_id"];
 			console.log(classifier_id)
-			stateClassifier_id = classifier_id
+			stateClassifier_id = classifier_id;
 			// return classifier_id
 		})
 		.catch(err => console.error(err))
@@ -279,7 +282,7 @@ async function loopingTesting() {
 async function checkTesting() {
 	// var a = 3
 
-	var endpointCheckTesting = endpoint + 'classifiers/' + stateClassifier_id + '/test_sets/' + testId
+	var endpointCheckTesting = endpoint + 'classifiers/' + stateClassifier_id + '/test_sets/' + testId;
 
 	await axios
 		.get(endpointCheckTesting)
@@ -310,7 +313,7 @@ async function checkTesting() {
 
 async function getPred() {
 	console.log("getPred");
-	var endpointGetPred = endpoint + 'classifiers/' + stateClassifier_id + '/test_sets/' + testId + '/predictions'
+	var endpointGetPred = endpoint + 'classifiers/' + stateClassifier_id + '/test_sets/' + testId + '/predictions?file_type=csv';
 	await axios
 		
 
@@ -382,13 +385,21 @@ function validateEmail(email) {
 
 var emailAddress = $("#email");
 
-
+// if(!validateEmail(emailAddress)) { 
+// 	stateEmail=true
+// } else {
+// 	stateEmail=false
+// 	// $('#email').on("change", function(){
+		
+// 	// })
+// }
 
 $('#annotatedsamplefile2').on("change", function(){ 
 	$('#performAnalysis').click(async function(){
 
-		if(!validateEmail(emailAddress)) { 
+		// if(!validateEmail(emailAddress)) { 
 			/* do stuff here */ 
+			console.log(name);
 			console.log(emailAddress)
 			$('#hideStep1').hide();
 			$('#hideStep1_1').hide();
@@ -408,7 +419,7 @@ $('#annotatedsamplefile2').on("change", function(){
 			} else if (policyIssue == "other") {
 				await initTraining();
 			}
-		}
+		// }
 
 
 	 });
