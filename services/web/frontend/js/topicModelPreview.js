@@ -146,7 +146,7 @@ $(function() {
         // let GET_KEYWORDS = BASE_URL + `/topic_models/${topicModelContext.tmID}/keywords`;
         // $.ajax({
         //     url: GET_KEYWORDS,
-        //     type: 'POST',
+        //     type: 'GET',
         //     data: {
         //         file_type: 'xlsx'
         //     },
@@ -167,7 +167,7 @@ $(function() {
 
         $.ajax({
             url: GET_PROPORTIONS,
-            type: 'POST',
+            type: 'GET',
             dataType: 'json',
             success: function(data) {
                 console.log(data);
