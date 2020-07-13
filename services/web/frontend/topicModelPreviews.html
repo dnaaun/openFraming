@@ -30,9 +30,6 @@
             <li class="nav-item text-white">
                 <a class="nav-link text-white" href="LDA.html">LDA</a>
             </li>
-            <li class="nav-item text-white" style="background-color: #f7daf7">
-                <a class="nav-link text-dark" href="topicModelPreviews.html">Topic Model Previews</a>
-            </li>
             <li class="nav-item text-white">
                 <a class="nav-link text-white" href="tutorials.html">Tutorials</a>
             </li>
@@ -57,66 +54,73 @@
 <!--  Topic Model section -->
 <div id="topic-model-spec" class="wrapper bg-light">
     <div class="container bg-light pt-2">
-        <div class="table-responsive-sm">
-            <table class="table">
-                <tbody>
-                <tr>
-                    <td class="">Topic model ID</td>
-                    <td class="align-items-center"><input id="topic-model-id" type="text" class="input-group-sm"></td>
-                </tr>
-                <tr>
-                    <td><button class="btn btn-secondary text-white" type="button" id="topic-model-preview-submit">See Preview</button></td>
-                </tr>
-                <tr><td id="no-spec-id" hidden style="color: red">Please enter an ID!</td></tr>
-                <tr><td id="n-exist-id" hidden style="color: red">This is not a valid ID!</td></tr>
-                </tbody>
-            </table>
+        <!-- we show the error msg if we can't parse te topic_model_id from the url-->
+        <div id="invalid-topic-model-id-msg" hidden class="table-responsive-sm">
+            <div class="alert alert-danger">
+              You should not be seeing this error message. If you were
+              directed here by openFraming, please contact us so we can fix
+              the issue with the website.
+            </div>
+        </div>
+        <!-- The error message blow is if can't access the backend for some reason-->
+        <div id="server-error-msg" hidden class="table-responsive-sm">
+            <div class="alert alert-danger">
+                There was in internal server error. Please try again. If the problem persists,
+                please contact us so we can fix the issue.
+            </div>
+        </div>
+        <div id="invalid-topic-model-id-msg" hidden class="table-responsive-sm">
+            <div class="alert alert-danger">
+              You should not be seeing this error message. If you were
+              directed here by openFraming, please contact us so we can fix
+              the issue with the website.
+            </div>
         </div>
         <!--  Preview section -->
         <div id="topic-model-preview" hidden class="table-responsive-sm">
             <script id="topic-model-spec-template" type="text/x-handlebars-template">
-                <table class="table">
-                    <tbody>
-                    <tr>
-                        <td class="">Topic model ID</td>
-                        <td class="align-items-center"> {{tmID}} </td>
-                    </tr>
-                    <tr>
-                        <td class="">Topic model name</td>
-                        <td class="align-items-center"> {{tmName}} </td>
-                    </tr>
-                    <tr>
-                        <td class="">Number of topics</td>
-                        <td class="align-items-center"> {{tmNumTopics}} </td>
-                    </tr>
-                    <tr>
-                        <td class="">Status</td>
-                        <td class="align-items-center"> {{tmStatus}} </td>
-                    </tr>
-                    <tr><td class=""><b>Previews</b></td></tr>
-                    {{#each tmPreviews}}
-                    <tr>
-                        <td><label>{{name}}</label></td>
-                        <td>
-                            <label>Keywords</label>
-                            <ul>
+              <div class="row justify-content-center">
+                  <div class="col-auto">
+                    <table class="table">
+                        <tbody>
+                        <tr>
+                            <th class="">Topic model name</th>
+                            <td class="align-items-center"> {{tmName}} </td>
+                        </tr>
+                        <tr>
+                            <th class="">Number of topics</th>
+                            <td class="align-items-center"> {{tmNumTopics}} </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <table class="mt-lg-5 table">
+                        <thead>
+                        <tr>
+                            <th>Topic name (if provided by you)</th>
+                            <th>Important keywords for topic</th>
+                            <th>Examples this topic is most responsible for</th>
+                        <tbody>
+                        {{#each tmPreviews}}
+
+                        <tr>
+                            <td><label>{{name}}</label></td>
+                            <td>
                                 {{#each keywords}}
-                                <li>{{this}}</li>
+                                <div class="p-1 m-1 float-left border border-primary">{{this}}</div>
                                 {{/each}}
-                            </ul>
-                        </td>
-                        <td>
-                            <label>Examples</label>
-                            <ul>
+                            </td>
+                            <td>
                                 {{#each examples}}
-                                <li>{{this}}</li>
+                                <div class="p-1 m-1 float-left border border-primary">{{this}}</div>
                                 {{/each}}
-                            </ul>
-                        </td>
-                    </tr>
-                    {{/each}}
-                    </tbody>
-                </table>
+                                </ul>
+                            </td>
+                        </tr>
+                        {{/each}}
+                        </tbody>
+                    </table>
+                  </div>
+                </div>
             </script>
         </div>
         <div id="prev-specific-fields" hidden class="table-responsive-sm">
@@ -128,16 +132,6 @@
                     <td><button class="btn btn-secondary text-white" type="button" id="topic-names-submit">Submit</button></td>
                 </tr>
                 <tr><td id="wrong-names" hidden style="color: red">Please enter the same number of names as there are topics!</td></tr>
-                <tr>
-                    <td>
-                        <button class="btn btn-secondary text-white" type="button" id="keywords-submit">Download Keywords</button>
-                        <label id="no-keywords" hidden style="color: red">This topic model does not have keywords!</label>
-                    </td>
-                    <td>
-                        <button class="btn btn-secondary text-white" type="button" id="proportions-submit">Download Topic Proportions</button>
-                        <label id="no-proportions" hidden style="color: red">This topic model does not have topic proportions!</label>
-                    </td>
-                </tr>
                 </tbody>
             </table>
         </div>
