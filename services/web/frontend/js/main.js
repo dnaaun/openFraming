@@ -48,9 +48,9 @@ async function postFraming() {
 
 	
 	var name = $("input[name='policyissue']:checked").val();
-	if (name =="other") {
-		name = document.getElementById("other_text").value;
-	}
+	// if (name =="other") {
+		
+	// }
 
 	// if (name === "gunviolence") {
 	// 	console.log("gunviolence")
@@ -76,12 +76,14 @@ async function postFraming() {
 	// 	console.log("climatechange")
 	// 	var arrayCategoryNames = ["climatechange1", "climatechange2"]
 	// 	console.log(arrayCategoryNames)
-	// } else if (name === "other") {
-	// 	console.log("other")
-	// 	var stringCategoryNames = document.getElementById("category_names").value;
-	// 	var arrayCategoryNames = stringCategoryNames.split(',');
-	// 	console.log(arrayCategoryNames)
-	// } 
+	// } else 
+	if (name === "other") {
+		console.log("other")
+		var stringCategoryNames = document.getElementById("category_names").value;
+		var arrayCategoryNames = stringCategoryNames.split(',');
+		name = document.getElementById("other_text").value;
+		console.log(arrayCategoryNames)
+	} 
 
 
 	// console.log(name);
