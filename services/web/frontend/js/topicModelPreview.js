@@ -127,55 +127,16 @@ $(function() {
     });
 
     $('#keywords-submit').on('click', function () {
-        // makeshift xls creation out of keywords
-        let result_table = extractKeywordsFromPreviews(topicModelContext.tmPreviews);
-        let lineArray = [];
-        result_table.forEach(function(infoArray, index) {
-            let line = infoArray.join(" \t");
-            lineArray.push(index == 0 ? line : line);
-        });
-        let csvContent = lineArray.join("\r\n");
-        let excel_file = document.createElement('a');
-        excel_file.setAttribute('href', 'data:application/vnd.ms-excel;charset=utf-8,' + encodeURIComponent(csvContent));
-        excel_file.setAttribute('download', `topic_model_${topicModelContext.tmName}_keywords.xls`);
-        document.body.appendChild(excel_file);
-        excel_file.click();
-        document.body.removeChild(excel_file);
-
-        // actual AJAX call to get the keywords
-        // let GET_KEYWORDS = BASE_URL + `/topic_models/${topicModelContext.tmID}/keywords`;
-        // $.ajax({
-        //     url: GET_KEYWORDS,
-        //     type: 'GET',
-        //     data: {
-        //         file_type: 'xlsx'
-        //     },
-        //     dataType: 'json',
-        //     success: function(data) {
-        //         console.log(data);
-        //
-        //     },
-        //     error: function (err) {
-        //         console.log(err);
-        //         $('#no-keywords').removeAttr('hidden');
-        //     }
-        // });
+        let GET_KEYWORDS = BASE_URL + `/topic_models/${topicModelContext.tmID}/keywords?file_type=xlsx`;
+        let a = document.createElement("a");
+        a.href = GET_KEYWORDS;
+        a.click();
     });
 
     $('#proportions-submit').on('click', function () {
-        let GET_PROPORTIONS = BASE_URL + `/topic_models/${topicModelContext.tmID}/topics_by_doc`;
-
-        $.ajax({
-            url: GET_PROPORTIONS,
-            type: 'GET',
-            dataType: 'json',
-            success: function(data) {
-                console.log(data);
-            },
-            error: function (err) {
-                console.log(err);
-                $('#no-proportions').removeAttr('hidden');
-            }
-        });
+        let GET_PROPORTIONS = BASE_URL + `/topic_models/${topicModelContext.tmID}/topics_by_doc?file_type=xlsx`;
+        let a = document.createElement("a");
+        a.href = GET_PROPORTIONS;
+        a.click();
     });
 });
