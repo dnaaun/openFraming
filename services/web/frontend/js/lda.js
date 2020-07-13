@@ -2,14 +2,15 @@ $(function() {
     ///////////////
     // CONSTANTS //
     ///////////////
-    const BASE_URL = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api";
+    const BASE_URL = "http://www.openframing.org/api";
+    // const BASE_URL = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api";
 
     //////////////////
     // HBS TEMPLATE //
     //////////////////
     let ldaTemplate = $('#topic-model-template').html();
     let ldaTemplateScript = Handlebars.compile(ldaTemplate);
-    let ldaContext = {topicModelName : "", numTopics : ""};
+    let ldaContext = {topicModelName : "", numTopics : "", notifyEmail: ""};
     let ldaHtml = ldaTemplateScript(ldaContext);
     $('#all_topic_models').append(ldaHtml);
 
@@ -18,22 +19,30 @@ $(function() {
         $('#no-name').attr('hidden', true);
         $('#no-number').attr('hidden', true);
         $('#no-file').attr('hidden', true);
+        $('#no-email').attr('hidden', true);
+        $('#err-creating-tm').attr('hidden', true);
+        $('#err-uploading').attr('hidden', true);
+        $('#tm-success-message').attr('hidden', true);
         if ($('#topic-model-name').val() === "") {
             $('#no-name').removeAttr('hidden');
-        } else if ($('#num-topics').val() === "") {
+        } else if ($('#tm-num-topics').val() === "") {
             $('#no-number').removeAttr('hidden');
         } else if (document.getElementById("ldatrainingfile").files.length === 0) {
             $('#no-file').removeAttr('hidden');
+        } else if ($('#tm-notify-email').val() === "") {
+            $('#no-email').removeAttr('hidden');
         } else {
-            $('#no-name').attr('hidden');
-            $('#no-number').attr('hidden');
-            $('#no-file').attr('hidden');
+            $('#no-name').attr('hidden', true);
+            $('#no-number').attr('hidden', true);
+            $('#no-file').attr('hidden', true);
+            $('#no-email').attr('hidden', true);
 
             // POST request for topic model
             const POST_TOPIC_MODEL = BASE_URL + "/topic_models/";
             let postData = {
                 topic_model_name: $('#topic-model-name').val(),
-                num_topics: $('#num-topics').val()
+                num_topics: $('#tm-num-topics').val(),
+                notify_at_email: $('#tm-notify-email').val()
             };
             $.ajax({
                 url: POST_TOPIC_MODEL,
@@ -41,7 +50,7 @@ $(function() {
                 dataType: 'json',
                 data: postData,
                 success: function (data) {
-                    console.log('success in first POST');
+                    console.log('success in topic model POST');
 
                     // POST request for training file
                     const POST_TM_TRAINING_FILE = BASE_URL + `/topic_models/${data.topic_model_id}/training/file`;
@@ -54,11 +63,20 @@ $(function() {
                         type: 'POST',
                         processData: false,
                         contentType: false,
-                        success: console.log('success on file POST'),
-                        error: handle_ajax_error
+                        success: function(){
+                            console.log('success in training file POST');
+                            $('#tm-success-message').removeAttr('hidden');
+                        },
+                        error: function (err) {
+                            console.log(err);
+                            $('#err-uploading').removeAttr('hidden');
+                        }
                     });
                 },
-                error: handle_ajax_error
+                error: function (err) {
+                    console.log(err);
+                    $('#err-creating-tm').removeAttr('hidden');
+                }
             });
         }
     });

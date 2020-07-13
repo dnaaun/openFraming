@@ -30,6 +30,9 @@
             <li class="nav-item text-white">
                 <a class="nav-link text-white" href="LDA.html">LDA</a>
             </li>
+            <li class="nav-item text-white" style="background-color: #f7daf7">
+                <a class="nav-link text-dark" href="topicModelPreviews.html">Topic Model Previews</a>
+            </li>
             <li class="nav-item text-white">
                 <a class="nav-link text-white" href="tutorials.html">Tutorials</a>
             </li>
@@ -62,7 +65,7 @@
                     <td class="align-items-center"><input id="topic-model-id" type="text" class="input-group-sm"></td>
                 </tr>
                 <tr>
-                    <td><button id="topic-model-preview-submit">See Preview</button></td>
+                    <td><button class="btn btn-secondary text-white" type="button" id="topic-model-preview-submit">See Preview</button></td>
                 </tr>
                 <tr><td id="no-spec-id" hidden style="color: red">Please enter an ID!</td></tr>
                 <tr><td id="n-exist-id" hidden style="color: red">This is not a valid ID!</td></tr>
@@ -122,16 +125,16 @@
                 <tr>
                     <td>Enter topic names (please enter names in order separated by commas)</td>
                     <td class="align-items-center"><input id="topic-names" type="text" class="input-group-sm"></td>
-                    <td><button id="topic-names-submit">Submit</button></td>
+                    <td><button class="btn btn-secondary text-white" type="button" id="topic-names-submit">Submit</button></td>
                 </tr>
                 <tr><td id="wrong-names" hidden style="color: red">Please enter the same number of names as there are topics!</td></tr>
                 <tr>
                     <td>
-                        <button id="keywords-submit">Download Keywords</button>
+                        <button class="btn btn-secondary text-white" type="button" id="keywords-submit">Download Keywords</button>
                         <label id="no-keywords" hidden style="color: red">This topic model does not have keywords!</label>
                     </td>
                     <td>
-                        <button id="proportions-submit">Download Topic Proportions</button>
+                        <button class="btn btn-secondary text-white" type="button" id="proportions-submit">Download Topic Proportions</button>
                         <label id="no-proportions" hidden style="color: red">This topic model does not have topic proportions!</label>
                     </td>
                 </tr>
