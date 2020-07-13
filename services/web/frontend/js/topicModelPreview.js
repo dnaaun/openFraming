@@ -30,13 +30,24 @@ function updatePreviewNames(names, context) {
     }
 }
 
+function extractKeywordsFromPreviews(previews) {
+    let keywords = [["Keywords"]];
+    for (let p of previews) {
+        for (let k of p.keywords) {
+            keywords.push([k]);
+        }
+    }
+    return keywords;
+}
+
+
 
 // doc ready
 $(function() {
     ///////////////
     // CONSTANTS //
     ///////////////
-    const BASE_URL = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api";
+    const BASE_URL = "http://www.openframing.org/api";
 
     //////////////////
     // HBS TEMPLATE //
@@ -60,17 +71,16 @@ $(function() {
             $('#n-exist-id').attr('hidden', true);
             $('#no-keywords').attr('hidden', true);
             $('#no-proportions').attr('hidden', true);
-            const GET_ONE_TOPIC_MDL = BASE_URL + `/topic_models/${$('#topic-model-id').val()}`;
+            const GET_ONE_TOPIC_MDL = BASE_URL + `/topic_models/${$('#topic-model-id').val()}/topics/preview`;
 
             $.ajax({
                 url: GET_ONE_TOPIC_MDL,
                 type: 'GET',
                 dataType: 'json',
                 success: function(data) {
+                    console.log(data);
                     updateTopicModelContent(data, topicModelContext);
                     topicModelTemplate = $('#topic-model-preview').html();
-                    // console.log(topicModelTemplate);
-                    // topicModelTemplateScript = Handlebars.compile(topicModelTemplate);
                     topicModelHtml = topicModelTemplateScript(topicModelContext);
                     $('#topic-model-preview').empty().append(topicModelHtml);
                     $('#topic-model-preview').removeAttr('hidden');
@@ -117,20 +127,39 @@ $(function() {
     });
 
     $('#keywords-submit').on('click', function () {
-        let GET_KEYWORDS = BASE_URL + `/topic_models/${topicModelContext.tmID}/keywords`;
-
-        $.ajax({
-            url: GET_KEYWORDS,
-            type: 'POST',
-            dataType: 'json',
-            success: function(data) {
-                console.log(data);
-            },
-            error: function (err) {
-                console.log(err);
-                $('#no-keywords').removeAttr('hidden');
-            }
+        // makeshift xls creation out of keywords
+        let result_table = extractKeywordsFromPreviews(topicModelContext.tmPreviews);
+        let lineArray = [];
+        result_table.forEach(function(infoArray, index) {
+            let line = infoArray.join(" \t");
+            lineArray.push(index == 0 ? line : line);
         });
+        let csvContent = lineArray.join("\r\n");
+        let excel_file = document.createElement('a');
+        excel_file.setAttribute('href', 'data:application/vnd.ms-excel;charset=utf-8,' + encodeURIComponent(csvContent));
+        excel_file.setAttribute('download', `topic_model_${topicModelContext.tmName}_keywords.xls`);
+        document.body.appendChild(excel_file);
+        excel_file.click();
+        document.body.removeChild(excel_file);
+
+        // actual AJAX call to get the keywords
+        // let GET_KEYWORDS = BASE_URL + `/topic_models/${topicModelContext.tmID}/keywords`;
+        // $.ajax({
+        //     url: GET_KEYWORDS,
+        //     type: 'POST',
+        //     data: {
+        //         file_type: 'xlsx'
+        //     },
+        //     dataType: 'json',
+        //     success: function(data) {
+        //         console.log(data);
+        //
+        //     },
+        //     error: function (err) {
+        //         console.log(err);
+        //         $('#no-keywords').removeAttr('hidden');
+        //     }
+        // });
     });
 
     $('#proportions-submit').on('click', function () {
