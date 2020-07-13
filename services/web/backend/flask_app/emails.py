@@ -112,13 +112,13 @@ Cheers!
         subject="[openFraming] Inference on unlabelled dataset was completed.",
         html_content=(
             """<h2>OpenFraming</h2>
-Hi there!
+Hi there!<br>
 
 You requested to run inference on an unlabelled dataset with the following policy issue
-classifier: {classifier_name}.
+classifier: {classifier_name}.<br>
 
 Inference has completed! Please <a href={predictions_url}>click here</a> to download
-your results.
+your results.<br>
 
 Have a great rest of your day!
 """
@@ -128,15 +128,63 @@ Have a great rest of your day!
         subject="[openFraming] Topic modeling completed.",
         html_content=(
             """<h2>OpenFraming</h2>
-Hi there!
+Hello!<br>
 
 You requested to run topic modeling with your chosen topic model name of:
-{topic_model_name}.
+{topic_model_name}.<br>
 
 Topic modeling has completed! Please <a href={topic_model_preview_url}>click here</a> to
 view your topic modeling results.  On that page, you'll be able to preview the topics
 discovered, and give the topic models names. You'll of course, be able to download the
-results of the topic modeling.
+results of the topic modeling.<br>
+
+Have a great rest of your day!
+"""
+        ),
+    ),
+    "classifier_training_error": EmailTemplate(
+        subject="[openFraming] Error encountered in policy issue classifier training.",
+        html_content=(
+            """<h2>OpenFraming</h2>
+Hello,<br>
+
+The policy issue classifier you started training on openFraming.org has encountered
+an error. The name you gave to this policy issue classifier was: {classifier_name}.<br>
+
+Unfortunately, you'll have to begin training again. If the problem persists, please
+contact us by replying to this email.<br>
+
+Cheers!
+"""
+        ),
+    ),
+    "classifier_inference_errror": EmailTemplate(
+        subject="[openFraming] Error encountered while doing inference on unlabelled dataset.",
+        html_content=(
+            """<h2>OpenFraming</h2>
+Hi there,<br>
+
+You requested to run inference on an unlabelled dataset with the following policy issue
+classifier: {classifier_name}. We ran into an error in processing your submission.<br>
+
+Unfortunately, you'll have to begin this process again again. If the problem persists,
+please contact us by replying to this email.<br>
+
+Have a great rest of your day!
+"""
+        ),
+    ),
+    "topic_model_training_errror": EmailTemplate(
+        subject="[openFraming] Error encountered in topic modeling.",
+        html_content=(
+            """<h2>OpenFraming</h2>
+Hello,<br>
+
+You requested to run topic modeling with your chosen topic model name of:
+{topic_model_name}.<br>
+
+We encountered an internal error in processing your submission. Please try again. If the 
+problem persists, contact us by replying to this email.<br>
 
 Have a great rest of your day!
 """
@@ -222,4 +270,7 @@ class Emailer:
         )
 
         for sg_client in self._sg_clients:
-            sg_client.send(message)
+            try:
+                sg_client.send(message)
+            except Exception as e:
+                logger.critical("Coudn't send email: " + str(vars(e)))

@@ -1,4 +1,3 @@
-import csv
 import io
 import shutil
 import unittest
@@ -18,7 +17,7 @@ from flask_app import utils
 from flask_app.app import API_URL_PREFIX
 from flask_app.app import ClassifierStatusJson
 from flask_app.app import ClassifierTestSetStatusJson
-from flask_app.modeling.enqueue_jobs import Scheduler
+from flask_app.modeling.queue_manager import QueueManager
 from flask_app.settings import Settings
 
 
@@ -88,9 +87,9 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
             self.assertDictEqual(clsf_status, dict(expected_classifier_status))
 
     def test_trigger_training(self) -> None:
-        # Mock the scheduler
-        scheduler: Scheduler = current_app.scheduler
-        scheduler.add_classifier_training: mock.MagicMock = mock.MagicMock(return_value=None)  # type: ignore
+        # Mock the queue manager
+        queue_manager: QueueManager = current_app.queue_manager
+        queue_manager.add_classifier_training: mock.MagicMock = mock.MagicMock(return_value=None)  # type: ignore
 
         test_url = (
             API_URL_PREFIX + f"/classifiers/{self._clsf.classifier_id}/training/file"
@@ -120,7 +119,7 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
             self.assertDictEqual(clsf_status, dict(expected_classifier_status))
 
         # Assert shceduler called
-        scheduler.add_classifier_training.assert_called_with(
+        queue_manager.add_classifier_training.assert_called_with(
             classifier_id=self._clsf.classifier_id,
             labels=self._clsf.category_names,
             model_path=Settings.TRANSFORMERS_MODEL,
@@ -159,12 +158,12 @@ class TestClassifiersTrainingFile(ClassifierMixin):
         train_set_file = utils.Files.classifier_train_set_file(self._clsf.classifier_id)
         # Perform training, also will modify the database to indicate that it was
         # trained
-        scheduler: Scheduler = current_app.scheduler
+        queue_manager: QueueManager = current_app.queue_manager
         # Note: This is a weak check because it is actually an error that can be caught
         # before the job is even queued(a file that doesn't exist).
         # But I don't have the time to figure out how to raise an error
         # in a forked process(which is what RQ workers are).
-        scheduler.add_classifier_training(
+        queue_manager.add_classifier_training(
             classifier_id=self._clsf.classifier_id,
             labels=self._clsf.category_names,
             model_path=Settings.TRANSFORMERS_MODEL,
@@ -197,8 +196,8 @@ class TestClassifiersTrainingFile(ClassifierMixin):
             )
             # Perform training, also will modify the database to indicate that it was
             # trained
-            scheduler: Scheduler = current_app.scheduler
-            scheduler.add_classifier_training(
+            queue_manager: QueueManager = current_app.queue_manager
+            queue_manager.add_classifier_training(
                 classifier_id=self._clsf.classifier_id,
                 labels=self._clsf.category_names,
                 model_path=Settings.TRANSFORMERS_MODEL,
