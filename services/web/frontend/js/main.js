@@ -49,35 +49,7 @@ async function postFraming() {
 
 	
 	var name = $("input[name='policyissue']:checked").val();
-	// if (name =="other") {
-		
-	// }
 
-	// if (name === "gunviolence") {
-	// 	console.log("gunviolence")
-	// 	var arrayCategoryNames = ["gun_topic1", "gun_topic2"]
-	// 	console.log(arrayCategoryNames)
-	// } else if (name === "immigration") {
-	// 	console.log("immigration")
-	// 	var arrayCategoryNames = ["immigration1", "immigration2"]
-	// 	console.log(arrayCategoryNames)
-	// } else if (name === "tobocco") {
-	// 	console.log("tobocco")
-	// 	var arrayCategoryNames = ["tobocco1", "tobocco2"]
-	// 	console.log(arrayCategoryNames)
-	// } else if (name === "samesexmarriage") {
-	// 	console.log("samesexmarriage")
-	// 	var arrayCategoryNames = ["samesexmarriage1", "samesexmarriage2"]
-	// 	console.log(arrayCategoryNames)
-	// } else if (name === "covid19") {
-	// 	console.log("covid19")
-	// 	var arrayCategoryNames = ["covid19_1", "covid19_2"]
-	// 	console.log(arrayCategoryNames)
-	// } else if (name === "climatechange") {
-	// 	console.log("climatechange")
-	// 	var arrayCategoryNames = ["climatechange1", "climatechange2"]
-	// 	console.log(arrayCategoryNames)
-	// } else 
 	if (name === "other") {
 		console.log("other")
 		var stringCategoryNames = document.getElementById("category_names").value;
