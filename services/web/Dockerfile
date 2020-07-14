@@ -1,7 +1,7 @@
 # Using Multistage builds to make the final image smaller.
  
 #### Stage one #####
-FROM python:3.8-slim-buster as builder
+FROM pytorch/pytorch:1.5.1-cuda10.1-cudnn7-runtime as builder
 
 # set work directory
 WORKDIR /usr/src/app
@@ -10,16 +10,16 @@ WORKDIR /usr/src/app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-COPY ./backend/requirements_no_gpu.txt . 
+COPY ./backend/requirements_gpu.txt . 
 RUN pip wheel \
 	--no-cache-dir \
 	--no-deps \
 	--wheel-dir \
-	/usr/src/app/wheels -r requirements_no_gpu.txt
+	/usr/src/app/wheels -r requirements_gpu.txt
 
 
 ### Stage two #####
-FROM python:3.8-slim-buster
+FROM pytorch/pytorch:1.5.1-cuda10.1-cudnn7-runtime
 #################### Copied from Docker's Openjdk Dockerfile ##########################
 RUN set -eux; \
 	apt-get update; \
@@ -68,8 +68,8 @@ RUN set -eux; \
 		*) echo >&2 "error: unsupported architecture: '$arch'"; exit 1 ;; \
 	esac; \
 	\
-	wget -O openjdk.tgz "$downloadUrl"; \
-	echo "$downloadSha256 */openjdk.tgz" | sha256sum -c -; \
+	wget --progress=bar -O openjdk.tgz "$downloadUrl"; \
+	echo "$downloadSha256 openjdk.tgz" | sha256sum -c -; \
 	\
 	mkdir -p "$JAVA_HOME"; \
 	tar --extract \
