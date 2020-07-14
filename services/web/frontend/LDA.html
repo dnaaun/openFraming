@@ -34,6 +34,7 @@
 ">
           <a class="nav-link text-dark" href="LDA.html">LDA</a>
         </li>
+
         <li class="nav-item text-white">
           <a class="nav-link text-white" href="tutorials.html">Tutorials</a>
         </li>
@@ -69,18 +70,26 @@
               </tr>
               <tr>
                 <td class="">Number of topics</td>
-                <td class="align-items-center"><input id="num-topics" type="text" placeholder="7" class="input-group-sm" value="{{numTopics}}"></td>
+                <td class="align-items-center"><input id="tm-num-topics" type="text" placeholder="7" class="input-group-sm" value="{{numTopics}}"></td>
               </tr>
               <tr>
                 <td>Upload training file</td>
                 <td class="text-danger"><input type="file" name="ldatrainingfile" id="ldatrainingfile" accept=".xlsx, .xls, .csv"></td>
               </tr>
               <tr>
-                <td><button id="topic-model-submit">Submit</button></td>
+                <td class="">Email address</td>
+                <td class="align-items-center"><input id="tm-notify-email" type="text" placeholder="email@example.com" class="input-group-sm" value="{{notifyEmail}}"></td>
+              </tr>
+              <tr>
+                <td style="border-collapse: collapse;border:0pt"><button class="btn btn-secondary text-white" type="button" id="topic-model-submit">Submit</button></td>
               </tr>
               <tr><td id="no-name" hidden style="color: red">Please enter a name!</td></tr>
               <tr><td id="no-number" hidden style="color: red">Please enter a number of topics!</td></tr>
               <tr><td id="no-file" hidden style="color: red">Please upload a file!</td></tr>
+              <tr><td id="no-email" hidden style="color: red">Please enter an email address!</td></tr>
+              <tr><td id="err-creating-tm" hidden style="color: red">An error occurred while creating the topic model</td></tr>
+              <tr><td id="err-uploading" hidden style="color: red">An error occurred while uploading your file</td></tr>
+              <tr><td id="tm-success-message" hidden style="color: green">Your upload was successful! You will receive an email when training is complete.</td></tr>
             </tbody>
           </table>
         </div>
