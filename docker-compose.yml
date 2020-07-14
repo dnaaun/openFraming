@@ -6,6 +6,7 @@ services:
     restart: always
     build:
       context: ./services/web
+      dockerfile: $DOCKERFILE
     expose:
       - "5000"
     volumes:
