@@ -39,7 +39,7 @@ API_URL_PREFIX = "/api"
 logger = logging.getLogger(__name__)
 
 
-class HasReqParseProtocol(T.Protocol):
+class HasReqParseProtocol(TT.Protocol):
     reqparse: reqparse.RequestParser
 
 
@@ -96,7 +96,7 @@ class AlreadyExists(HTTPException):
 email_expr = re.compile(r"\"?([-a-zA-Z0-9.`?{}]+@\w+\.\w+)\"?")
 
 
-class ResourceProtocol(T.Protocol):
+class ResourceProtocol(TT.Protocol):
 
     url: str  # Our own addition
 

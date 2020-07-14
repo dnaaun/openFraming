@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class ResponseProtocol(T.Protocol):
+class ResponseProtocol(TT.Protocol):
     @property
     def status_code(self) -> int:
         ...
@@ -30,7 +30,7 @@ class ResponseProtocol(T.Protocol):
         ...
 
 
-class SengGridAPIClientProtocol(T.Protocol):
+class SengGridAPIClientProtocol(TT.Protocol):
     def send(self, mail: Mail) -> ResponseProtocol:
         ...
 
@@ -91,7 +91,7 @@ class EmailTemplate(TT.TypedDict):
     html_content: str
 
 
-_email_templates: T.Final[T.Dict[str, EmailTemplate]] = {
+_email_templates: TT.Final[T.Dict[str, EmailTemplate]] = {
     "classifier_training_finished": EmailTemplate(
         subject="[openFraming] Policy issue classifier training completed.",
         html_content=(
@@ -212,7 +212,7 @@ class Emailer:
     @T.overload
     def send_email(
         self,
-        email_template_name: T.Literal["classifier_training_finished"],
+        email_template_name: TT.Literal["classifier_training_finished"],
         to_email: str,
         *,
         classifier_name: str
@@ -222,7 +222,7 @@ class Emailer:
     @T.overload
     def send_email(
         self,
-        email_template_name: T.Literal["classifier_inference_finished"],
+        email_template_name: TT.Literal["classifier_inference_finished"],
         to_email: str,
         *,
         classifier_name: str,
@@ -233,7 +233,7 @@ class Emailer:
     @T.overload
     def send_email(
         self,
-        email_template_name: T.Literal["topic_model_training_finished"],
+        email_template_name: TT.Literal["topic_model_training_finished"],
         to_email: str,
         *,
         topic_model_name: str,
@@ -243,7 +243,7 @@ class Emailer:
 
     def send_email(
         self,
-        email_template_name: T.Literal[
+        email_template_name: TT.Literal[
             "classifier_inference_finished",
             "topic_model_training_finished",
             "classifier_training_finished",
