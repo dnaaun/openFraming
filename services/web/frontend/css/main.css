@@ -76,6 +76,12 @@ input:invalid {
     opacity: 0.5;
 }
 
+.video {
+    padding-left: 7%;
+    /* padding-right: 7%; */
+    width: auto;
+    height: auto;
+}
 
 .jumbotron{
     background-color:mediumpurple !important;
