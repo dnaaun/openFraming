@@ -75,7 +75,7 @@ BODY: {body}
                 "SENDGRID_API_KEY was not set, so this email was not actually sent."
             )
         log_string = logging_string_fmt.format(
-            from_=mail.from_email,
+            from_=mail.from_email.get(),
             to=[p.get() for p in mail.personalizations],
             subject=mail.subject.get(),
             body="==\n".join([m.get()["value"] for m in mail.contents]),

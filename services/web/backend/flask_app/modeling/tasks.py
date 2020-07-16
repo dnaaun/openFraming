@@ -131,7 +131,8 @@ def do_topic_model_related_task(task_args: TopicModelTrainingTaskArgs) -> None:
         topic_mdl.lda_set.error_encountered = True
     else:
         lda_modeler.model_topics_to_spreadsheet(
-            num_topics=task_args["num_topics"],
+            num_topics=topic_mdl.num_topics,
+            default_topic_names=topic_mdl.topic_names,
             fname_keywords=task_args["fname_keywords"],
             fname_topics_by_doc=task_args["fname_topics_by_doc"],
         )
