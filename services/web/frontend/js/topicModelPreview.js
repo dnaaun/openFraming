@@ -10,7 +10,9 @@ function updateTopicModelContent(tmPrevGetData, context) {
   context.tmStatus = tmPrevGetData.status;
   if (tmPrevGetData.topic_previews !== undefined) {
     context.tmPreviews = tmPrevGetData.topic_previews;
-    updatePreviewNames(tmPrevGetData.topic_names, context);
+    for (let i = 0; i < context.tmPreviews.length; i++) {
+      context.tmPreviews[i].name = tmPrevGetData.topic_names[i];
+    }
   } else {
     context.tmPreviews = [];
     // context.tmPreviews = [{name: 'name1', keywords:["k1", "k2"], examples:["this is an example", "this is another example"]},
@@ -18,15 +20,13 @@ function updateTopicModelContent(tmPrevGetData, context) {
   }
 }
 
+/*
+ * @param {string} inputString - The comma separated string the user entered.
+ * @param {Object[]} previews - An array of { "examples": string[], "keywords": string[] } objects.
+ */
 function validNameInput(inputString, previews) {
   let inputArr = inputString.split(",");
   return inputArr.length === previews.length;
-}
-
-function updatePreviewNames(names, context) {
-  for (let i = 0; i < context.tmPreviews.length; i++) {
-    context.tmPreviews[i].name = names[i];
-  }
 }
 
 function extractKeywordsFromPreviews(previews) {
@@ -70,6 +70,8 @@ $(function () {
   //////////////////
   let topicModelTemplate = $("#topic-model-spec-template").html();
   let topicModelTemplateScript = Handlebars.compile(topicModelTemplate);
+
+  // Handlebars context
   let topicModelContext = {
     tmID: "",
     tmName: "",
@@ -94,9 +96,9 @@ $(function () {
       url: GET_ONE_TOPIC_MDL,
       type: "GET",
       dataType: "json",
-      success: function (data, status) {
-        console.log(data);
+      success: function (data) {
         updateTopicModelContent(data, topicModelContext);
+        debugger;
 
         // Update the download links with the correct urls
         $("a#download-proportions").attr(
