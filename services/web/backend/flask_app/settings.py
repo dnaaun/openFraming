@@ -33,6 +33,8 @@ class Settings:
     STEMMED_CONTENT_COL = "Simplified text"
     MOST_LIKELY_TOPIC_COL = "Most likely topic"
     TOPIC_PROPORTIONS_ROW = "Proportions"
+    DEFAULT_TOPIC_NAME_TEMPLATE = "Topic {}"
+    PROBAB_OF_TOPIC_TEMPLATE = "Probability of topic: {}"
 
     # Used by classiifiers only
     LABEL_COL = "Category"

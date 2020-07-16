@@ -2,6 +2,12 @@
 project_data/
 transformers_cache/
 
+# Frontend dev related
+package-lock.json
+node_modules/
+.eslintrc.json
+.tern-project
+
 # For the database
 sqlite.db
 

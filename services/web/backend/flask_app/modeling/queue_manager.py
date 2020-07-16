@@ -38,7 +38,6 @@ class TopicModelTrainingTaskArgs(TT.TypedDict):
     # No need for task type, since the topic model queue has only one kind of task
     topic_model_id: int
     training_file: str
-    num_topics: int
     fname_keywords: str
     fname_topics_by_doc: str
     iterations: int
@@ -114,7 +113,6 @@ class QueueManager(object):
         self,
         topic_model_id: int,
         training_file: str,
-        num_topics: int,
         fname_keywords: str,
         fname_topics_by_doc: str,
         mallet_bin_directory: str,
@@ -127,7 +125,6 @@ class QueueManager(object):
             TopicModelTrainingTaskArgs(
                 topic_model_id=topic_model_id,
                 training_file=training_file,
-                num_topics=num_topics,
                 fname_keywords=fname_keywords,
                 fname_topics_by_doc=fname_topics_by_doc,
                 iterations=iterations,

@@ -1,6 +1,4 @@
 import csv
-import io
-import shutil
 import unittest
 from unittest import mock
 
@@ -10,7 +8,6 @@ from flask import url_for
 from tests.common import AppMixin
 from tests.common import make_csv_file
 from tests.common import RQWorkerMixin
-from tests.common import TESTING_FILES_DIR
 
 from flask_app import db
 from flask_app import utils
@@ -28,6 +25,10 @@ class TopicModelMixin(RQWorkerMixin, AppMixin):
         self._topic_mdl = db.TopicModel.create(
             name="test_topic_model",
             num_topics=num_topics,
+            topic_names=[
+                Settings.DEFAULT_TOPIC_NAME_TEMPLATE.format(topic_num)
+                for topic_num in range(1, num_topics + 1)
+            ],
             notify_at_email="davidat@bu.edu",
         )
 
@@ -77,26 +78,6 @@ class TopicModelMixin(RQWorkerMixin, AppMixin):
         ]
 
 
-class TrainedTopicModelMixin(TopicModelMixin):
-    def setUp(self) -> None:
-        super().setUp()
-        # Pretend like we trained a topic model
-        # Copy files
-        with current_app.app_context():
-            shutil.copy(
-                TESTING_FILES_DIR / "topic_models" / "keywords.csv",
-                utils.Files.topic_model_keywords_file(self._topic_mdl.id_),
-            )
-            shutil.copy(
-                TESTING_FILES_DIR / "topic_models" / "topics_by_doc.csv",
-                utils.Files.topic_model_topics_by_doc_file(self._topic_mdl.id_),
-            )
-        self._topic_mdl.lda_set = db.LDASet()
-        self._topic_mdl.lda_set.lda_completed = True
-        self._topic_mdl.lda_set.save()
-        self._topic_mdl.save()
-
-
 class TestTopicModels(TopicModelMixin, unittest.TestCase):
     def test_get(self) -> None:
         url = API_URL_PREFIX + "/topic_models/"
@@ -105,16 +86,19 @@ class TestTopicModels(TopicModelMixin, unittest.TestCase):
                 "topic_model_id": self._topic_mdl.id_,
                 "topic_model_name": "test_topic_model",
                 "num_topics": self._topic_mdl.num_topics,
-                "topic_names": None,
+                "topic_names": [
+                    Settings.DEFAULT_TOPIC_NAME_TEMPLATE.format(topic_num)
+                    for topic_num in range(1, self._topic_mdl.num_topics + 1)
+                ],
                 "status": "not_begun",
                 "notify_at_email": self._topic_mdl.notify_at_email,
             }
         )
         with current_app.test_client() as client:
             with self.subTest("get all topic models"):
-                resp = client.get(url)
-                self._assert_response_success(resp, url)
-                resp_json = resp.get_json()
+                with client.get(url) as resp:
+                    self._assert_response_success(resp, url)
+                    resp_json = resp.get_json()
                 self.assertIsInstance(resp_json, list)
                 expected_topic_model_list_json = [expected_topic_model_json]
                 self.assertListEqual(resp_json, expected_topic_model_list_json)
@@ -124,11 +108,11 @@ class TestTopicModels(TopicModelMixin, unittest.TestCase):
                 single_topic_mdl_url = (
                     API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}"
                 )
-                single_topic_mdl_resp = client.get(single_topic_mdl_url)
-                self._assert_response_success(
-                    single_topic_mdl_resp, single_topic_mdl_url
-                )
-                single_topic_mdl_resp_json = single_topic_mdl_resp.get_json()
+                with client.get(single_topic_mdl_url) as single_topic_mdl_resp:
+                    self._assert_response_success(
+                        single_topic_mdl_resp, single_topic_mdl_url
+                    )
+                    single_topic_mdl_resp_json = single_topic_mdl_resp.get_json()
                 self.assertIsInstance(single_topic_mdl_resp_json, dict)
                 self.assertDictEqual(
                     single_topic_mdl_resp_json, dict(expected_topic_model_json)
@@ -137,18 +121,19 @@ class TestTopicModels(TopicModelMixin, unittest.TestCase):
     def test_post(self) -> None:
         url = API_URL_PREFIX + "/topic_models/"
 
+        num_topics = 2
         with current_app.test_client() as client:
             with self.subTest("creating a topic model"):
-                resp = client.post(
+                with client.post(
                     url,
                     json={
                         "topic_model_name": "test_topic_model",
-                        "num_topics": 2,
+                        "num_topics": num_topics,
                         "notify_at_email": "davidat@bu.edu",
                     },
-                )
-                self._assert_response_success(resp, url)
-                resp_json: Json = resp.get_json()
+                ) as resp:
+                    self._assert_response_success(resp, url)
+                    resp_json: Json = resp.get_json()
 
                 self.assertIsInstance(resp_json, dict)
                 expected_topic_model_json = TopicModelStatusJson(
@@ -156,7 +141,10 @@ class TestTopicModels(TopicModelMixin, unittest.TestCase):
                         "topic_model_id": 999,
                         "topic_model_name": "test_topic_model",
                         "num_topics": 2,
-                        "topic_names": None,
+                        "topic_names": [
+                            Settings.DEFAULT_TOPIC_NAME_TEMPLATE.format(topic_num)
+                            for topic_num in range(1, num_topics + 1)
+                        ],
                         "status": "not_begun",
                         "notify_at_email": "davidat@bu.edu",
                     }
@@ -206,7 +194,6 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
             mallet_bin_directory=str(Settings.MALLET_BIN_DIRECTORY),
             topic_model_id=self._topic_mdl.id_,
             training_file=str(training_file_path),
-            num_topics=self._topic_mdl.num_topics,
             fname_keywords=str(fname_keywords),
             fname_topics_by_doc=str(fname_topics_by_doc),
         )
@@ -237,7 +224,6 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
             mallet_bin_directory=str(Settings.MALLET_BIN_DIRECTORY),
             topic_model_id=self._topic_mdl.id_,
             training_file=str(training_file_path),
-            num_topics=self._topic_mdl.num_topics,
             fname_keywords=str(fname_keywords),
             fname_topics_by_doc=str(fname_topics_by_doc),
             iterations=10,
@@ -253,12 +239,69 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
             single_topic_mdl_url = (
                 API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}"
             )
-            with current_app.test_client() as client:
-                resp = client.get(single_topic_mdl_url)
-            self._assert_response_success(resp)
-
-            resp_json: Json = resp.get_json()
+            with current_app.test_client() as client, client.get(
+                single_topic_mdl_url
+            ) as resp:
+                self._assert_response_success(resp)
+                resp_json: Json = resp.get_json()
             assert isinstance(resp_json, dict)
+            self.assertEqual(resp_json["status"], "completed")
+
+        with self.subTest("topic previews"):
+            url = API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}/topics/preview"
+
+            with current_app.test_client() as client, client.get(url) as resp:
+                self._assert_response_success(resp)
+                resp_json = resp.get_json()
+            assert isinstance(resp_json, dict)
+            self.assertTrue(
+                {
+                    "topic_model_id",
+                    "topic_model_name",
+                    "num_topics",
+                    "topic_names",
+                    "status",
+                    "topic_previews",
+                    "notify_at_email",
+                }
+                == set(resp_json.keys())
+            )
+            self.assertEqual(
+                len(resp_json["topic_previews"]), self._topic_mdl.num_topics
+            )
+            at_least_one_topic_has_examples = False
+            for preview in resp_json["topic_previews"]:
+                self.assertTrue("examples" in preview)
+                self.assertTrue("keywords" in preview)
+
+                # Check that the examples are longer than the keywords
+                # doesnt NEED to be true, but should prbobably be true
+                self.assertEqual(
+                    len(preview["keywords"]), Settings.DEFAULT_NUM_KEYWORDS_TO_GENERATE
+                )
+
+                if len(preview["examples"]) > 0:
+                    at_least_one_topic_has_examples = True
+            # Test at least one topic has examples
+            self.assertTrue(at_least_one_topic_has_examples)
+
+        with self.subTest("download results file after naming topics"):
+            topic_naming_url = url_for(
+                "TopicModelsTopicsNames",
+                id_=self._topic_mdl.id_,
+                _method="POST",
+                _external=False,
+            )
+            topic_names = [
+                f"named_topic {i+1}" for i in range(self._topic_mdl.num_topics)
+            ]
+            post_data = {"topic_names": topic_names}
+            with current_app.test_client() as client:
+                with client.post(topic_naming_url, json=post_data) as resp:
+                    self._assert_response_success(resp, url=topic_naming_url)
+                    resp_json = resp.get_json()
+            assert isinstance(resp_json, dict)
+            self.assertListEqual(resp_json["topic_names"], topic_names)
             self.assertEqual(resp_json["status"], "completed")
 
         with self.subTest("get results of lda"):
@@ -267,9 +310,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
                 [f"word_{i}" for i in range(Settings.DEFAULT_NUM_KEYWORDS_TO_GENERATE)]
                 + [Settings.TOPIC_PROPORTIONS_ROW]
             )
-            expected_keywords_df_columns = pd.Index(
-                [f"{i}" for i in range(self._topic_mdl.num_topics)]
-            )
+            expected_keywords_df_columns = pd.Index(topic_names)
             num_examples = len(self._valid_training_table) - 1  # -1 for the header
 
             expected_topics_by_doc_index = pd.Index(
@@ -277,7 +318,10 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
             )
             expected_topics_by_doc_columns = pd.Index(
                 [Settings.CONTENT_COL, Settings.STEMMED_CONTENT_COL,]
-                + [f"proba_topic_{i}" for i in range(self._topic_mdl.num_topics)]
+                + [
+                    Settings.PROBAB_OF_TOPIC_TEMPLATE.format(topic)
+                    for topic in topic_names
+                ]
                 + [Settings.MOST_LIKELY_TOPIC_COL]
             )
 
@@ -294,13 +338,13 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
                         _method="GET",
                     )
 
-                    with current_app.test_client() as client:
-                        resp = client.get(keywords_url)
-                    self._assert_response_success(resp, keywords_url)
-
-                    keywords_df = self._df_from_bytes(
-                        resp.data, file_type_with_dot, header=0, index_col=0  # type: ignore[arg-type]
-                    )
+                    with current_app.test_client() as client, client.get(
+                        keywords_url
+                    ) as resp:
+                        self._assert_response_success(resp, keywords_url)
+                        keywords_df = self._df_from_bytes(
+                            resp.data, file_type_with_dot, header=0, index_col=0  # type: ignore[arg-type]
+                        )
                     keywords_df.index.name = None  # It doesn't matter
                     pd.testing.assert_index_equal(
                         keywords_df.index, expected_keywords_df_index
@@ -320,15 +364,14 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
                         _method="GET",
                     )
 
-                    with current_app.test_client() as client:
-                        resp = client.get(topics_by_doc_url)
-
-                    self._assert_response_success(resp, topics_by_doc_url)
-
-                    # Inspect the fname_topics_by_doc file
-                    topics_by_doc_df = self._df_from_bytes(
-                        resp.data, file_type_with_dot, header=0, index_col=0  # type: ignore[arg-type]
-                    )
+                    with current_app.test_client() as client, client.get(
+                        topics_by_doc_url
+                    ) as resp:
+                        self._assert_response_success(resp, topics_by_doc_url)
+                        # Inspect the fname_topics_by_doc file
+                        topics_by_doc_df = self._df_from_bytes(
+                            resp.data, file_type_with_dot, header=0, index_col=0  # type: ignore[arg-type]
+                        )
 
                     pd.testing.assert_index_equal(
                         topics_by_doc_df.index, expected_topics_by_doc_index
@@ -337,81 +380,6 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
                     pd.testing.assert_index_equal(
                         topics_by_doc_df.columns, expected_topics_by_doc_columns,
                     )
-
-
-class TestTopicModelsTopicsNames(TrainedTopicModelMixin, unittest.TestCase):
-    def test_naming_topics(self) -> None:
-        naming_url = (
-            API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}/topics/names"
-        )
-
-        topic_names = [
-            f"fancy_topic_name_{i}" for i in range(1, self._topic_mdl.num_topics + 1)
-        ]
-        post_json = {"topic_names": topic_names}
-        with current_app.test_client() as client:
-            res = client.post(naming_url, json=post_json)
-            self._assert_response_success(res, url=naming_url)
-
-        reloaded_topic_mdl = db.TopicModel.get(db.TopicModel.id_ == self._topic_mdl.id_)
-
-        with self.subTest("topic naming db change"):
-            self.assertListEqual(reloaded_topic_mdl.topic_names, topic_names)
-        with self.subTest("get request after naming topic"):
-            get_url = API_URL_PREFIX + "/topic_models/"
-            with current_app.test_client() as client:
-                resp = client.get(get_url)
-            self._assert_response_success(resp)
-
-            resp_json: Json = resp.get_json()
-
-            assert isinstance(resp_json, list)
-            dict_ = resp_json[0]
-            self.assertListEqual(dict_["topic_names"], topic_names)
-            self.assertEqual(dict_["status"], "completed")
-
-
-class TestTopicModelsTopicsPreview(TrainedTopicModelMixin, unittest.TestCase):
-    def test_topic_preview(self) -> None:
-        url = API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}/topics/preview"
-
-        with current_app.test_client() as client:
-            resp = client.get(url)
-        self._assert_response_success(resp)
-
-        resp_json: Json = resp.get_json()
-
-        assert isinstance(resp_json, dict)
-        self.assertTrue(
-            {
-                "topic_model_id",
-                "topic_model_name",
-                "num_topics",
-                "topic_names",
-                "status",
-                "topic_previews",
-                "notify_at_email",
-            }
-            == set(resp_json.keys())
-        )
-
-        self.assertEqual(len(resp_json["topic_previews"]), self._topic_mdl.num_topics)
-
-        at_least_one_topic_has_examples = False
-        for preview in resp_json["topic_previews"]:
-            self.assertTrue("examples" in preview)
-            self.assertTrue("keywords" in preview)
-
-            # Check that the examples are longer than the keywords
-            # doesnt NEED to be true, but should prbobably be true
-            self.assertEqual(
-                len(preview["keywords"]), Settings.DEFAULT_NUM_KEYWORDS_TO_GENERATE
-            )
-
-            if len(preview["examples"]) > 0:
-                at_least_one_topic_has_examples = True
-        # Test at least one topic has examples
-        self.assertTrue(at_least_one_topic_has_examples)
 
     def test_error_during_training(self) -> None:
 
@@ -438,20 +406,20 @@ class TestTopicModelsTopicsPreview(TrainedTopicModelMixin, unittest.TestCase):
             mallet_bin_directory=str(Settings.MALLET_BIN_DIRECTORY),
             topic_model_id=self._topic_mdl.id_,
             training_file=str(training_file_path),
-            num_topics=self._topic_mdl.num_topics,
             fname_keywords=str(fname_keywords),
             fname_topics_by_doc=str(fname_topics_by_doc),
-            iterations=10,
+            iterations=1,
         )
 
         self.assertTrue(self._burst_workers("topic_models"))
         self._topic_mdl = self._topic_mdl.refresh()
         self.assertEqual(self._topic_mdl.lda_set.error_encountered, True)  # type: ignore[union-attr]
         client = current_app.test_client()
-        resp = client.get(url_for("OneTopicModel", topic_model_id=self._topic_mdl.id_))
-        self._assert_response_success(resp)
-
-        self.assertEqual(resp.get_json()["status"], "error_encountered")
+        with client.get(
+            url_for("OneTopicModel", topic_model_id=self._topic_mdl.id_)
+        ) as resp:
+            self._assert_response_success(resp)
+            self.assertEqual(resp.get_json()["status"], "error_encountered")
 
 
 if __name__ == "__main__":
