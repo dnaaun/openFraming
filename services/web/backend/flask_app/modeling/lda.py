@@ -23,7 +23,6 @@ TSV_EXTENSIONS = {"tsv"}
 
 
 EXPERT_LABEL_COLUMN_NAME = "EXPERT_LABEL"
-TOPIC_PROBA_PREFIX = "proba_topic_"
 
 import logging
 
@@ -332,7 +331,8 @@ class LDAModeler(object):
 
     def model_topics_to_spreadsheet(
         self,
-        num_topics: int = 10,
+        num_topics: int,
+        default_topic_names: T.List[str],
         num_keywords: int = 20,
         fname_keywords: str = "topic_keywords_and_proportions.xlsx",
         fname_topics_by_doc: str = "topic_probabilities_by_document.xlsx",
@@ -367,8 +367,10 @@ class LDAModeler(object):
             + [Settings.STEMMED_CONTENT_COL]
         ]
 
-        for c in range(self.num_topics):
-            doc_topic_df[TOPIC_PROBA_PREFIX + str(c)] = doc_topics[:, c]
+        for topic_num in range(self.num_topics):
+            doc_topic_df[
+                Settings.PROBAB_OF_TOPIC_TEMPLATE.format(default_topic_names[topic_num])
+            ] = doc_topics[:, topic_num]
         doc_topic_df.set_index(self.content.id_column_name, inplace=True)
 
         # Again, just keep the indices of the topic indices here (as opposed to doing

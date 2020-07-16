@@ -64,11 +64,11 @@ class ListField(pw.TextField):
         self._sep = sep
         super().__init__(*args, **kwargs)
 
-    def db_value(self, value: T.Optional[T.Any]) -> str:
+    def db_value(self, value: T.Optional[T.Any]) -> T.Optional[str]:
         """Validate and convert to string."""
         # Allow a None for an empty list
         if value is None:
-            return ""
+            return None
         elif not isinstance(value, list) or set(map(type, value)) != {str}:
             raise ValueError("ListField stores lists of strings.")
 
@@ -197,10 +197,14 @@ class TopicModel(BaseModel):
 
     @classmethod
     def create(  # type: ignore[override]
-        cls, name: str, num_topics: int, notify_at_email: str
+        cls, name: str, num_topics: int, notify_at_email: str, topic_names: T.List[str]
     ) -> "TopicModel":
+        assert len(topic_names) == num_topics
         return super(TopicModel, cls).create(
-            name=name, num_topics=num_topics, notify_at_email=notify_at_email
+            name=name,
+            num_topics=num_topics,
+            notify_at_email=notify_at_email,
+            topic_names=topic_names,
         )
 
     id_: int = pw.AutoField()

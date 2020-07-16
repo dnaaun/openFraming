@@ -648,6 +648,18 @@ class TopicModelRelatedResource(BaseResource):
     """Base class to define utility functions related to classifiers."""
 
     @staticmethod
+    def _ensure_topic_names(topic_mdl: db.TopicModel) -> db.TopicModel:
+        # TODO: Remove this. This is only for compatibility reasons.
+        # We didn't assign default topic names before.
+        if topic_mdl.topic_names is None:
+            topic_mdl.topic_names = [
+                Settings.DEFAULT_TOPIC_NAME_TEMPLATE.format(topic_num)
+                for topic_num in range(1, topic_mdl.num_topics + 1)
+            ]
+            topic_mdl.save()
+        return topic_mdl.refresh()
+
+    @staticmethod
     def _topic_model_status_json(topic_mdl: db.TopicModel) -> TopicModelStatusJson:
         topic_names = topic_mdl.topic_names
         status: TT.Literal[
@@ -731,9 +743,11 @@ class TopicModels(TopicModelRelatedResource):
         args = self.reqparse.parse_args()
         topic_mdl = db.TopicModel.create(
             name=args["topic_model_name"],
+            topic_names=[f"Topic {i}" for i in range(1, args["num_topics"] + 1)],
             num_topics=args["num_topics"],
             notify_at_email=args["notify_at_email"],
         )
+        # Default topic names
         topic_mdl.save()
         utils.Files.topic_model_dir(id_=topic_mdl.id_, ensure_exists=True)
         return self._topic_model_status_json(topic_mdl)
@@ -777,10 +791,10 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
 
         queue_manager: QueueManager = current_app.queue_manager
 
+        topic_mdl = self._ensure_topic_names(topic_mdl)
         queue_manager.add_topic_model_training(
             topic_model_id=topic_mdl.id_,
             training_file=str(train_file),
-            num_topics=topic_mdl.num_topics,
             fname_keywords=str(utils.Files.topic_model_keywords_file(id_)),
             fname_topics_by_doc=str(utils.Files.topic_model_topics_by_doc_file(id_)),
             mallet_bin_directory=str(Settings.MALLET_BIN_DIRECTORY),
@@ -953,30 +967,53 @@ class TopicModelsKeywords(TopicModelRelatedResource, SupportSpreadsheetFileType)
         SupportSpreadsheetFileType.__init__(self)
 
     def get(self, topic_model_id: int) -> Response:
-        topic_model = get_object_or_404(
+        topic_mdl = get_object_or_404(
             db.TopicModel, db.TopicModel.id_ == topic_model_id
         )
-        if topic_model.lda_set is None:
+        if topic_mdl.lda_set is None:
             raise NotFound(
                 "A training set has not been uploaded to this topic model yet. Please upload training data first."
             )
-        if not topic_model.lda_set.lda_completed:
+        if not topic_mdl.lda_set.lda_completed:
             raise BadRequest("Training this topic model has not been completed yet.")
         else:
             args = self.reqparse.parse_args()
-            keywords_file = utils.Files.topic_model_keywords_file(topic_model_id)
+            if topic_mdl.topic_names is not None:
+                keywords_file = self._get_keywords_file_with_topic_names(topic_mdl)
+            else:
+                keywords_file = utils.Files.topic_model_keywords_file(topic_mdl.id_)
+
             file_type_with_dot = "." + args["file_type"]
-            keywords_file_with_type = self._get_cached_version_with_file_type(
+            keywords_with_type_file = self._get_cached_version_with_file_type(
                 keywords_file, file_type_with_dot
             )
-            name_for_file = (
-                f"Topic_model_{topic_model.name}-keywords{file_type_with_dot}"
-            )
+            name_for_file = f"Topic_model_{topic_mdl.name}-keywords{file_type_with_dot}"
             return send_file(
-                keywords_file_with_type,
+                keywords_with_type_file,
                 as_attachment=True,
                 attachment_filename=name_for_file,
             )
+
+    @classmethod
+    def _get_keywords_file_with_topic_names(cls, topic_mdl: db.TopicModel) -> Path:
+        topic_mdl = cls._ensure_topic_names(topic_mdl)
+
+        keywords_file = utils.Files.topic_model_keywords_file(topic_mdl.id_)
+        keywords_file_with_topic_names = utils.Files.topic_model_keywords_with_topic_names_file(
+            topic_mdl.id_, topic_mdl.topic_names
+        )
+        if not keywords_file_with_topic_names.exists():
+            keywords_df = pd.read_csv(keywords_file, header=0, index_col=0)
+            # Sanity check
+            pd.testing.assert_index_equal(
+                keywords_df.columns,
+                pd.Index([f"{i}" for i in range(topic_mdl.num_topics)]),
+            )
+
+            keywords_df.columns = pd.Index(topic_mdl.topic_names)
+            keywords_df.to_csv(keywords_file_with_topic_names, header=True, index=True)
+
+        return keywords_file_with_topic_names
 
 
 class TopicModelsTopicsByDoc(TopicModelRelatedResource, SupportSpreadsheetFileType):
@@ -987,32 +1024,75 @@ class TopicModelsTopicsByDoc(TopicModelRelatedResource, SupportSpreadsheetFileTy
         SupportSpreadsheetFileType.__init__(self)
 
     def get(self, topic_model_id: int) -> Response:
-        topic_model = get_object_or_404(
+        topic_mdl = get_object_or_404(
             db.TopicModel, db.TopicModel.id_ == topic_model_id
         )
-        if topic_model.lda_set is None:
+        if topic_mdl.lda_set is None:
             raise NotFound(
                 "A training set has not been uploaded to this topic model yet. Please upload training data first."
             )
-        if not topic_model.lda_set.lda_completed:
+        if not topic_mdl.lda_set.lda_completed:
             raise BadRequest("Training this topic model has not been completed yet.")
         else:
             args = self.reqparse.parse_args()
-            topics_by_doc_file = utils.Files.topic_model_topics_by_doc_file(
-                topic_model_id
+            assert topic_mdl.topic_names is not None  # We assign default topic names
+            topics_by_doc_file = self._get_topics_by_doc_file_with_topic_names(
+                topic_mdl
             )
             file_type_with_dot = "." + args["file_type"]
             topics_by_doc_with_file_type = self._get_cached_version_with_file_type(
                 topics_by_doc_file, file_type_with_dot
             )
-            name_for_file = (
-                f"Topic_model_{topic_model.name}-keywords{file_type_with_dot}"
-            )
+            name_for_file = f"Topic_model_{topic_mdl.name}-keywords{file_type_with_dot}"
             return send_file(
                 topics_by_doc_with_file_type,
                 as_attachment=True,
                 attachment_filename=name_for_file,
             )
+
+    @classmethod
+    def _get_topics_by_doc_file_with_topic_names(cls, topic_mdl: db.TopicModel) -> Path:
+        topic_mdl = cls._ensure_topic_names(topic_mdl)
+        topics_by_doc_file_with_topic_names = utils.Files.topic_model_topics_by_doc_with_topic_names_file(
+            topic_mdl.id_, topic_mdl.topic_names
+        )
+        if not topics_by_doc_file_with_topic_names.exists():
+            topics_by_doc_file = utils.Files.topic_model_topics_by_doc_file(
+                topic_mdl.id_
+            )
+            keywords_df = pd.read_csv(topics_by_doc_file, header=0, index_col=0)
+            # Sanity check, the "default topic names" are "Topic 1", "Topic 2", etc.
+            # Technically the i-th default topic name is
+            # Settings.PROBAB_OF_TOPIC_TEMPLATE.format(str(i + 1))
+            # where i starts from 0
+            pd.testing.assert_index_equal(
+                keywords_df.columns,
+                pd.Index(
+                    [Settings.CONTENT_COL, Settings.STEMMED_CONTENT_COL]
+                    + [
+                        Settings.PROBAB_OF_TOPIC_TEMPLATE.format(
+                            Settings.DEFAULT_TOPIC_NAME_TEMPLATE.format(topic_num)
+                        )
+                        for topic_num in range(1, topic_mdl.num_topics + 1)
+                    ]
+                    + [Settings.MOST_LIKELY_TOPIC_COL]
+                ),
+            )
+
+            keywords_df.columns = pd.Index(
+                [Settings.CONTENT_COL, Settings.STEMMED_CONTENT_COL]
+                + [
+                    Settings.PROBAB_OF_TOPIC_TEMPLATE.format(topic)
+                    for topic in topic_mdl.topic_names
+                ]
+                + [Settings.MOST_LIKELY_TOPIC_COL]
+            )
+
+            keywords_df.to_csv(
+                topics_by_doc_file_with_topic_names, header=True, index=True
+            )
+
+        return topics_by_doc_file_with_topic_names
 
 
 # We will initialize database manually in here, so we are not going to do
