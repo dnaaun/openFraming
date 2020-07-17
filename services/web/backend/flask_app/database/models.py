@@ -4,6 +4,7 @@ import functools
 import typing as T
 
 import peewee as pw
+
 from flask_app.settings import needs_settings_init
 from flask_app.settings import Settings
 
@@ -86,7 +87,7 @@ class ListField(pw.TextField):
         return None
 
 
-class Metrics(BaseModel):
+class ClassifierMetrics(BaseModel):
     """Metrics on a labeled set.
 
     Attributes:
@@ -100,6 +101,10 @@ class Metrics(BaseModel):
     macro_precision: float = pw.FloatField()
     macro_recall: float = pw.FloatField()
     accuracy: float = pw.FloatField()
+
+
+class TopicModelMetrics(BaseModel):
+    umass_coherence: float = pw.FloatField()
 
 
 class LabeledSet(BaseModel):
@@ -119,7 +124,7 @@ class LabeledSet(BaseModel):
     id_: int = pw.AutoField(primary_key=True)
     training_or_inference_completed: bool = pw.BooleanField(default=False)  # type: ignore
     error_encountered: bool = pw.BooleanField(default=False)  # type: ignore
-    metrics: Metrics = pw.ForeignKeyField(Metrics, null=True)  # type: ignore
+    metrics: ClassifierMetrics = pw.ForeignKeyField(ClassifierMetrics, null=True)  # type: ignore
 
 
 class Classifier(BaseModel):
@@ -190,6 +195,7 @@ class LDASet(BaseModel):
     id_: int = pw.AutoField(primary_key=True)  # type: ignore
     error_encountered: bool = pw.BooleanField(default=False)  # type: ignore
     lda_completed: bool = pw.BooleanField(default=False)  # type: ignore
+    metrics: T.Optional[TopicModelMetrics] = pw.ForeignKeyField(TopicModelMetrics, null=True)  # type: ignore
 
 
 class TopicModel(BaseModel):
@@ -251,11 +257,12 @@ def needs_database_init(func: F) -> F:
 
 
 MODELS: T.Tuple[T.Type[pw.Model], ...] = (
-    Metrics,
+    ClassifierMetrics,
     LabeledSet,
     Classifier,
     TestSet,
     LDASet,
     TopicModel,
     SemiSupervisedSet,
+    TopicModelMetrics,
 )

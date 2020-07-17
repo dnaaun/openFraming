@@ -26,9 +26,11 @@ from werkzeug.exceptions import BadRequest
 from werkzeug.exceptions import HTTPException
 from werkzeug.exceptions import NotFound
 
-from flask_app import db
 from flask_app import utils
-from flask_app.modeling.classifier import ClassifierMetrics
+from flask_app.database import commands as database_commands
+from flask_app.database import models
+from flask_app.modeling.classifier import ClassifierMetricsJson
+from flask_app.modeling.lda import TopicModelMetricsJson
 from flask_app.modeling.queue_manager import QueueManager
 from flask_app.settings import needs_settings_init
 from flask_app.settings import Settings
@@ -145,16 +147,16 @@ class ClassifierStatusJson(TypedDict):
     trained_by_openFraming: bool
     status: TT.Literal["not_begun", "training", "error_encountered", "completed"]
     notify_at_email: str
-    metrics: T.Optional[ClassifierMetrics]
+    metrics: T.Optional[ClassifierMetricsJson]
 
 
 class ClassifierRelatedResource(BaseResource):
     """Base class to define utility functions related to classifiers."""
 
     @staticmethod
-    def _classifier_status(clsf: db.Classifier) -> ClassifierStatusJson:
+    def _classifier_status(clsf: models.Classifier) -> ClassifierStatusJson:
         """Process a Classifier instance and format it into the API spec."""
-        metrics: T.Optional[ClassifierMetrics] = None
+        metrics: T.Optional[ClassifierMetricsJson] = None
         status: TT.Literal[
             "not_begun", "error_encountered", "completed", "training"
         ] = "not_begun"
@@ -164,7 +166,7 @@ class ClassifierRelatedResource(BaseResource):
                 assert clsf.dev_set.training_or_inference_completed
                 assert clsf.dev_set.metrics is not None
                 status = "completed"
-                metrics = ClassifierMetrics(
+                metrics = ClassifierMetricsJson(
                     accuracy=clsf.dev_set.metrics.accuracy,
                     macro_f1_score=clsf.dev_set.metrics.macro_f1_score,
                     macro_precision=clsf.dev_set.metrics.macro_precision,
@@ -197,7 +199,7 @@ class OneClassifier(ClassifierRelatedResource):
 
     def get(self, classifier_id: int) -> ClassifierStatusJson:
         clsf = get_object_or_404(
-            db.Classifier, db.Classifier.classifier_id == classifier_id
+            models.Classifier, models.Classifier.classifier_id == classifier_id
         )
         return self._classifier_status(clsf)
 
@@ -241,7 +243,7 @@ class Classifiers(ClassifierRelatedResource):
         category_names = args["category_names"]
         name = args["name"]
         notify_at_email = args["notify_at_email"]
-        clsf = db.Classifier.create(
+        clsf = models.Classifier.create(
             name=name, category_names=category_names, notify_at_email=notify_at_email
         )
         clsf.save()
@@ -250,7 +252,7 @@ class Classifiers(ClassifierRelatedResource):
 
     def get(self) -> T.List[ClassifierStatusJson]:
         """Get a list of classifiers."""
-        res = [self._classifier_status(clsf) for clsf in db.Classifier.select()]
+        res = [self._classifier_status(clsf) for clsf in models.Classifier.select()]
         return res
 
 
@@ -281,8 +283,10 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         file_: FileStorage = args["file"]
 
         try:
-            classifier = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
-        except db.Classifier.DoesNotExist:
+            classifier = models.Classifier.get(
+                models.Classifier.classifier_id == classifier_id
+            )
+        except models.Classifier.DoesNotExist:
             raise NotFound("classifier not found.")
 
         if classifier.train_set is not None:
@@ -305,14 +309,16 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         dev_file = utils.Files.classifier_dev_set_file(classifier_id)
         self._write_headers_and_data_to_csv(table_headers, dev_data, dev_file)
 
-        classifier.train_set = db.LabeledSet()
-        classifier.dev_set = db.LabeledSet()
+        classifier.train_set = models.LabeledSet()
+        classifier.dev_set = models.LabeledSet()
         classifier.train_set.save()
         classifier.dev_set.save()
         classifier.save()
 
         # Refresh classifier
-        classifier = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
+        classifier = models.Classifier.get(
+            models.Classifier.classifier_id == classifier_id
+        )
 
         queue_manager: QueueManager = current_app.queue_manager
 
@@ -402,7 +408,7 @@ class ClassifierTestSetStatusJson(TypedDict):
 
 class ClassifierTestSetRelatedResource(ClassifierRelatedResource):
     @staticmethod
-    def _test_set_status(test_set: db.TestSet) -> ClassifierTestSetStatusJson:
+    def _test_set_status(test_set: models.TestSet) -> ClassifierTestSetStatusJson:
         status: TT.Literal[
             "not_begun", "predicting", "error_encountered", "completed"
         ] = "not_begun"
@@ -428,7 +434,7 @@ class OneClassifierTestSet(ClassifierTestSetRelatedResource):
     url = "/classifiers/<int:classifier_id>/test_sets/<int:test_set_id>"
 
     def get(self, classifier_id: int, test_set_id: int) -> ClassifierTestSetStatusJson:
-        test_set = get_object_or_404(db.TestSet, db.TestSet.id_ == test_set_id)
+        test_set = get_object_or_404(models.TestSet, models.TestSet.id_ == test_set_id)
         if test_set.classifier.classifier_id != classifier_id:
             raise NotFound("!test set not found.")
         return self._test_set_status(test_set)
@@ -454,7 +460,7 @@ class ClassifiersTestSets(ClassifierTestSetRelatedResource):
 
     def get(self, classifier_id: int) -> T.List[ClassifierTestSetStatusJson]:
         clsf = get_object_or_404(
-            db.Classifier, db.Classifier.classifier_id == classifier_id
+            models.Classifier, models.Classifier.classifier_id == classifier_id
         )
 
         return [self._test_set_status(test_set) for test_set in clsf.test_sets]
@@ -465,8 +471,10 @@ class ClassifiersTestSets(ClassifierTestSetRelatedResource):
         notify_at_email: str = args["notify_at_email"]
 
         try:
-            classifier = db.Classifier.get(db.Classifier.classifier_id == classifier_id)
-        except db.Classifier.DoesNotExist:
+            classifier = models.Classifier.get(
+                models.Classifier.classifier_id == classifier_id
+            )
+        except models.Classifier.DoesNotExist:
             raise NotFound("classifier not found.")
 
         if classifier.train_set is None:
@@ -477,7 +485,7 @@ class ClassifiersTestSets(ClassifierTestSetRelatedResource):
             assert not classifier.dev_set.training_or_inference_completed
             raise BadRequest("This classifier's training has not been completed yet.")
 
-        test_set = db.TestSet.create(
+        test_set = models.TestSet.create(
             classifier=classifier, name=test_set_name, notify_at_email=notify_at_email
         )
 
@@ -499,7 +507,7 @@ class ClassifiersTestSetsPredictions(
         SupportSpreadsheetFileType.__init__(self)
 
     def get(self, classifier_id: int, test_set_id: int) -> Response:
-        test_set = get_object_or_404(db.TestSet, db.TestSet.id_ == test_set_id)
+        test_set = get_object_or_404(models.TestSet, models.TestSet.id_ == test_set_id)
         if test_set.classifier.classifier_id != classifier_id:
             raise NotFound(
                 "Please check the classifier id and the test set id. They don't match."
@@ -555,7 +563,7 @@ class ClassifiersTestSetsFile(ClassifierTestSetRelatedResource):
         args = self.reqparse.parse_args()
         file_: FileStorage = args["file"]
 
-        test_set = get_object_or_404(db.TestSet, db.TestSet.id_ == test_set_id)
+        test_set = get_object_or_404(models.TestSet, models.TestSet.id_ == test_set_id)
         if test_set.classifier.classifier_id != classifier_id:
             raise NotFound(
                 "Please check the classifier id and test set id. They don't match."
@@ -629,6 +637,7 @@ class TopicModelStatusJson(TypedDict):
     num_topics: int
     topic_names: T.Optional[T.List[str]]
     notify_at_email: str
+    metrics: T.Optional[TopicModelMetricsJson]
     status: TT.Literal[
         "not_begun", "training", "topics_to_be_named", "error_encountered", "completed"
     ]
@@ -648,7 +657,7 @@ class TopicModelRelatedResource(BaseResource):
     """Base class to define utility functions related to classifiers."""
 
     @staticmethod
-    def _ensure_topic_names(topic_mdl: db.TopicModel) -> db.TopicModel:
+    def _ensure_topic_names(topic_mdl: models.TopicModel) -> models.TopicModel:
         # TODO: Remove this. This is only for compatibility reasons.
         # We didn't assign default topic names before.
         if topic_mdl.topic_names is None:
@@ -660,7 +669,7 @@ class TopicModelRelatedResource(BaseResource):
         return topic_mdl.refresh()
 
     @staticmethod
-    def _topic_model_status_json(topic_mdl: db.TopicModel) -> TopicModelStatusJson:
+    def _topic_model_status_json(topic_mdl: models.TopicModel) -> TopicModelStatusJson:
         topic_names = topic_mdl.topic_names
         status: TT.Literal[
             "not_begun",
@@ -669,6 +678,7 @@ class TopicModelRelatedResource(BaseResource):
             "topics_to_be_named",
             "completed",
         ]
+        metrics: T.Optional[TopicModelMetricsJson] = None
         if topic_mdl.lda_set is None:
             status = "not_begun"
         else:
@@ -678,6 +688,13 @@ class TopicModelRelatedResource(BaseResource):
                 else:
                     status = "completed"
                 status = "completed"
+                # TODO: This check is necesary because metrics were added later/some topic
+                # models don't have metrics. In the future, this should be removed.
+                if topic_mdl.lda_set.metrics is not None:
+                    metrics = TopicModelMetricsJson(
+                        umass_coherence=topic_mdl.lda_set.metrics.umass_coherence
+                    )
+
             elif topic_mdl.lda_set.error_encountered:
                 status = "error_encountered"
             else:
@@ -690,10 +707,11 @@ class TopicModelRelatedResource(BaseResource):
             topic_names=topic_names,
             notify_at_email=topic_mdl.notify_at_email,
             status=status,
+            metrics=metrics,
         )
 
     @staticmethod
-    def _validate_topic_model_finished_training(topic_mdl: db.TopicModel) -> None:
+    def _validate_topic_model_finished_training(topic_mdl: models.TopicModel) -> None:
         if topic_mdl.lda_set is None:
             raise BadRequest("Topic model has not started training yet.")
         elif not topic_mdl.lda_set.lda_completed:
@@ -706,7 +724,7 @@ class OneTopicModel(TopicModelRelatedResource):
 
     def get(self, topic_model_id: int) -> TopicModelStatusJson:
         topic_mdl = get_object_or_404(
-            db.TopicModel, db.TopicModel.id_ == topic_model_id
+            models.TopicModel, models.TopicModel.id_ == topic_model_id
         )
         return self._topic_model_status_json(topic_mdl)
 
@@ -741,7 +759,7 @@ class TopicModels(TopicModelRelatedResource):
     def post(self) -> TopicModelStatusJson:
         """Create a classifier."""
         args = self.reqparse.parse_args()
-        topic_mdl = db.TopicModel.create(
+        topic_mdl = models.TopicModel.create(
             name=args["topic_model_name"],
             topic_names=[f"Topic {i}" for i in range(1, args["num_topics"] + 1)],
             num_topics=args["num_topics"],
@@ -755,7 +773,7 @@ class TopicModels(TopicModelRelatedResource):
     def get(self) -> T.List[TopicModelStatusJson]:
         res = [
             self._topic_model_status_json(topic_mdl)
-            for topic_mdl in db.TopicModel.select()
+            for topic_mdl in models.TopicModel.select()
         ]
         return res
 
@@ -776,8 +794,8 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         file_: FileStorage = args["file"]
 
         try:
-            topic_mdl = db.TopicModel.get(db.TopicModel.id_ == id_)
-        except db.TopicModel.DoesNotExist:
+            topic_mdl = models.TopicModel.get(models.TopicModel.id_ == id_)
+        except models.TopicModel.DoesNotExist:
             raise NotFound("The topic model was not found.")
 
         if topic_mdl.lda_set is not None:
@@ -799,12 +817,12 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
             fname_topics_by_doc=str(utils.Files.topic_model_topics_by_doc_file(id_)),
             mallet_bin_directory=str(Settings.MALLET_BIN_DIRECTORY),
         )
-        topic_mdl.lda_set = db.LDASet()
+        topic_mdl.lda_set = models.LDASet()
         topic_mdl.lda_set.save()
         topic_mdl.save()
 
         # Refresh classifier
-        topic_mdl = db.TopicModel.get(db.TopicModel.id_ == id_)
+        topic_mdl = models.TopicModel.get(models.TopicModel.id_ == id_)
 
         return self._topic_model_status_json(topic_mdl)
 
@@ -861,7 +879,7 @@ class TopicModelsTopicsNames(TopicModelRelatedResource):
     def post(self, id_: int) -> TopicModelStatusJson:
         args = self.reqparse.parse_args()
         topic_names: T.List[str] = args["topic_names"]
-        topic_mdl = get_object_or_404(db.TopicModel, db.TopicModel.id_ == id_)
+        topic_mdl = get_object_or_404(models.TopicModel, models.TopicModel.id_ == id_)
 
         self._validate_topic_model_finished_training(topic_mdl)
         if len(topic_names) != topic_mdl.num_topics:
@@ -880,7 +898,7 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
 
     def get(self, topic_model_id: int) -> TopicModelPreviewJson:
         topic_mdl = get_object_or_404(
-            db.TopicModel, db.TopicModel.id_ == topic_model_id
+            models.TopicModel, models.TopicModel.id_ == topic_model_id
         )
         self._validate_topic_model_finished_training(topic_mdl)
 
@@ -896,8 +914,9 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
                 "topic_model_name": topic_mdl_status_json["topic_model_name"],
                 "num_topics": topic_mdl_status_json["num_topics"],
                 "topic_names": topic_mdl_status_json["topic_names"],
-                "notify_at_email": topic_mdl.notify_at_email,
+                "notify_at_email": topic_mdl.notify_at_email,  # TODO: umm, why the black sheep?
                 "status": topic_mdl_status_json["status"],
+                "metrics": topic_mdl_status_json["metrics"],
                 "topic_previews": [
                     OneTopicPreviewJson({"examples": examples, "keywords": keywords})
                     for examples, keywords in zip(
@@ -909,7 +928,7 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
         return topic_preview_json
 
     @staticmethod
-    def _get_keywords_per_topic(topic_mdl: db.TopicModel) -> T.List[T.List[str]]:
+    def _get_keywords_per_topic(topic_mdl: models.TopicModel) -> T.List[T.List[str]]:
         """
 
         Returns:
@@ -927,7 +946,7 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
         return keywords_df.T.values.tolist()  # type: ignore[no-any-return]
 
     @staticmethod
-    def _get_examples_per_topic(topic_mdl: db.TopicModel) -> T.List[T.List[str]]:
+    def _get_examples_per_topic(topic_mdl: models.TopicModel) -> T.List[T.List[str]]:
         """
 
         Returns;
@@ -968,7 +987,7 @@ class TopicModelsKeywords(TopicModelRelatedResource, SupportSpreadsheetFileType)
 
     def get(self, topic_model_id: int) -> Response:
         topic_mdl = get_object_or_404(
-            db.TopicModel, db.TopicModel.id_ == topic_model_id
+            models.TopicModel, models.TopicModel.id_ == topic_model_id
         )
         if topic_mdl.lda_set is None:
             raise NotFound(
@@ -995,7 +1014,7 @@ class TopicModelsKeywords(TopicModelRelatedResource, SupportSpreadsheetFileType)
             )
 
     @classmethod
-    def _get_keywords_file_with_topic_names(cls, topic_mdl: db.TopicModel) -> Path:
+    def _get_keywords_file_with_topic_names(cls, topic_mdl: models.TopicModel) -> Path:
         topic_mdl = cls._ensure_topic_names(topic_mdl)
 
         keywords_file = utils.Files.topic_model_keywords_file(topic_mdl.id_)
@@ -1025,7 +1044,7 @@ class TopicModelsTopicsByDoc(TopicModelRelatedResource, SupportSpreadsheetFileTy
 
     def get(self, topic_model_id: int) -> Response:
         topic_mdl = get_object_or_404(
-            db.TopicModel, db.TopicModel.id_ == topic_model_id
+            models.TopicModel, models.TopicModel.id_ == topic_model_id
         )
         if topic_mdl.lda_set is None:
             raise NotFound(
@@ -1051,7 +1070,9 @@ class TopicModelsTopicsByDoc(TopicModelRelatedResource, SupportSpreadsheetFileTy
             )
 
     @classmethod
-    def _get_topics_by_doc_file_with_topic_names(cls, topic_mdl: db.TopicModel) -> Path:
+    def _get_topics_by_doc_file_with_topic_names(
+        cls, topic_mdl: models.TopicModel
+    ) -> Path:
         topic_mdl = cls._ensure_topic_names(topic_mdl)
         topics_by_doc_file_with_topic_names = utils.Files.topic_model_topics_by_doc_with_topic_names_file(
             topic_mdl.id_, topic_mdl.topic_names
@@ -1128,13 +1149,13 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
     # Create database tables if the SQLITE file is going to be new
     if not Settings.DATABASE_FILE.exists():
         database = pw.SqliteDatabase(str(Settings.DATABASE_FILE))
-        db.database_proxy.initialize(database)
-        with db.database_proxy.connection_context():
+        models.database_proxy.initialize(database)
+        with models.database_proxy.connection_context():
             logger.info("Created tables because SQLITE file was not found.")
-            db.database_proxy.create_tables(db.MODELS)
+            models.database_proxy.create_tables(models.MODELS)
     else:
         database = pw.SqliteDatabase(str(Settings.DATABASE_FILE))
-        db.database_proxy.initialize(database)
+        models.database_proxy.initialize(database)
         logger.info("SQLITE file found. Not creating tables")
 
     app.queue_manager = QueueManager()
@@ -1142,15 +1163,18 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
     @app.before_request
     def _db_connect() -> None:
         """Ensures that a connection is opened to handle queries by the request."""
-        db.database_proxy.connect(reuse_if_open=True)
+        models.database_proxy.connect(reuse_if_open=True)
 
     @app.teardown_request
     def _db_close(exc: T.Optional[Exception]) -> None:
         """Close on tear down."""
-        if not db.database_proxy.is_closed():
-            db.database_proxy.close()
+        if not models.database_proxy.is_closed():
+            models.database_proxy.close()
 
     api = Api(app)
+
+    # Add commands
+    database_commands.add_commands_to_app(app)
 
     lsresource_cls: T.Tuple[T.Type[ResourceProtocol], ...] = (
         Classifiers,

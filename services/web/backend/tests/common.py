@@ -17,13 +17,14 @@ import pandas as pd  # type: ignore
 import typing_extensions as TT
 from flask import current_app
 from flask import Response
-from flask_app import db
-from flask_app import settings
-from flask_app.app import create_app
-from flask_app.settings import Settings
 from redis import Redis
 from rq import Queue
 from rq import Worker
+
+from flask_app import settings
+from flask_app.app import create_app
+from flask_app.database import models
+from flask_app.settings import Settings
 
 F = T.TypeVar("F", bound=T.Callable[..., T.Any])
 
@@ -93,8 +94,8 @@ class AppMixin(unittest.TestCase):
     def tearDown(self) -> None:
         super().tearDown()
         self._app_context.pop()
-        db.database_proxy.drop_tables(db.MODELS)
-        db.database_proxy.close()
+        models.database_proxy.drop_tables(models.MODELS)
+        models.database_proxy.close()
         shutil.rmtree(Settings.PROJECT_DATA_DIRECTORY)
 
     def _assert_response_success(
