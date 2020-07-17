@@ -28,8 +28,8 @@ var downloadURL='';
 //
 
 // const endpoint = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api/"
-// const endpoint = "http://www.openframing.org/api/"
-const endpoint = "http://localhost/api/"
+const endpoint = "http://www.openframing.org/api/"
+// const endpoint = "http://localhost/api/"
 
 
 async function getFraming() {
@@ -421,7 +421,7 @@ if (page === "framing.html") {
 				policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
 			
 				if (policyIssue == "gunviolence") {
-					stateClassifier_id = 3;
+					stateClassifier_id = 15;
 					testName = policyIssue;
 					noTraining();
 				} else if (policyIssue == "other") {
