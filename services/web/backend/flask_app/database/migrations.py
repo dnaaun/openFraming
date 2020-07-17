@@ -9,14 +9,14 @@ from playhouse.reflection import Introspector
 from flask_app.database import models
 
 
-_DatabaseSub = T.TypeVar("_DatabaseSub", bound=pw.Database)
+_DatabaseSub = T.TypeVar("_DatabaseSub", bound=T.Union[pw.DatabaseProxy, pw.Database])
 
 
 class BaseMigration(abc.ABC, T.Generic[_DatabaseSub]):
     """Make it easier to run database migrations."""
 
     @abc.abstractmethod
-    def database_needs_migrations(self, db: pw.Database) -> bool:
+    def database_needs_migrations(self, db: _DatabaseSub) -> bool:
         """Check if the migration has already been run on the datbase.
 
         This is a very rough function since we don't thoroughly check that the expected
@@ -42,7 +42,7 @@ class BaseMigration(abc.ABC, T.Generic[_DatabaseSub]):
         pass
 
 
-class AddTopicModelMetricsMigration(BaseMigration[pw.SqliteDatabase]):
+class AddTopicModelMetricsMigration(BaseMigration[_DatabaseSub]):
     def database_needs_migrations(self, db: pw.Database) -> bool:
         models_in_db = Introspector.from_database(db).generate_models()
         if "ldaset" not in models_in_db:
@@ -64,12 +64,42 @@ class AddTopicModelMetricsMigration(BaseMigration[pw.SqliteDatabase]):
     def get_models_to_create(self) -> T.List[T.Type[pw.Model]]:
         return [models.TopicModelMetrics]
 
-    def make_migrate_operations(self, db: pw.SqliteDatabase) -> T.List[Operation]:
-        migrator = SqliteMigrator(db)
+    def make_migrate_operations(self, db: _DatabaseSub) -> T.List[Operation]:
+        migrator = SqliteMigrator(T.cast(pw.SqliteDatabase, db))
 
         ops = [
             migrator.add_column(
                 "ldaset", "metrics_id", models.LDASet._meta.columns["metrics_id"]
             )
         ]
+        return ops
+
+
+class RenameClassifierMetricsTableMigration(BaseMigration[_DatabaseSub]):
+    """This should actually have been part of AddTopicModelMetricsMigration, but I 
+       forgot to do this.
+
+       It's a lot of work to test migrations properly when there's no easy way to
+       setup specific versions of the ORM, I think(since I haven't done it, I can only
+       speculate).
+    """
+
+    def database_needs_migrations(self, db: _DatabaseSub) -> bool:
+        models_in_db = Introspector.from_database(db).generate_models()
+        metrics_found = "metrics" in models_in_db
+        classifiermetrics_not_found = "classifiermetrics" not in models_in_db
+
+        if metrics_found != classifiermetrics_not_found:
+            raise RuntimeError(
+                f"Inconsistent status:"
+                f" classifiermetrics_not_found={classifiermetrics_not_found} and metrics_found={metrics_found}"
+            )
+        return metrics_found
+
+    def get_models_to_create(self) -> T.List[T.Type[pw.Model]]:
+        return []
+
+    def make_migrate_operations(self, db: _DatabaseSub) -> T.List[Operation]:
+        migrator = SqliteMigrator(db)
+        ops = [migrator.rename_table("metrics", "classifiermetrics")]
         return ops
