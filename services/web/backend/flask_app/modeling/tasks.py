@@ -12,8 +12,8 @@ import typing as T
 from flask import url_for
 
 import flask_app
-from flask_app import db
 from flask_app import emails
+from flask_app.database import models
 from flask_app.modeling.classifier import ClassifierModel
 from flask_app.modeling.lda import Corpus
 from flask_app.modeling.lda import LDAModeler
@@ -32,7 +32,7 @@ def do_classifier_related_task(
     task_args: T.Union[ClassifierTrainingTaskArgs, ClassifierPredictionTaskArgs],
 ) -> None:
     if task_args["task_type"] == "prediction":
-        test_set = db.TestSet.get(db.TestSet.id_ == task_args["test_set_id"])
+        test_set = models.TestSet.get(models.TestSet.id_ == task_args["test_set_id"])
         assert test_set.inference_began
         assert not test_set.inference_completed
 
@@ -72,8 +72,8 @@ def do_classifier_related_task(
 
     elif task_args["task_type"] == "training":
         assert task_args["task_type"] == "training"
-        clsf = db.Classifier.get(
-            db.Classifier.classifier_id == task_args["classifier_id"]
+        clsf = models.Classifier.get(
+            models.Classifier.classifier_id == task_args["classifier_id"]
         )
         assert clsf.train_set is not None
         assert clsf.dev_set is not None
@@ -96,13 +96,14 @@ def do_classifier_related_task(
         else:
             clsf.train_set.training_or_inference_completed = True
             clsf.dev_set.training_or_inference_completed = True
-            clsf.dev_set.metrics = db.Metrics(**metrics)
+            clsf.dev_set.metrics = models.ClassifierMetrics(**metrics)
             clsf.dev_set.metrics.save()
             emailer = emails.Emailer()
             emailer.send_email(
                 email_template_name="classifier_training_finished",
                 to_email=clsf.notify_at_email,
                 classifier_name=clsf.name,
+                metrics=T.cast(T.Dict[str, float], metrics),
             )
 
         finally:
@@ -113,7 +114,9 @@ def do_classifier_related_task(
 
 @flask_app.app.needs_app_context
 def do_topic_model_related_task(task_args: TopicModelTrainingTaskArgs) -> None:
-    topic_mdl = db.TopicModel.get(db.TopicModel.id_ == task_args["topic_model_id"])
+    topic_mdl = models.TopicModel.get(
+        models.TopicModel.id_ == task_args["topic_model_id"]
+    )
     assert topic_mdl.lda_set is not None
     try:
         corpus = Corpus(
@@ -130,12 +133,13 @@ def do_topic_model_related_task(task_args: TopicModelTrainingTaskArgs) -> None:
         logger.critical(f"Error while doing lda training task: {e}")
         topic_mdl.lda_set.error_encountered = True
     else:
-        lda_modeler.model_topics_to_spreadsheet(
+        metrics = lda_modeler.model_topics_to_spreadsheet(
             num_topics=topic_mdl.num_topics,
             default_topic_names=topic_mdl.topic_names,
             fname_keywords=task_args["fname_keywords"],
             fname_topics_by_doc=task_args["fname_topics_by_doc"],
         )
+        topic_mdl.lda_set.metrics = models.TopicModelMetrics.create(**metrics)
         topic_mdl.lda_set.lda_completed = True
         emailer = emails.Emailer()
         emailer.send_email(
@@ -143,6 +147,7 @@ def do_topic_model_related_task(task_args: TopicModelTrainingTaskArgs) -> None:
             to_email=topic_mdl.notify_at_email,
             topic_model_name=topic_mdl.name,
             topic_model_preview_url=f"http://{Settings.SERVER_NAME}/topicModelPreviews.html?topic_model_id={topic_mdl.id_}",
+            metrics=T.cast(T.Dict[str, T.Union[int, float]], metrics),
         )
 
     finally:

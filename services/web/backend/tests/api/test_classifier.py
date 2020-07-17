@@ -12,11 +12,11 @@ from tests.common import make_csv_file
 from tests.common import RQWorkerMixin
 from tests.common import TESTING_FILES_DIR
 
-from flask_app import db
 from flask_app import utils
 from flask_app.app import API_URL_PREFIX
 from flask_app.app import ClassifierStatusJson
 from flask_app.app import ClassifierTestSetStatusJson
+from flask_app.database import models
 from flask_app.modeling.queue_manager import QueueManager
 from flask_app.settings import Settings
 
@@ -25,7 +25,7 @@ class ClassifierMixin(RQWorkerMixin, AppMixin):
     def setUp(self) -> None:
         super().setUp()
         # Create a classifer in the database
-        self._clsf = db.Classifier.create(
+        self._clsf = models.Classifier.create(
             notify_at_email="davidat@bu.edu",
             name="test_classifier",
             category_names=["up", "down"],
@@ -146,8 +146,8 @@ class TestClassifiersTrainingFile(ClassifierMixin):
         shutil.copy(TESTING_FILES_DIR / "classifiers" / "train.csv", train_set_file)
 
         # Update the database
-        self._clsf.train_set = db.LabeledSet()
-        self._clsf.dev_set = db.LabeledSet()
+        self._clsf.train_set = models.LabeledSet()
+        self._clsf.dev_set = models.LabeledSet()
         self._clsf.dev_set.save()
         self._clsf.train_set.save()
         self._clsf.save()

@@ -20,8 +20,9 @@ from transformers.trainer_utils import PredictionOutput
 from flask_app.modeling.lda import CSV_EXTENSIONS
 from flask_app.settings import Settings
 
-ClassifierMetrics = TT.TypedDict(
-    "ClassifierMetrics",
+# Named as such to distinguish from db.ClassifierMetrics
+ClassifierMetricsJson = TT.TypedDict(
+    "ClassifierMetricsJson",
     {
         "accuracy": float,
         "macro_f1_score": float,
@@ -163,7 +164,7 @@ class ClassifierModel(object):
                 dev_file, Settings.CONTENT_COL, Settings.LABEL_COL,
             )
 
-    def compute_metrics(self, p: EvalPrediction) -> ClassifierMetrics:
+    def compute_metrics(self, p: EvalPrediction) -> ClassifierMetricsJson:
         """
         Compute accuracy of predictions vs labels. Piggy back on sklearn.
         """
@@ -175,7 +176,7 @@ class ClassifierModel(object):
         clsf_report_sklearn = classification_report(
             y_true=y_true, y_pred=y_pred, output_dict=True, labels=self.labels,
         )
-        final = ClassifierMetrics(
+        final = ClassifierMetricsJson(
             {
                 "accuracy": clsf_report_sklearn["accuracy"],
                 "macro_f1_score": clsf_report_sklearn["macro avg"]["f1-score"],
@@ -230,7 +231,7 @@ class ClassifierModel(object):
         self.trainer.save_model()
         self.tokenizer.save_pretrained(self.trainer.args.output_dir)
 
-    def train_and_evaluate(self) -> ClassifierMetrics:
+    def train_and_evaluate(self) -> ClassifierMetricsJson:
         """
         Wrapper on the trainer.evaluate method; evaluate model's performance on eval set
         provided by the user.
@@ -249,7 +250,7 @@ class ClassifierModel(object):
                 new_key = key.replace("eval_", "")
             new_metrics[new_key] = val  # type: ignore
 
-        return ClassifierMetrics(
+        return ClassifierMetricsJson(
             {
                 "accuracy": new_metrics["accuracy"],
                 "macro_f1_score": new_metrics["macro_f1_score"],
