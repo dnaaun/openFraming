@@ -28,8 +28,8 @@ var downloadURL='';
 //
 
 // const endpoint = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api/"
-const endpoint = "http://www.openframing.org/api/"
-// const endpoint = "http://localhost/api/"
+// const endpoint = "http://www.openframing.org/api/"
+const endpoint = "http://localhost/api/"
 
 
 async function getFraming() {
@@ -382,36 +382,45 @@ var emailAddress = $("#email");
 // 	// })
 // }
 
-$('#annotatedsamplefile2').on("change", function(){ 
-	$('#performAnalysis').click(async function(){
-
-		// if(!validateEmail(emailAddress)) { 
-			/* do stuff here */ 
-			console.log(name);
-			console.log(emailAddress)
-			$('#hideStep1').hide();
-			$('#hideStep1_1').hide();
-			$('#hideStep2').hide();
-			$('#hideStep3').hide();
-			
-			$('#result').fadeIn();
-			
-			email = document.getElementById("email").value;
-			testName = document.getElementById("other_text").value;
-			policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
-		
-			if (policyIssue == "gunviolence") {
-				stateClassifier_id = 7;
-				testName = policyIssue;
-				noTraining();
-			} else if (policyIssue == "other") {
-				await initTraining();
-			}
-		// }
-
-
-	 });
+$('#downloadFile').click(function() {
+	var file = "./files/test.csv";
+	window.open(file);
 });
+
+var path = window.location.pathname;
+var page = path.split("/").pop();
+console.log( page );
+
+if (page === "framing.html") {
+	$('#annotatedsamplefile2').on("change", function(){ 
+		$('#performAnalysis').click(async function(){
+	
+			// if(!validateEmail(emailAddress)) { 
+				/* do stuff here */ 
+				console.log(name);
+				console.log(emailAddress)
+				$('#hideStep1').hide();
+				$('#hideStep1_1').hide();
+				$('#hideStep2').hide();
+				$('#hideStep3').hide();
+				
+				$('#result').fadeIn();
+				
+				email = document.getElementById("email").value;
+				testName = document.getElementById("other_text").value;
+				policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
+			
+				if (policyIssue == "gunviolence") {
+					stateClassifier_id = 3;
+					testName = policyIssue;
+					noTraining();
+				} else if (policyIssue == "other") {
+					await initTraining();
+				}
+		 });
+	});
+}
+
 
 
  

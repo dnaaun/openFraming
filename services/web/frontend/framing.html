@@ -135,7 +135,11 @@
                     <div class="row step2">
                         <div class="col-md-12"><label for="documenttextarea" class="text-body">Please upload your data in form of a Excel sheet or CSV file, please upload it by clicking on the button below.<br>Select a document
                                 file.<br></label>
-                            <div class="form-group"><input type="file" name="annotatedsamplefile2" id="annotatedsamplefile2" accept=".xlsx, .xls, .csv" class=""></div>
+                            <div class="form-group">
+                                <input type="file" name="annotatedsamplefile2" id="annotatedsamplefile2" accept=".xlsx, .xls, .csv" class="">
+                                <button type="button" class="btn btn-secondary text-white" id="downloadFile" value="test">Try Our Test File</button>
+
+                            </div>
                         </div>
                     </div>
                 <!-- </div> -->
@@ -169,6 +173,7 @@
                     <div class="col-md-12 py-3">
                         <!-- <a class="btn btn-secondary text-white" href="#">Perform Analysis</a> -->
                         <button type="button" class="btn btn-secondary text-white" id="performAnalysis" value="test">Perform Analysis</button>
+
                     </div>
                 </div>
             <!-- </div> -->
