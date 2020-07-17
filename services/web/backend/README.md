@@ -77,10 +77,10 @@ Empty.
      "metrics": One_of(
         NULL,
         {
-	  "macro_f1_score": float,
-	  "macro_precision": float,
-	  "macro_recall": float,
-	  "accuracy": float
+          "macro_f1_score": float,
+          "macro_precision": float,
+          "macro_recall": float,
+          "accuracy": float
         }
       )
    },
@@ -395,12 +395,19 @@ Empty.
     "num_topics": int,
 
     # The user will be able to provide names for the topics discovered by the topic model.
-    # If the training finished and the user provided the names, this will not
-    # be NULL.
-    "topic_names": One_of(NULL, [str, ...])
+    # By default, we give topic names "Topic 1", "Topic 2", ... etc.
+    "topic_names": [str, ...],
 
     # The email address to send a notification to when training this topic model finishes
     "notify_at_email": str,
+
+    # The metrics will be NULL for a topic model that is not trained yet.
+    "metrics": One_of(
+         NULL,
+         {
+            "umass_coherence": float
+         }
+    ),
 
     # "training" indicates the topic model is training currently. "topics_to_be_named"
     # indicates the topic model finished training, but the topics have not been named yet by the
@@ -443,9 +450,10 @@ Empty.
   "topic_model_id": int, 
   "topic_model_name": str,
   "num_topics": int,
-  "topic_names": NULL, 
+  "topic_names": [str, ...],
   "notify_at_email": str
-  "status": "not_begun"
+  "metrics": NULL,
+   "status": "not_begun"
  }
 ```
 
@@ -467,8 +475,14 @@ Empty.
   "topic_model_id": int,
   "topic_model_name": str,
   "num_topics": int,
-  "topic_names": One_of(NULL, [str, ...]),
+  "topic_names": [str, ...],
   "notify_at_email": str,
+  "metrics": One_of(
+    NULL,
+    {
+      "umass_coherence": float
+    }
+  ,
   "status": One_of("not_begun", "training", "error_encountered", "topics_to_be_named", "completed")
 }
 ```
@@ -498,8 +512,9 @@ file format is identical to the file format required by the
   "topic_model_id": int,
   "topic_model_name": str,
   "num_topics": int,
-  "topic_names": NULL,
+  "topic_names": [str, ...],
   "notify_at_email": str,
+  "metrics": NULL,
   "status":  "training"
 }
 ```
@@ -527,8 +542,11 @@ Empty.
   "topic_model_name": str,
   "num_topics": int,
   "notify_at_email": str,
+  "topic_names": [str, ...],
 
-  "topic_names": One_of(NULL, [str, ...]),
+  "metrics": {
+    "umass_coherence": float
+  },
 
   # If we're providing a preview, the topic model has been trained already,
   # which is why the status can only be one of the two below.
@@ -583,6 +601,9 @@ human readable names to the topic.
      "num_topics": int,
      "topic_names": [str, ...],
      "notify_at_email": str,
+     "metrics": {
+       "umass_coherence": float
+     },
      "status": "completed"
 }
 ```
