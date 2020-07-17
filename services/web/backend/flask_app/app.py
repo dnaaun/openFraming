@@ -220,6 +220,7 @@ class Classifiers(ClassifierRelatedResource):
             type=self._validate_email,
             required=True,
             location="json",
+            help="The email address provided must be a valid email address.",
         )
         self.reqparse.add_argument(
             name="category_names",
@@ -227,20 +228,16 @@ class Classifiers(ClassifierRelatedResource):
             action="append",
             required=True,
             location="json",
-            help="The category names must be a list of strings.",
+            help="The category names must be a list of strings that don't contain commas within them..",
         )
 
     def post(self) -> ClassifierStatusJson:
         """Create a classifier."""
 
         args = self.reqparse.parse_args()
-        if (
-            len(args["category_names"]) < 2
-        ):  # I don't know how to do this validation in the
-            # RequestParser
-            raise BadRequest("must be at least two categories.")
-
         category_names = args["category_names"]
+        utils.Validate.no_duplicates(category_names)
+        utils.Validate.not_just_one(category_names)
         name = args["name"]
         notify_at_email = args["notify_at_email"]
         clsf = models.Classifier.create(
@@ -742,12 +739,16 @@ class TopicModels(TopicModelRelatedResource):
 
         def greater_than_1(x: T.Any) -> int:
             int_x = int(x)
-            if int_x < 1:
-                raise ValueError("must be greater than 1")
+            if int_x <= 1:
+                raise ValueError("Must be greater than 1")
             return int_x
 
         self.reqparse.add_argument(
-            name="num_topics", type=greater_than_1, required=True, location="json"
+            name="num_topics",
+            type=greater_than_1,
+            required=True,
+            location="json",
+            help="The number of topics must be an integer greater than 1.",
         )
         self.reqparse.add_argument(
             name="notify_at_email",

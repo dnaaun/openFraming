@@ -269,3 +269,18 @@ class Validate:
                 f"table must have {num_columns}"
                 + ("column." if num_columns == 1 else "columns.")
             )
+
+    @classmethod
+    def no_duplicates(
+        cls, ls: T.List[str], error_msg: str = "There must be no duplicates."
+    ) -> None:
+        """Checks after lower casing."""
+        if not len(set([s.lower() for s in ls])) == len(ls):
+            raise BadRequest(error_msg)
+
+    @classmethod
+    def not_just_one(
+        cls, ls: T.List[str], error_msg: str = "We need more than one."
+    ) -> None:
+        if not len(ls) > 1:
+            raise BadRequest(error_msg)
