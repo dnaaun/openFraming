@@ -9,10 +9,10 @@ from tests.common import AppMixin
 from tests.common import make_csv_file
 from tests.common import RQWorkerMixin
 
-from flask_app import db
 from flask_app import utils
 from flask_app.app import API_URL_PREFIX
 from flask_app.app import TopicModelStatusJson
+from flask_app.database import models
 from flask_app.modeling.queue_manager import QueueManager
 from flask_app.settings import Settings
 from flask_app.utils import Json
@@ -22,7 +22,7 @@ class TopicModelMixin(RQWorkerMixin, AppMixin):
     def setUp(self) -> None:
         super().setUp()
         num_topics = 10
-        self._topic_mdl = db.TopicModel.create(
+        self._topic_mdl = models.TopicModel.create(
             name="test_topic_model",
             num_topics=num_topics,
             topic_names=[
@@ -91,6 +91,7 @@ class TestTopicModels(TopicModelMixin, unittest.TestCase):
                     for topic_num in range(1, self._topic_mdl.num_topics + 1)
                 ],
                 "status": "not_begun",
+                "metrics": None,
                 "notify_at_email": self._topic_mdl.notify_at_email,
             }
         )
@@ -146,6 +147,7 @@ class TestTopicModels(TopicModelMixin, unittest.TestCase):
                             for topic_num in range(1, num_topics + 1)
                         ],
                         "status": "not_begun",
+                        "metrics": None,
                         "notify_at_email": "davidat@bu.edu",
                     }
                 )
@@ -209,7 +211,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
         )
 
         # Update db
-        lda_set = db.LDASet()
+        lda_set = models.LDASet()
         lda_set.save()
         self._topic_mdl.lda_set = lda_set
         self._topic_mdl.save()
@@ -231,7 +233,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
 
         assert self._burst_workers("topic_models")
 
-        with self.subTest("Test LDA file results."):
+        with self.subTest("Test LDA file results are present"):
             self.assertTrue(fname_keywords.exists())
             self.assertTrue(fname_topics_by_doc.exists())
 
@@ -246,6 +248,10 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
                 resp_json: Json = resp.get_json()
             assert isinstance(resp_json, dict)
             self.assertEqual(resp_json["status"], "completed")
+            self.assertIsNotNone(resp_json["metrics"])
+            self.assertLessEqual(  # presumably, the metrics are an integer or float
+                set(map(type, resp_json["metrics"].values())), {int, float}
+            )
 
         with self.subTest("topic previews"):
             url = API_URL_PREFIX + f"/topic_models/{self._topic_mdl.id_}/topics/preview"
@@ -254,18 +260,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
                 self._assert_response_success(resp)
                 resp_json = resp.get_json()
             assert isinstance(resp_json, dict)
-            self.assertTrue(
-                {
-                    "topic_model_id",
-                    "topic_model_name",
-                    "num_topics",
-                    "topic_names",
-                    "status",
-                    "topic_previews",
-                    "notify_at_email",
-                }
-                == set(resp_json.keys())
-            )
+            self.assertIn("topic_previews", set(resp_json.keys()))
             self.assertEqual(
                 len(resp_json["topic_previews"]), self._topic_mdl.num_topics
             )
@@ -392,7 +387,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
         )
 
         # Mock db
-        lda_set = db.LDASet()
+        lda_set = models.LDASet()
         lda_set.save()
         self._topic_mdl.lda_set = lda_set
         self._topic_mdl.save()

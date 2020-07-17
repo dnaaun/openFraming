@@ -9,12 +9,11 @@ import pandas as pd  # type: ignore
 import typing_extensions as TT
 from gensim import corpora  # type: ignore
 from gensim import models
+from gensim.models import CoherenceModel  # type: ignore
 from nltk.corpus import stopwords  # type: ignore
 from nltk.stem.wordnet import WordNetLemmatizer  # type: ignore
 
 from flask_app.settings import Settings
-
-# from gensim.models import CoherenceModel  # type: ignore
 
 
 EXCEL_EXTENSIONS = {"xlsx", "xls"}
@@ -27,6 +26,10 @@ EXPERT_LABEL_COLUMN_NAME = "EXPERT_LABEL"
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class TopicModelMetricsJson(TT.TypedDict):
+    umass_coherence: float
 
 
 class LDAPreprocessingOptions(TT.TypedDict, total=False):
@@ -291,7 +294,9 @@ class LDAModeler(object):
         self,
         num_topics: int = 10,
         num_keywords: int = Settings.DEFAULT_NUM_KEYWORDS_TO_GENERATE,
-    ) -> T.Tuple[T.List[T.List[str]], T.Any, T.Iterator[T.List[T.Tuple[int, float]]]]:
+    ) -> T.Tuple[
+        float, T.List[T.List[str]], T.Any, T.Iterator[T.List[T.Tuple[int, float]]]
+    ]:
         self.num_topics = num_topics
 
         mallet_path = Path(self.mallet_bin_directory) / "mallet"
@@ -310,11 +315,10 @@ class LDAModeler(object):
             iterations=self.iterations,
         )
 
-        # TODO: Integrate this to database.
-        # coherence_model = CoherenceModel(
-        # model=self.lda_model, corpus=self.corpus_bow, coherence="u_mass"
-        # )
-        # coherence = coherence_model.get_coherence()
+        coherence_model = CoherenceModel(
+            model=self.lda_model, corpus=self.corpus_bow, coherence="u_mass"
+        )
+        umass_coherence: np.float64 = coherence_model.get_coherence()
 
         topic_keywords: T.List[T.List[str]] = []
         for idx, topic in self.lda_model.show_topics(
@@ -327,7 +331,7 @@ class LDAModeler(object):
             T.List[T.Tuple[int, float]]
         ] = self.lda_model.load_document_topics()
 
-        return topic_keywords, topic_proportions, topics_by_doc
+        return float(umass_coherence), topic_keywords, topic_proportions, topics_by_doc
 
     def model_topics_to_spreadsheet(
         self,
@@ -337,12 +341,20 @@ class LDAModeler(object):
         fname_keywords: str = "topic_keywords_and_proportions.xlsx",
         fname_topics_by_doc: str = "topic_probabilities_by_document.xlsx",
         extra_df_columns_wanted: T.List[str] = [],
-    ) -> bool:
+    ) -> TopicModelMetricsJson:
+        """
+
+        Returns:
+            umass_coherence:
+        """
 
         self.num_topics = num_topics
-        topic_keywords, topic_proportions, topics_by_doc = self.model_topics(
-            self.num_topics, num_keywords
-        )
+        (
+            umass_coherence,
+            topic_keywords,
+            topic_proportions,
+            topics_by_doc,
+        ) = self.model_topics(self.num_topics, num_keywords)
 
         topic_keywords_df = pd.DataFrame()
         for w_idx in range(num_keywords):
@@ -380,7 +392,7 @@ class LDAModeler(object):
         doc_topic_df[Settings.MOST_LIKELY_TOPIC_COL] = most_likely_topic_per_doc
         doc_topic_df.to_csv(fname_topics_by_doc, index=True)
 
-        return True
+        return TopicModelMetricsJson(umass_coherence=float(umass_coherence))
 
     def get_topic_proportions(self) -> np.ndarray:  # type: ignore
         """
