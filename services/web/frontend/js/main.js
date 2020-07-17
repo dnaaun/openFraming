@@ -382,9 +382,19 @@ var emailAddress = $("#email");
 // 	// })
 // }
 
-$('#downloadFile').click(function() {
+$('#downloadTestFile').click(function() {
 	var file = "./files/test.csv";
 	window.open(file);
+});
+
+$('#downloadTrainingFile').click(function() {
+	var file = "./files/train.csv";
+	window.open(file);
+});
+
+$('#inputLabel').click(function() {
+	var ourLabel = "gun rights,gun control,politics,mental health,school/public space safety,race/ethnicity,public opinion,society/culture,economic consequences";
+	document.getElementById('category_names').value = ourLabel;
 });
 
 var path = window.location.pathname;

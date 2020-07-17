@@ -104,16 +104,25 @@
             <div class="row">
                 <div class="col-md-12">
                     <div class="form-group"><textarea class="form-control" id="category_names" rows="3"
-                            placeholder="gun rights,gun control,politics,mental health,school/public space safety,race/ethnicity,public opinion,society/culture,economic consequences"></textarea><span style="color: red;" id="commaerror">Please
+                            placeholder="gun control,politics,school/public space safety,public opinion"></textarea><span style="color: red;" id="commaerror">Please
                             separate the frame names with a comma</span>
                     </div>
                 </div>
             </div>
             <div class="row">
-                <div class="col-md-12"><span>If you chose <b>Other</b> for <b>Policy Issue</b> please upload a sample annotated data in CSV, xls, or xlsx format. <div class="form-group"><input type="file" name="annotatedsamplefile1"
-                                id="annotatedsamplefile1" accept=".xlsx, .xls, .csv" class=""></div>
+                <div class="col-md-12">
+                    <span>If you chose <b>Other</b> for <b>Policy Issue</b> please upload a sample annotated data in CSV, xls, or xlsx format. 
+                        <div class="form-group">
+                            <input type="file" name="annotatedsamplefile1" id="annotatedsamplefile1" accept=".xlsx, .xls, .csv" class="">
+                            <button type="button" class="btn btn-secondary text-white" id="downloadTrainingFile" value="test">Try Our Train File</button>
+                            <button type="button" class="btn btn-secondary text-white" id="inputLabel" value="test">Input Our Label</button>
+
+
+                        </div>
                         <span id="emptysamplefileerror" style="display:none;">Please upload a sample annotated file if you chose <b>Other</b></span>
-                    </span></div>
+                    </span>
+
+                </div>
             </div>
         </div>
 
@@ -137,7 +146,7 @@
                                 file.<br></label>
                             <div class="form-group">
                                 <input type="file" name="annotatedsamplefile2" id="annotatedsamplefile2" accept=".xlsx, .xls, .csv" class="">
-                                <button type="button" class="btn btn-secondary text-white" id="downloadFile" value="test">Try Our Test File</button>
+                                <button type="button" class="btn btn-secondary text-white" id="downloadTestFile" value="test">Try Our Test File</button>
 
                             </div>
                         </div>
