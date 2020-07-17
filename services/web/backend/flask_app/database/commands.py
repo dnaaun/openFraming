@@ -32,12 +32,12 @@ def run_migration(migration_name: str) -> None:
         flask_app.database.migrations, migration_name
     )
     migration = migration_class()
-    if not migration.database_needs_migrations(database_proxy.obj):
+    if not migration.database_needs_migrations(database_proxy.obj):  # type: ignore[arg-type]
         print("Database doesn't need the migrations.")
         return
 
     models = migration.get_models_to_create()
-    operations = migration.make_migrate_operations(database_proxy)
+    operations = migration.make_migrate_operations(database_proxy.obj)  # type: ignore[arg-type]
     with database_proxy.atomic():
         database_proxy.create_tables(models)
         migrate(*operations)
