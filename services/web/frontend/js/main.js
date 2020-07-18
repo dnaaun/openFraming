@@ -381,16 +381,14 @@ $('#downloadTestFile').click(function() {
 
 $('#downloadTrainingFile').click(function() {
 	var file = "./files/train.csv";
-	window.open(file);
-});
+	window.open(file,"_self");
 
-$('#inputLabel').click(function() {
-	// var ourLabel = "gun rights,gun control,politics,mental health,school/public space safety,race/ethnicity,public opinion,society/culture,economic consequences";
+	var ourTopic = "Gun Violence";
+	$('#other_text').val(ourTopic);
+
 	var ourLabel = "2nd Amendment rights,Economic consequences,Gun control,Mental health,Politics,Public opinion,Race,School or public space safety,Society";
-
 	$('#category_names').val(ourLabel);
 	$('#category_names').keyup();
-	// document.getElementById('category_names').value = ourLabel;
 });
 
 // const endpoint = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api/"
@@ -401,7 +399,7 @@ var path = window.location.pathname;
 var page = path.split("/").pop();
 console.log( page );
 
-if (page === "framing.html") {
+// if (page === "framing.html") {
 	$('#annotatedsamplefile2').on("change", function(){ 
 		$('#performAnalysis').click(async function(){
 	
@@ -417,7 +415,6 @@ if (page === "framing.html") {
 				$('#result').fadeIn();
 				
 				email = document.getElementById("email").value;
-				testName = document.getElementById("other_text").value;
 				policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
 			
 				if (policyIssue == "gunviolence") {
@@ -425,11 +422,12 @@ if (page === "framing.html") {
 					testName = policyIssue;
 					noTraining();
 				} else if (policyIssue == "other") {
+					testName = document.getElementById("other_text").value;
 					await initTraining();
 				}
 		 });
 	});
-}
+// }
 
 
 
