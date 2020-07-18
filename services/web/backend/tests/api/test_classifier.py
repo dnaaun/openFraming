@@ -171,7 +171,7 @@ class TestClassifiersTrainingFile(ClassifierMixin):
             dev_file=str(dev_set_file),
             cache_dir=str(Settings.TRANSFORMERS_CACHE_DIRECTORY),
             output_dir=str(output_dir),
-            num_train_epochs=1.0,
+            num_train_epochs=2.0,
         )
         self._burst_workers("classifiers")
 
@@ -205,7 +205,7 @@ class TestClassifiersTrainingFile(ClassifierMixin):
                 dev_file=str(dev_set_file),
                 cache_dir=str(Settings.TRANSFORMERS_CACHE_DIRECTORY),
                 output_dir=str(output_dir),
-                num_train_epochs=1.0,
+                num_train_epochs=2.0,
             )
             # Do the queued work
             assert self._burst_workers("classifiers")
@@ -238,6 +238,7 @@ class TestClassifiersTrainingFile(ClassifierMixin):
                 {"macro_f1_score", "accuracy", "macro_precision", "macro_recall",},
                 set(metrics.keys()),
             )
+            self.assertTrue(all(0 <= metric <= 1 for metric in metrics.values()))
             self.assertSetEqual(set(map(type, metrics.values())), {float})
 
         with self.subTest("get all test sets"):
