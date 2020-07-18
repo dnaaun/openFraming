@@ -24,14 +24,6 @@ var resultText='';
 var downloadURL='';
 
 
-// GET POST
-//
-
-// const endpoint = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api/"
-const endpoint = "http://www.openframing.org/api/"
-// const endpoint = "http://localhost/api/"
-
-
 async function getFraming() {
 	// console.log("asdfdas");
 	var endpointGET = endpoint + 'classifiers/';
@@ -382,36 +374,63 @@ var emailAddress = $("#email");
 // 	// })
 // }
 
-$('#annotatedsamplefile2').on("change", function(){ 
-	$('#performAnalysis').click(async function(){
-
-		// if(!validateEmail(emailAddress)) { 
-			/* do stuff here */ 
-			console.log(name);
-			console.log(emailAddress)
-			$('#hideStep1').hide();
-			$('#hideStep1_1').hide();
-			$('#hideStep2').hide();
-			$('#hideStep3').hide();
-			
-			$('#result').fadeIn();
-			
-			email = document.getElementById("email").value;
-			testName = document.getElementById("other_text").value;
-			policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
-		
-			if (policyIssue == "gunviolence") {
-				stateClassifier_id = 7;
-				testName = policyIssue;
-				noTraining();
-			} else if (policyIssue == "other") {
-				await initTraining();
-			}
-		// }
-
-
-	 });
+$('#downloadTestFile').click(function() {
+	var file = "./files/test.csv";
+	window.open(file);
 });
+
+$('#downloadTrainingFile').click(function() {
+	var file = "./files/train.csv";
+	window.open(file);
+});
+
+$('#inputLabel').click(function() {
+	// var ourLabel = "gun rights,gun control,politics,mental health,school/public space safety,race/ethnicity,public opinion,society/culture,economic consequences";
+	var ourLabel = "2nd Amendment rights,Economic consequences,Gun control,Mental health,Politics,Public opinion,Race,School or public space safety,Society";
+
+	$('#category_names').val(ourLabel);
+	$('#category_names').keyup();
+	// document.getElementById('category_names').value = ourLabel;
+});
+
+// const endpoint = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api/"
+const endpoint = "http://www.openframing.org/api/"
+// const endpoint = "http://localhost/api/"
+
+var path = window.location.pathname;
+var page = path.split("/").pop();
+console.log( page );
+
+if (page === "framing.html") {
+	$('#annotatedsamplefile2').on("change", function(){ 
+		$('#performAnalysis').click(async function(){
+	
+			// if(!validateEmail(emailAddress)) { 
+				/* do stuff here */ 
+				console.log(name);
+				console.log(emailAddress)
+				$('#hideStep1').hide();
+				$('#hideStep1_1').hide();
+				$('#hideStep2').hide();
+				$('#hideStep3').hide();
+				
+				$('#result').fadeIn();
+				
+				email = document.getElementById("email").value;
+				testName = document.getElementById("other_text").value;
+				policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
+			
+				if (policyIssue == "gunviolence") {
+					stateClassifier_id = 15; // 3 15
+					testName = policyIssue;
+					noTraining();
+				} else if (policyIssue == "other") {
+					await initTraining();
+				}
+		 });
+	});
+}
+
 
 
  
