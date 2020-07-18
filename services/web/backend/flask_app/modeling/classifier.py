@@ -240,7 +240,9 @@ class ClassifierModel(object):
         assert self.train_dataset is not None, "train_file was not provided!"
 
         self.train()
-        metrics = self.trainer.evaluate(eval_dataset=self.eval_dataset)
+        metrics: T.Dict[str, float] = self.trainer.evaluate(  # type: ignore[assignment]
+            eval_dataset=self.eval_dataset
+        )
 
         new_metrics: T.Dict[str, float] = {}
         for key, val in metrics.items():
@@ -248,7 +250,7 @@ class ClassifierModel(object):
                 continue
             if "eval_" in key:  # transformers library prepends this
                 new_key = key.replace("eval_", "")
-            new_metrics[new_key] = val  # type: ignore
+                new_metrics[new_key] = val
 
         return ClassifierMetricsJson(
             {
