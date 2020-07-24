@@ -68,9 +68,7 @@ input:invalid {
 .progress-bar {
     background-color: #0275d8 !important;
 }
-.con-width {
-    /* height: 100px; */
-}
+
 
 #submitbutton:disabled {
     opacity: 0.5;

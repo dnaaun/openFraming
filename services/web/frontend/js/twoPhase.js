@@ -118,7 +118,7 @@ async function upTrainingFile() {
 async function checkClassifier() {
 	// var a = 3
 
-	var endpointCheckClassifier = endpoint + 'classifiers/' + stateClassifier_id
+	var endpointCheckClassifier = endpoint + 'classifiers/' + stateClassifier_id;
 
 	await axios
 		.get(endpointCheckClassifier)
@@ -130,12 +130,9 @@ async function checkClassifier() {
 				// postTestName();
 			} else if (stateStatus == "completed") {
 				clearInterval(i);
-				afterTraining();
+				afterTrainingTwoPhase();
 			}
-
-
 		})
-
 		.catch(err => {
 			console.error({err});
 		});
@@ -146,6 +143,26 @@ async function looping() {
 	i = setInterval(function(){
 		checkClassifier();
 	}, 5000);
+}
+
+async function takeNameAndEmail() {
+	var endpointCheckClassifier = endpoint + 'classifiers/' + stateClassifier_id;
+	await axios
+		.get(endpointCheckClassifier)
+		.then(res => {
+            console.log(res);
+            console.log(res.data);
+            stateStatus = res.data["status"];
+            testName = res.data["classifier_name"];
+            email = res.data["notify_at_email"];
+            
+            console.log(stateStatus);
+            console.log(testName);
+            console.log(email);
+		})
+		.catch(err => {
+			console.error({err});
+		});
 }
 
 
@@ -316,12 +333,26 @@ async function initTraining() {
 	await looping();
 }
 
-async function afterTraining() {
-	$('#progressBar').addClass("w-75");
-	await postTestName(); // return test set id
-	await getTestId();
-	await upTestingFile();
-	await loopingTesting();
+// async function afterTraining() {
+// 	$('#progressBar').addClass("w-75");
+// 	await postTestName(); // return test set id
+// 	await getTestId();
+// 	await upTestingFile();
+// 	await loopingTesting();
+
+// 	// await checkTesting();
+// 	// await getPred();
+// }
+
+async function afterTrainingTwoPhase() {
+    $('#progressBar').addClass("w-75");
+    $('#progressBar').removeClass("progress-bar-striped progress-bar-animated")
+    $('#result-status').text("Training Completed! Check your email.");
+    alert("Training Completed! Check your email to process the inference.");
+	// await postTestName(); // return test set id
+	// await getTestId();
+	// await upTestingFile();
+	// await loopingTesting();
 
 	// await checkTesting();
 	// await getPred();
@@ -392,21 +423,36 @@ $('#downloadTrainingFile').click(function() {
 	$('#category_names').keyup();
 });
 
+function getUrlParam(name) { 
+    var results = new RegExp("[?&]" + name + "=([^&#]*)").exec( 
+      window.location.href); 
+    if (results == null) { 
+      return null; 
+    } 
+return decodeURI(results[1]); 
+}
+
 // const endpoint = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api/"
 const endpoint = "http://www.openframing.org/api/"
 // const endpoint = "http://localhost/api/"
 
 var path = window.location.pathname;
+// console.log( path);
+// console.log( path.split("/"));
 var page = path.split("/").pop();
-console.log( page );
+var stateClassifier_id = parseInt(getUrlParam('classifier_id')); 
+console.log( page,  stateClassifier_id);
+
+
+
 
 
 async function clickSubmit() {
 	
 	// if(!validateEmail(emailAddress)) { 
 		/* do stuff here */ 
-		console.log(name);
-		console.log(emailAddress)
+		// console.log(name);
+		// console.log(emailAddress)
 		$('#hideStep1').hide();
 		$('#hideStep1_1').hide();
 		$('#hideStep2').hide();
@@ -415,37 +461,39 @@ async function clickSubmit() {
 		$('#result').fadeIn();
 		
 		email = document.getElementById("email").value;
-		policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
-	
-		if (policyIssue == "gunviolence") {
-			stateClassifier_id = 15; // 3 local 15 openframing
-			testName = policyIssue;
-			noTraining();
-		} else if (policyIssue == "immigration") {
-			stateClassifier_id = 23;
-			testName = policyIssue;
-			noTraining();
-		} else if (policyIssue == "tobacco") {
-			stateClassifier_id = 20; 
-			testName = policyIssue;
-			noTraining();
-		} else if (policyIssue == "samesexmarriage") {
-			stateClassifier_id = 21; 
-			testName = policyIssue;
-			noTraining();
-		} else if (policyIssue == "other") {
+        policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
+    
+	    if (policyIssue == "other") {
 			testName = document.getElementById("other_text").value;
 			await initTraining();
 		}
 }
-if (page === "framing.html") {
-	$('#annotatedsamplefile2').on("change", function(){ 
-		$('#performAnalysis').click(async function(){
-			alert("After the training is completed, we'll notify you through email for the next step");
-			clickSubmit();
-			});
-	});
-} else if (page === "train.html") {
+
+async function clickSubmitTSecondPhase() {
+	
+	// if(!validateEmail(emailAddress)) { 
+		/* do stuff here */ 
+		// console.log(name);
+		// console.log(emailAddress)
+		$('#hideStep1').hide();
+		$('#hideStep1_1').hide();
+		$('#hideStep2').hide();
+		$('#hideStep3').hide();
+		
+		$('#result').fadeIn();
+		
+		// email = document.getElementById("email").value;
+        // policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
+    
+	    // if (policyIssue == "other") {
+            // testName = document.getElementById("other_text").value;
+        
+        await takeNameAndEmail();
+        await noTraining();
+		// }
+}
+
+if (page === "train.html") {
 	$('#annotatedsamplefile1').on("change", function(){ 
 		$('#performAnalysis').click(async function(){
 			alert("After the training is completed, we'll notify you through email for the next step");
@@ -456,14 +504,7 @@ if (page === "framing.html") {
 	$('#annotatedsamplefile2').on("change", function(){ 
 		$('#performAnalysis').click(async function(){
 			alert("Once the inference is completed, we'll send you the result via email");
-			clickSubmit();
-		 });
-	});
-} else if (page === "test_only.html") {
-	$('#annotatedsamplefile2').on("change", function(){ 
-		$('#performAnalysis').click(async function(){
-			alert("Once the inference is completed, we'll send you the result via email");
-			clickSubmit();
+			clickSubmitTSecondPhase();
 		 });
 	});
 }
