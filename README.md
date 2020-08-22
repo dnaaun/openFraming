@@ -1,3 +1,11 @@
+# OpenFraming
+
+## Introduction
+
+We have introduced [OpenFraming](http://www.openframing.org), a Web-based system for analyzing and classifying frames in the text documents. OpenFraming is designed to lower the barriers to applying machine learning for frame analysis, including giving researchers the capability to build models using their own labeled data. Its architecture is designed to be user-friendly and easily navigable, empowering researchers to com- fortably make sense of their text corpora without specific machine learning knowledge.
+
+You can find the preprint of our work [here](https://arxiv.org/pdf/2008.06974.pdf)
+
 ## Requirements
 
 ### Docker
@@ -35,6 +43,20 @@ sure these environment variables are picked up. i.e.,
 
 ```bash
 sudo -E docker-compose up
+```
+## Getting help
+
+If you have any question, concern, or bug report, please file an issue in this repository's Issue Tracker and we will respond accordingly.
+
+
+## Citation
+```
+@article{smith2020openframing,
+  title={OpenFraming: We brought the ML; you bring the data. Interact with your data and discover its frames},
+  author={Smith, Alyssa and Tofu, David Assefa and Jalal, Mona and Halim, Edward Edberg and Sun, Yimeng and Akavoor, Vidya and Betke, Margrit and Ishwar, Prakash and Guo, Lei and Wijaya, Derry},
+  journal={arXiv preprint arXiv:2008.06974},
+  year={2020}
+}
 ```
 
 ## Funding
