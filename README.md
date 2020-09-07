@@ -44,6 +44,13 @@ sure these environment variables are picked up. i.e.,
 ```bash
 sudo -E docker-compose up
 ```
+
+## Video demonstration
+
+You can check the following YouTube video for a quick demonstration of our Website's features.
+
+[![IMAGE ALT TEXT](http://img.youtube.com/vi/u8SJAZ-EbgU/0.jpg)](http://www.youtube.com/watch?v=u8SJAZ-EbgU "OpenFraming video tutorial")
+
 ## Getting help
 
 If you have any question, concern, or bug report, please file an issue in this repository's Issue Tracker and we will respond accordingly.
