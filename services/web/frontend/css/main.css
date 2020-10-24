@@ -41,6 +41,13 @@ html, body {
     margin: 0;
 }
 
+.figure {
+    max-width: 80%;
+    display: block;
+    margin: 0 auto;
+    margin-left: 10%;
+}
+
 
 
 input:invalid {
