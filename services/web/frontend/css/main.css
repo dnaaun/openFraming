@@ -41,11 +41,24 @@ html, body {
     margin: 0;
 }
 
+/* li:hover ul {
+    display: inline-block;
+    position: absolute;
+    left: 0px;
+    padding: -1 px;
+ } */
+
+ /* .dropdown-menu{
+    min-width: -1rem;
+    position: absolute;
+  } */
+
 .figure {
     max-width: 80%;
     display: block;
     margin: 0 auto;
     margin-left: 10%;
+    margin-bottom: 1%;
 }
 
 
