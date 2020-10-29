@@ -524,7 +524,6 @@ if (page === "train.html") {
 
 $(function () {
     $('form').on('submit', function (e) {
-
         $.ajax(
                         {
                             url:'/submitData',
@@ -692,4 +691,3 @@ function regularFruit(){
 	let a = document.getElementById('other_text');
 	a.value="";
 }
-

@@ -1,3 +1,11 @@
+# OpenFraming
+
+## Introduction
+
+We have introduced [OpenFraming](http://www.openframing.org), a Web-based system for analyzing and classifying frames in the text documents. OpenFraming is designed to lower the barriers to applying machine learning for frame analysis, including giving researchers the capability to build models using their own labeled data. Its architecture is designed to be user-friendly and easily navigable, empowering researchers to com- fortably make sense of their text corpora without specific machine learning knowledge.
+
+You can find the preprint of our work [here](https://arxiv.org/pdf/2008.06974.pdf)
+
 ## Requirements
 
 ### Docker
@@ -37,6 +45,27 @@ sure these environment variables are picked up. i.e.,
 sudo -E docker-compose up
 ```
 
+## Video demonstration
+
+You can check the following YouTube video for a quick demonstration of our Website's features.
+
+[![IMAGE ALT TEXT](http://img.youtube.com/vi/u8SJAZ-EbgU/0.jpg)](http://www.youtube.com/watch?v=u8SJAZ-EbgU "OpenFraming video tutorial")
+
+## Getting help
+
+If you have any question, concern, or bug report, please file an issue in this repository's Issue Tracker and we will respond accordingly.
+
+
+## Citation
+```
+@article{smith2020openframing,
+  title={OpenFraming: We brought the ML; you bring the data. Interact with your data and discover its frames},
+  author={Smith, Alyssa and Tofu, David Assefa and Jalal, Mona and Halim, Edward Edberg and Sun, Yimeng and Akavoor, Vidya and Betke, Margrit and Ishwar, Prakash and Guo, Lei and Wijaya, Derry},
+  journal={arXiv preprint arXiv:2008.06974},
+  year={2020}
+}
+```
+
 ## Funding
 
 This research is funded by the following NSF Award:
@@ -51,4 +80,4 @@ We are truly grateful to Gerard Shockley, Boston University Cloud Broker, for he
 
 ## Credits
 
-[Alyssa Smith](https://www.linkedin.com/in/alyssa-smith-2463b7a0), [David Assefa Tofu](https://davidatbu.github.io), [Mona Jalal](http://monajalal.com), [Edward Edberg Halim](https://id.linkedin.com/in/edward-edberg-halim-241014111), [Yimeng Sun](https://www.linkedin.com/in/yimengsun0104), [Vidya Prasad Akavoor](https://www.linkedin.com/in/vidya-akavoor), [Margrit Betke](http://www.cs.bu.edu/~betke), [Prakash Ishwar](http://sites.bu.edu/pi), [Lei Guo](https://www.leiguo.net), [Derry Wijaya](https://derrywijaya.github.io)
+[Alyssa Smith](https://www.linkedin.com/in/alyssa-smith-2463b7a0)<sup>&ast;</sup>, [David Assefa Tofu](https://davidatbu.github.io)<sup>&ast;</sup>, [Mona Jalal](http://monajalal.com)<sup>&ast;</sup>, [Edward Edberg Halim](https://id.linkedin.com/in/edward-edberg-halim-241014111), [Yimeng Sun](https://www.linkedin.com/in/yimengsun0104), [Vidya Prasad Akavoor](https://www.linkedin.com/in/vidya-akavoor), [Margrit Betke](http://www.cs.bu.edu/~betke), [Prakash Ishwar](http://sites.bu.edu/pi), [Lei Guo](https://www.leiguo.net), [Derry Wijaya](https://derrywijaya.github.io)
