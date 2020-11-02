@@ -9,8 +9,7 @@ $(".form-check-inline").on("click", function(){
 });
 
 $(".other-policy").on("click", function(){
-   $(".other-option").fadeIn();
-   $("#other_policy").attr("checked", true);
+   $(".other-option").fadeIn()();
 });
 
 
@@ -400,77 +399,35 @@ var path = window.location.pathname;
 var page = path.split("/").pop();
 console.log( page );
 
-
-async function clickSubmit() {
+// if (page === "framing.html") {
+	$('#annotatedsamplefile2').on("change", function(){ 
+		$('#performAnalysis').click(async function(){
 	
-	// if(!validateEmail(emailAddress)) { 
-		/* do stuff here */ 
-		console.log(name);
-		console.log(emailAddress)
-		$('#hideStep1').hide();
-		$('#hideStep1_1').hide();
-		$('#hideStep2').hide();
-		$('#hideStep3').hide();
-		
-		$('#result').fadeIn();
-		
-		email = document.getElementById("email").value;
-		policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
-	
-		if (policyIssue == "gunviolence") {
-			stateClassifier_id = 15; // 3 local 15 openframing
-			testName = policyIssue;
-			noTraining();
-		} else if (policyIssue == "immigration") {
-			stateClassifier_id = 23;
-			testName = policyIssue;
-			noTraining();
-		} else if (policyIssue == "tobacco") {
-			stateClassifier_id = 20; 
-			testName = policyIssue;
-			noTraining();
-		} else if (policyIssue == "samesexmarriage") {
-			stateClassifier_id = 21; 
-			testName = policyIssue;
-			noTraining();
-		} else if (policyIssue == "other") {
-			testName = document.getElementById("other_text").value;
-			await initTraining();
-		}
-}
-if (page === "framing.html") {
-	$('#annotatedsamplefile2').on("change", function(){ 
-		$('#performAnalysis').click(async function(){
-			alert("After the training is completed, we'll notify you through email for the next step");
-			clickSubmit();
-			});
-	});
-} else if (page === "train.html") {
-	$('#annotatedsamplefile1').on("change", function(){ 
-		$('#performAnalysis').click(async function(){
-			alert("After the training is completed, we'll notify you through email for the next step");
-			clickSubmit();
+			// if(!validateEmail(emailAddress)) { 
+				/* do stuff here */ 
+				console.log(name);
+				console.log(emailAddress)
+				$('#hideStep1').hide();
+				$('#hideStep1_1').hide();
+				$('#hideStep2').hide();
+				$('#hideStep3').hide();
+				
+				$('#result').fadeIn();
+				
+				email = document.getElementById("email").value;
+				policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
+			
+				if (policyIssue == "gunviolence") {
+					stateClassifier_id = 4; // 3 15
+					testName = policyIssue;
+					noTraining();
+				} else if (policyIssue == "other") {
+					testName = document.getElementById("other_text").value;
+					await initTraining();
+				}
 		 });
 	});
-} else if (page === "test.html") {
-	$('#annotatedsamplefile2').on("change", function(){ 
-		$('#performAnalysis').click(async function(){
-			alert("Once the inference is completed, we'll send you the result via email");
-			clickSubmit();
-		 });
-	});
-} else if (page === "test_only.html") {
-	$('#annotatedsamplefile2').on("change", function(){ 
-		$('#performAnalysis').click(async function(){
-			alert("Once the inference is completed, we'll send you the result via email");
-			clickSubmit();
-		 });
-	});
-}
-
-
-
-
+// }
 
 
 
