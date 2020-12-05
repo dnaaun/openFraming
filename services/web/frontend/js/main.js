@@ -9,7 +9,7 @@ $(".form-check-inline").on("click", function(){
 });
 
 $(".other-policy").on("click", function(){
-   $(".other-option").fadeIn()();
+   $(".other-option").fadeIn();
 });
 
 
@@ -25,66 +25,46 @@ var downloadURL='';
 
 
 async function getFraming() {
-	// console.log("asdfdas");
 	var endpointGET = endpoint + 'classifiers/';
+	let message = null;
 	await axios
 	   .get(endpointGET)
 	   .then(res => console.log(res))
-	   .catch(err => console.error(err))
+	   .catch(err => {
+	   	console.error(err);
+	   	message = err.response.data.message;
+	   });
+	return message;
  }
    
 async function postFraming() {
 	console.log("postFraming");
-	// let name = $("input[name='policyissue']:checked").val();
-
-
-
-	
 	var name = $("input[name='policyissue']:checked").val();
 
 	if (name === "other") {
-		console.log("other")
+		console.log("other");
 		var stringCategoryNames = document.getElementById("category_names").value;
 		var arrayCategoryNames = stringCategoryNames.split(',');
 		name = document.getElementById("other_text").value;
 		console.log(arrayCategoryNames)
 	} 
 
-
-	// console.log(name);
-	
 	var endpointPOST = endpoint + 'classifiers/';
-	await axios
-		
-		.post(endpointPOST, {
+	let message = null;
+	await axios.post(endpointPOST, {
 			name: name,
 			category_names: arrayCategoryNames,
 			notify_at_email: email
-		})
-		.then(res => {
+		}).then(res => {
 			var classifier_id = res.data["classifier_id"];
-			console.log(classifier_id)
+			console.log(classifier_id);
 			stateClassifier_id = classifier_id;
 			// return classifier_id
-		})
-		.catch(err => console.error(err))
-
-	// var classifier_id = res.data["classifier_id"]
-	// console.log(classifier_id);
-	// callback();
-	
-}
-
-//
-//GET /classifiers/<classifier_id:int>
-//
-function checkClassifier(classifier_id) {
-	var endpointGET = endpoint + 'classifiers/' + classifier_id
-	axios
-	   .get(endpointGET)
-	   .then(res => console.log(res.data))
-	   .catch(err => console.error(err));
-	
+		}).catch(err => {
+			console.error(err);
+			message = err.response.data.message;
+	});
+	return message;
 }
 
 
@@ -95,41 +75,43 @@ async function upTrainingFile() {
 	var formData = new FormData();
 	var imagefile = document.querySelector('#annotatedsamplefile1');
 	formData.append("file", imagefile.files[0]);
-	console.log(imagefile.files[0])
+	console.log(imagefile.files[0]);
 
-	await axios
-		.post(endpointUploadTraining, formData, {
+	let message = null;
+	await axios.post(endpointUploadTraining, formData, {
 			headers: {
 				'Content-Type': 'multipart/form-data'
 			}
-		})
-	    .then(res => {
+		}).then(res => {
 			console.log(res);
 			
-		})
-		.catch(err => {
-	        console.error({err});
+		}).catch(err => {
+	        console.error(err);
+	        message = err.response.data.message;
 	    });
+	return message;
 }
 
 
-
+//
+//GET /classifiers/<classifier_id:int>
+//
 async function checkClassifier() {
 	// var a = 3
 
-	var endpointCheckClassifier = endpoint + 'classifiers/' + stateClassifier_id
+	var endpointCheckClassifier = endpoint + 'classifiers/' + stateClassifier_id;
 
 	await axios
 		.get(endpointCheckClassifier)
 		.then(res => {
-			var stateStatus = res.data["status"]
+			var stateStatus = res.data["status"];
 			// console.log(stateStatus)
-			if (stateStatus == "training") {
+			if (stateStatus === "training") {
 				console.log(stateStatus);
 				// postTestName();
-			} else if (stateStatus == "completed") {
+			} else if (stateStatus === "completed") {
 				clearInterval(i);
-				afterTraining();
+				runTesting();
 			}
 
 
@@ -148,41 +130,32 @@ async function looping() {
 }
 
 
-
-async function getFraming() {
-	console.log("getFraming");
-	var endpointGET = endpoint + 'classifiers/'
-	await axios
-	   .get(endpointGET)
-	   .then(res => console.log(res))
-	   .catch(err => console.error(err));
-	
- }
-
-
-
 async function postTestName() {
 	console.log("postTestName");
 	var endpointPostTestName = endpoint + 'classifiers/' + stateClassifier_id + '/test_sets/'
 	// var endpointPostTestName = endpoint + 'classifiers/' + 40 + '/test_sets/'
 	console.log(endpointPostTestName);
 	console.log(testName);
+	let message = null;
 	await axios
 		.post(endpointPostTestName, {
 			test_set_name: testName,
 			notify_at_email: email
 		})
 		.then(res => console.log(res))
-		.catch(err => console.error(err))
+		.catch(err => {
+			console.error(err);
+			message = err.response.data.message;
+		});
+	return message;
 	// getTestId();
 }
 
 async function getTestId() {
 	console.log("getTestId");
 	var endpointGetTestId = endpoint + 'classifiers/' + stateClassifier_id + '/test_sets/'
+	let message = null;
 	await axios
-		
-
 		.get(endpointGetTestId)
 		.then(res => {
 			// console.log(res);
@@ -196,24 +169,27 @@ async function getTestId() {
 					// console.log(testId);
 				}
 			}
-
-
 		})
-		.catch(err => console.error(err));
+		.catch(err => {
+			console.error(err);
+			message = err.response.data.message;
+		});
+	return message;
 	// upTestingFile();
 }
 
 async function upTestingFile() {
 	console.log("upTestingFile");
 
-	var endpointUploadTraining = endpoint + 'classifiers/' + stateClassifier_id + '/test_sets/' + testId + '/file'
+	var endpointUploadTraining = endpoint + 'classifiers/' + stateClassifier_id + '/test_sets/' + testId + '/file';
 
 
 	var formData = new FormData();
 	var imagefile = document.querySelector('#annotatedsamplefile2');
 	formData.append("file", imagefile.files[0]);
-	console.log(imagefile.files[0])
+	console.log(imagefile.files[0]);
 
+	let message = null;
 	await axios
 		.post(endpointUploadTraining, formData, {
 			headers: {
@@ -225,7 +201,10 @@ async function upTestingFile() {
 		})
 		.catch(err => {
 	        console.error({err});
+	        message = err.response.data.message;
 		});
+
+	return message;
 	// getPred();
 }
 
@@ -308,35 +287,56 @@ var fileName = $('input[type="file"]').change(function(e){
 
 
 async function initTraining() {
-	await postFraming(); // return classifier id
-	await getFraming();
+	let framing = await postFraming(); // return classifier id
+	if (framing !== null) {
+		return reportError(framing, 'training');
+	}
+	let framingResult = await getFraming();
+	if (framingResult !== null) {
+		return reportError(framingResult, 'training');
+	}
 	$('#progressBar').addClass("w-25");
-	await upTrainingFile();
+	let upload = await upTrainingFile();
+	if (upload !== null) {
+		return reportError(upload, 'training');
+	}
 	await looping();
 }
 
-async function afterTraining() {
+async function runTesting() {
+	let testName = await postTestName(); // return test set id
+	if (testName !== null) {
+		return reportError(testName, 'testing');
+	}
+	let testId = await getTestId();
+	if (testId !== null) {
+		return reportError(testId, 'testing');
+	}
+	let upload = await upTestingFile();
+	if (upload !== null) {
+		return reportError(upload, 'testing');
+	}
+	$('#hideStep1').hide();
+	$('#hideStep1_1').hide();
+	$('#hideStep2').hide();
+	$('#hideStep3').hide();
+	$('#analysis-error').attr('hidden', true);
+	$('#framing-spinner').attr('hidden', true);
+	$('#result').fadeIn();
 	$('#progressBar').addClass("w-75");
-	await postTestName(); // return test set id
-	await getTestId();
-	await upTestingFile();
 	await loopingTesting();
 
 	// await checkTesting();
 	// await getPred();
 }
 
-async function noTraining() {
-	$('#progressBar').addClass("w-75");
-	await postTestName(); // return test set id
-	await getTestId();
-	await upTestingFile();
-	await loopingTesting();
+function reportError(message, fileType) {
+	$('#framing-spinner').attr('hidden', true);
+	$('#result').hide();
 
-	// await checkTesting();
-	// await getPred();
+	$('#analysis-error').html(`An error occurred when trying to upload your ${fileType} file: ${message}`)
+		.removeAttr('hidden');
 }
-
 
 async function showresult() {
 	$('#result-status').text("Completed! Here's the result.");
@@ -406,13 +406,8 @@ console.log( page );
 			// if(!validateEmail(emailAddress)) { 
 				/* do stuff here */ 
 				console.log(name);
-				console.log(emailAddress)
-				$('#hideStep1').hide();
-				$('#hideStep1_1').hide();
-				$('#hideStep2').hide();
-				$('#hideStep3').hide();
-				
-				$('#result').fadeIn();
+				console.log(emailAddress);
+				$('#framing-spinner').removeAttr('hidden');
 				
 				email = document.getElementById("email").value;
 				policyIssue = $('input[name=policyissue]:checked', '#policyissueradiobutton').val();
@@ -420,7 +415,7 @@ console.log( page );
 				if (policyIssue == "gunviolence") {
 					stateClassifier_id = 4; // 3 15
 					testName = policyIssue;
-					noTraining();
+					runTesting();
 				} else if (policyIssue == "other") {
 					testName = document.getElementById("other_text").value;
 					await initTraining();
