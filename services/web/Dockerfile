@@ -20,56 +20,70 @@ RUN pip wheel \
 
 ### Stage two #####
 FROM pytorch/pytorch:1.5.1-cuda10.1-cudnn7-runtime
-#################### Copied from Docker's Openjdk Dockerfile ##########################
+
+# This is needed for the openJDK copy-paste to use wget.
+RUN set -eux; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends wget
+
+######################################### Copied from Docker's Openjdk Dockerfile ###############################################
+##### https://github.com/docker-library/openjdk/blob/8107dd6c8a2f42c91fd37904fdfe7d4c434ca5fc/16/jdk/buster/Dockerfile ########
 RUN set -eux; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
+		bzip2 \
+		unzip \
+		xz-utils \
+		\
 # utilities for keeping Debian and OpenJDK CA certificates in sync
 		ca-certificates p11-kit \
+		\
+# jlink --strip-debug on 13+ needs objcopy: https://github.com/docker-library/openjdk/issues/351
+# Error: java.io.IOException: Cannot run program "objcopy": error=2, No such file or directory
+		binutils \
+# java.lang.UnsatisfiedLinkError: /usr/local/openjdk-11/lib/libfontmanager.so: libfreetype.so.6: cannot open shared object file: No such file or directory
+# java.lang.NoClassDefFoundError: Could not initialize class sun.awt.X11FontManager
+# https://github.com/docker-library/openjdk/pull/235#issuecomment-424466077
+		fontconfig libfreetype6 \
 	; \
 	rm -rf /var/lib/apt/lists/*
 
 # Default to UTF-8 file.encoding
 ENV LANG C.UTF-8
 
-ENV JAVA_HOME /usr/java/openjdk-16
+ENV JAVA_HOME /usr/local/openjdk-16
 ENV PATH $JAVA_HOME/bin:$PATH
 
 # backwards compatibility shim
 RUN { echo '#/bin/sh'; echo 'echo "$JAVA_HOME"'; } > /usr/local/bin/docker-java-home && chmod +x /usr/local/bin/docker-java-home && [ "$JAVA_HOME" = "$(docker-java-home)" ]
 
 # https://jdk.java.net/
+# >
 # > Java Development Kit builds, from Oracle
-ENV JAVA_VERSION 16-ea+5
+# >
+ENV JAVA_VERSION 16-ea+26
 
 RUN set -eux; \
-	\
-	savedAptMark="$(apt-mark showmanual)"; \
-	apt-get update; \
-	apt-get install -y --no-install-recommends \
-		wget \
-	; \
-	rm -rf /var/lib/apt/lists/*; \
 	\
 	arch="$(dpkg --print-architecture)"; \
 # this "case" statement is generated via "update.sh"
 	case "$arch" in \
 # arm64v8
 		arm64 | aarch64) \
-			downloadUrl=https://download.java.net/java/early_access/jdk16/5/GPL/openjdk-16-ea+5_linux-aarch64_bin.tar.gz; \
-			downloadSha256=0a29b196a14e038769ff1b506e473dbae610a51c15fe965db7d192413c4c6992; \
+			downloadUrl=https://download.java.net/java/early_access/jdk16/26/GPL/openjdk-16-ea+26_linux-aarch64_bin.tar.gz; \
+			downloadSha256=1e2fefe414a16aceeae6816b4e48b426e79bb647927a44bbfe4d692156096e74; \
 			;; \
 # amd64
 		amd64 | i386:x86-64) \
-			downloadUrl=https://download.java.net/java/early_access/jdk16/5/GPL/openjdk-16-ea+5_linux-x64_bin.tar.gz; \
-			downloadSha256=78cd9a7c222ca3c23b74734a74011729d0260e60e65186c73806341109402e12; \
+			downloadUrl=https://download.java.net/java/early_access/jdk16/26/GPL/openjdk-16-ea+26_linux-x64_bin.tar.gz; \
+			downloadSha256=e74300f3f770122358d768d45e181d29c710e8d41bbc4ab8e492929f2867347c; \
 			;; \
 # fallback
 		*) echo >&2 "error: unsupported architecture: '$arch'"; exit 1 ;; \
 	esac; \
 	\
-	wget --progress=bar -O openjdk.tgz "$downloadUrl"; \
-	echo "$downloadSha256 openjdk.tgz" | sha256sum -c -; \
+	wget -O openjdk.tgz "$downloadUrl" --progress=dot:giga; \
+	echo "$downloadSha256 *openjdk.tgz" | sha256sum --strict --check -; \
 	\
 	mkdir -p "$JAVA_HOME"; \
 	tar --extract \
@@ -79,10 +93,6 @@ RUN set -eux; \
 		--no-same-owner \
 	; \
 	rm openjdk.tgz; \
-	\
-	apt-mark auto '.*' > /dev/null; \
-	[ -z "$savedAptMark" ] || apt-mark manual $savedAptMark > /dev/null; \
-	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
 	\
 # update "cacerts" bundle to use Debian's CA certificates (and make sure it stays up-to-date with changes to Debian's store)
 # see https://github.com/docker-library/openjdk/issues/327
@@ -110,6 +120,7 @@ RUN set -eux; \
 	java -Xshare:dump; \
 	\
 # basic smoke test
+	fileEncoding="$(echo 'System.out.println(System.getProperty("file.encoding"))' | jshell -s -)"; [ "$fileEncoding" = 'UTF-8' ]; rm -rf ~/.java; \
 	javac --version; \
 	java --version
 ######################## OpenJDK Done #############################

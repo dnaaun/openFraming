@@ -521,7 +521,6 @@ if (page === "train.html") {
 
 
 /* submit button
-
 $(function () {
     $('form').on('submit', function (e) {
         $.ajax(
@@ -538,9 +537,7 @@ $(function () {
                         }
                     });
     });
-
 });
-
  */
 
 // The API endpoint prefix
