@@ -68,15 +68,17 @@ $(function() {
                             console.log('success in training file POST');
                             $('#tm-success-message').removeAttr('hidden');
                         },
-                        error: function (err) {
-                            console.log(err);
-                            $('#err-uploading').removeAttr('hidden');
+                        error: function (xhr, status, err) {
+                            console.log(xhr.responseText);
+                            $('#err-uploading').html(`An error occurred while uploading your file: ${JSON.parse(xhr.responseText).message}`)
+                                .removeAttr('hidden');
                         }
                     });
                 },
-                error: function (err) {
-                    console.log(err);
-                    $('#err-creating-tm').removeAttr('hidden');
+                error: function (xhr, status, err) {
+                    console.log(xhr.responseText);
+                    $('#err-creating-tm').html(`An error occurred while creating the topic model: ${JSON.parse(xhr.responseText).message}`)
+                        .removeAttr('hidden');
                 }
             });
         }
