@@ -70,15 +70,28 @@ $(function() {
                         },
                         error: function (xhr, status, err) {
                             console.log(xhr.responseText);
-                            $('#err-uploading').html(`An error occurred while uploading your file: ${JSON.parse(xhr.responseText).message}`)
-                                .removeAttr('hidden');
+                            let error = getErrorMessage(JSON.parse(xhr.responseText).message);
+                            // if (error.num_topics) {
+                            //     $('#err-creating-tm').html(`An error occurred while uploading your file: ${error.num_topics}`)
+                            //         .removeAttr('hidden');
+                            // } else{
+                                $('#err-creating-tm').html(`An error occurred while uploading your file: ${error}`)
+                                    .removeAttr('hidden');
+                            // }
                         }
                     });
                 },
                 error: function (xhr, status, err) {
                     console.log(xhr.responseText);
-                    $('#err-creating-tm').html(`An error occurred while creating the topic model: ${JSON.parse(xhr.responseText).message}`)
-                        .removeAttr('hidden');
+                    let error = getErrorMessage(JSON.parse(xhr.responseText).message);
+                    // if (error.num_topics) {
+                    //     $('#err-creating-tm').html(`An error occurred while creating the topic model: ${error.num_topics}`)
+                    //         .removeAttr('hidden');
+                    // } else{
+                        $('#err-creating-tm').html(`An error occurred while creating the topic model: ${error}`)
+                            .removeAttr('hidden');
+                    // }
+
                 }
             });
         }
