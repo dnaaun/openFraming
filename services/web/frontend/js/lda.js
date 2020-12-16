@@ -68,15 +68,30 @@ $(function() {
                             console.log('success in training file POST');
                             $('#tm-success-message').removeAttr('hidden');
                         },
-                        error: function (err) {
-                            console.log(err);
-                            $('#err-uploading').removeAttr('hidden');
+                        error: function (xhr, status, err) {
+                            console.log(xhr.responseText);
+                            let error = getErrorMessage(JSON.parse(xhr.responseText).message);
+                            // if (error.num_topics) {
+                            //     $('#err-creating-tm').html(`An error occurred while uploading your file: ${error.num_topics}`)
+                            //         .removeAttr('hidden');
+                            // } else{
+                                $('#err-creating-tm').html(`An error occurred while uploading your file: ${error}`)
+                                    .removeAttr('hidden');
+                            // }
                         }
                     });
                 },
-                error: function (err) {
-                    console.log(err);
-                    $('#err-creating-tm').removeAttr('hidden');
+                error: function (xhr, status, err) {
+                    console.log(xhr.responseText);
+                    let error = getErrorMessage(JSON.parse(xhr.responseText).message);
+                    // if (error.num_topics) {
+                    //     $('#err-creating-tm').html(`An error occurred while creating the topic model: ${error.num_topics}`)
+                    //         .removeAttr('hidden');
+                    // } else{
+                        $('#err-creating-tm').html(`An error occurred while creating the topic model: ${error}`)
+                            .removeAttr('hidden');
+                    // }
+
                 }
             });
         }

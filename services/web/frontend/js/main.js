@@ -14,6 +14,19 @@ $(".other-policy").on("click", function(){
 
 
 
+function getErrorMessage(message) {
+	if (typeof message === "object") {
+		let strArr = [];
+		for (let key of Object.keys(message)) {
+			strArr.push(message[key]);
+		}
+		return strArr.join('; ')
+
+	} else {
+		return message;
+	}
+}
+
 
 var stateClassifier_id='';
 var stateStatus='';
@@ -32,7 +45,7 @@ async function getFraming() {
 	   .then(res => console.log(res))
 	   .catch(err => {
 	   	console.error(err);
-	   	message = err.response.data.message;
+	   	message = getErrorMessage(err.response.data.message);
 	   });
 	return message;
  }
@@ -62,7 +75,7 @@ async function postFraming() {
 			// return classifier_id
 		}).catch(err => {
 			console.error(err);
-			message = err.response.data.message;
+			message = getErrorMessage(err.response.data.message);
 	});
 	return message;
 }
@@ -87,7 +100,7 @@ async function upTrainingFile() {
 			
 		}).catch(err => {
 	        console.error(err);
-	        message = err.response.data.message;
+			message = getErrorMessage(err.response.data.message);
 	    });
 	return message;
 }
@@ -145,7 +158,7 @@ async function postTestName() {
 		.then(res => console.log(res))
 		.catch(err => {
 			console.error(err);
-			message = err.response.data.message;
+			message = getErrorMessage(err.response.data.message);
 		});
 	return message;
 	// getTestId();
@@ -172,7 +185,7 @@ async function getTestId() {
 		})
 		.catch(err => {
 			console.error(err);
-			message = err.response.data.message;
+			message = getErrorMessage(err.response.data.message);
 		});
 	return message;
 	// upTestingFile();
@@ -201,7 +214,7 @@ async function upTestingFile() {
 		})
 		.catch(err => {
 	        console.error({err});
-	        message = err.response.data.message;
+			message = getErrorMessage(err.response.data.message);
 		});
 
 	return message;
