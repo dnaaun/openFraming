@@ -39,7 +39,7 @@ class Settings:
     # Used by classiifiers only
     LABEL_COL = "Category"
 
-    TRANSFORMERS_MODEL = "distilbert-base-uncased"
+    TRANSFORMERS_MODEL = "distilbert-base-multilingual-cased"
     TEST_SET_SPLIT = 0.2
     MINIMUM_LDA_EXAMPLES = 20
     DEFAULT_NUM_KEYWORDS_TO_GENERATE = 20

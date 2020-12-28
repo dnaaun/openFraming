@@ -97,6 +97,11 @@ class AlreadyExists(HTTPException):
 
 email_expr = re.compile(r"\"?([-a-zA-Z0-9.`?{}]+@\w+\.\w+)\"?")
 
+valid_languages = set()
+with open("modeling/valid_languages.txt") as f:
+    for line in f.readlines():
+        valid_languages.add(line.strip())
+
 
 class ResourceProtocol(TT.Protocol):
 
@@ -138,6 +143,15 @@ class BaseResource(Resource):
             return val
         else:
             raise ValueError("Not a valid email.")
+
+    @staticmethod
+    def _validate_language(val: T.Any) -> str:
+        if not isinstance(val, str):
+            raise ValueError("language must be string")
+        elif val in valid_languages:
+            return val
+        else:
+            raise ValueError("language is not in set of top 100 languages")
 
 
 class ClassifierStatusJson(TypedDict):
@@ -789,6 +803,12 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         self.reqparse.add_argument(
             name="file", type=FileStorage, required=True, location="files"
         )
+        self.reqparse.add_argument(
+            name="language",
+            type=self._validate_language,
+            required=True,
+            location="json",
+        )
 
     def post(self, id_: int) -> TopicModelStatusJson:
         args = self.reqparse.parse_args()
@@ -817,6 +837,7 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
             fname_keywords=str(utils.Files.topic_model_keywords_file(id_)),
             fname_topics_by_doc=str(utils.Files.topic_model_topics_by_doc_file(id_)),
             mallet_bin_directory=str(Settings.MALLET_BIN_DIRECTORY),
+            language=str(args["language"]),
         )
         topic_mdl.lda_set = models.LDASet()
         topic_mdl.lda_set.save()

@@ -10,7 +10,7 @@ $(function() {
     //////////////////
     let ldaTemplate = $('#topic-model-template').html();
     let ldaTemplateScript = Handlebars.compile(ldaTemplate);
-    let ldaContext = {topicModelName : "", numTopics : "", notifyEmail: ""};
+    let ldaContext = {topicModelName : "", numTopics : "", notifyEmail: "", trainingDataLanguage: ""};
     let ldaHtml = ldaTemplateScript(ldaContext);
     $('#all_topic_models').append(ldaHtml);
 

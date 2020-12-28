@@ -123,6 +123,7 @@ def do_topic_model_related_task(task_args: TopicModelTrainingTaskArgs) -> None:
             file_name=task_args["training_file"],
             content_column_name=Settings.CONTENT_COL,
             id_column_name=Settings.ID_COL,
+            language=task_args["language"],
         )
         lda_modeler = LDAModeler(
             corpus,

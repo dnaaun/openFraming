@@ -41,7 +41,8 @@ class TopicModelTrainingTaskArgs(TT.TypedDict):
     fname_keywords: str
     fname_topics_by_doc: str
     iterations: int
-    mallet_bin_directory: str
+    mallet_bin_directory: str,
+    language: str,
 
 
 class QueueManager(object):
