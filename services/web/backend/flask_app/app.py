@@ -1,5 +1,20 @@
 """All the flask api endpoints."""
 import csv
+from flask_app.settings import (
+    CONTENT_COL,
+    DEFAULT_TOPIC_NAME_TEMPLATE,
+    ID_COL,
+    LABEL_COL,
+    MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW,
+    MINIMUM_LDA_EXAMPLES,
+    MOST_LIKELY_TOPIC_COL,
+    PROBAB_OF_TOPIC_TEMPLATE,
+    STEMMED_CONTENT_COL,
+    SUPPORTED_NON_CSV_FORMATS,
+    TEST_SET_SPLIT,
+    TRANSFORMERS_MODEL,
+    settings,
+)
 import functools
 import logging
 import re
@@ -32,9 +47,8 @@ from flask_app.database import models
 from flask_app.modeling.classifier import ClassifierMetricsJson
 from flask_app.modeling.lda import TopicModelMetricsJson
 from flask_app.modeling.queue_manager import QueueManager
-from flask_app.settings import needs_settings_init
-from flask_app.settings import Settings
 from flask_app.version import Version
+
 
 API_URL_PREFIX = "/api"
 
@@ -49,8 +63,7 @@ class SupportSpreadsheetFileType(object):
     def __init__(self: HasReqParseProtocol) -> None:
         super().__init__()  # type: ignore[misc]
         choices = [
-            file_type.strip(".")
-            for file_type in Settings.SUPPORTED_NON_CSV_FORMATS | {".csv"}
+            file_type.strip(".") for file_type in SUPPORTED_NON_CSV_FORMATS | {".csv"}
         ]
         self.reqparse.add_argument(
             "file_type", type=str, choices=choices, location="args", default="xlsx"
@@ -66,7 +79,7 @@ class SupportSpreadsheetFileType(object):
 
         if file_type == file_path.suffix:
             return file_path
-        elif file_type in Settings.SUPPORTED_NON_CSV_FORMATS:
+        elif file_type in SUPPORTED_NON_CSV_FORMATS:
             file_path_with_type = file_path.parent / (file_path.stem + file_type)
             with file_path.open() as f:
                 df = pd.read_csv(
@@ -180,17 +193,16 @@ class ClassifierRelatedResource(BaseResource):
 
         category_names = clsf.category_names
 
-        return ClassifierStatusJson(
-            {
-                "classifier_id": clsf.classifier_id,
-                "classifier_name": clsf.name,
-                "trained_by_openFraming": clsf.trained_by_openFraming,
-                "category_names": category_names,
-                "notify_at_email": clsf.notify_at_email,
-                "status": status,
-                "metrics": metrics,
-            }
-        )
+        res: ClassifierStatusJson = {
+            "classifier_id": clsf.classifier_id,
+            "classifier_name": clsf.name,
+            "trained_by_openFraming": clsf.trained_by_openFraming,
+            "category_names": category_names,
+            "notify_at_email": clsf.notify_at_email,
+            "status": status,
+            "metrics": metrics,
+        }
+        return res
 
 
 class OneClassifier(ClassifierRelatedResource):
@@ -324,10 +336,10 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
         queue_manager.add_classifier_training(
             classifier_id=classifier.classifier_id,
             labels=classifier.category_names,
-            model_path=Settings.TRANSFORMERS_MODEL,
+            model_path=TRANSFORMERS_MODEL,
             train_file=str(utils.Files.classifier_train_set_file(classifier_id)),
             dev_file=str(utils.Files.classifier_dev_set_file(classifier_id)),
-            cache_dir=str(Settings.TRANSFORMERS_CACHE_DIRECTORY),
+            cache_dir=str(settings.TRANSFORMERS_CACHE_DIRECTORY),
             output_dir=str(
                 utils.Files.classifier_output_dir(classifier_id, ensure_exists=True)
             ),
@@ -355,13 +367,11 @@ class ClassifiersTrainingFile(ClassifierRelatedResource):
 
         utils.Validate.table_has_no_empty_cells(table)
         utils.Validate.table_has_num_columns(table, 2)
-        utils.Validate.table_has_headers(
-            table, [Settings.CONTENT_COL, Settings.LABEL_COL]
-        )
+        utils.Validate.table_has_headers(table, [CONTENT_COL, LABEL_COL])
 
         table_headers, table_data = table[0], table[1:]
 
-        min_num_examples = int(len(table_data) * Settings.TEST_SET_SPLIT)
+        min_num_examples = int(len(table_data) * TEST_SET_SPLIT)
         if len(table_data) < min_num_examples:
             raise BadRequest(
                 f"We need at least {min_num_examples} labelled examples for this issue."
@@ -501,7 +511,7 @@ class ClassifiersTestSetsPredictions(
 
     def __init__(self) -> None:
         self.reqparse = reqparse.RequestParser()
-        SupportSpreadsheetFileType.__init__(self)
+        SupportSpreadsheetFileType.__init__(self)  # type: ignore
 
     def get(self, classifier_id: int, test_set_id: int) -> Response:
         test_set = get_object_or_404(models.TestSet, models.TestSet.id_ == test_set_id)
@@ -591,7 +601,7 @@ class ClassifiersTestSetsFile(ClassifierTestSetRelatedResource):
             labels=test_set.classifier.category_names,
             model_path=str(model_path),
             test_file=str(test_file),
-            cache_dir=str(Settings.TRANSFORMERS_CACHE_DIRECTORY),
+            cache_dir=str(settings.TRANSFORMERS_CACHE_DIRECTORY),
             test_output_file=str(test_output_file),
         )
 
@@ -616,7 +626,7 @@ class ClassifiersTestSetsFile(ClassifierTestSetRelatedResource):
 
         utils.Validate.table_has_no_empty_cells(table)
         utils.Validate.table_has_num_columns(table, 1)
-        utils.Validate.table_has_headers(table, [Settings.CONTENT_COL])
+        utils.Validate.table_has_headers(table, [CONTENT_COL])
         table_headers, table_data = table[0], table[1:]
 
         min_num_examples = 1
@@ -659,7 +669,7 @@ class TopicModelRelatedResource(BaseResource):
         # We didn't assign default topic names before.
         if topic_mdl.topic_names is None:
             topic_mdl.topic_names = [
-                Settings.DEFAULT_TOPIC_NAME_TEMPLATE.format(topic_num)
+                DEFAULT_TOPIC_NAME_TEMPLATE.format(topic_num)
                 for topic_num in range(1, topic_mdl.num_topics + 1)
             ]
             topic_mdl.save()
@@ -816,7 +826,7 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
             training_file=str(train_file),
             fname_keywords=str(utils.Files.topic_model_keywords_file(id_)),
             fname_topics_by_doc=str(utils.Files.topic_model_topics_by_doc_file(id_)),
-            mallet_bin_directory=str(Settings.MALLET_BIN_DIRECTORY),
+            mallet_bin_directory=str(settings.MALLET_BIN_DIRECTORY),
         )
         topic_mdl.lda_set = models.LDASet()
         topic_mdl.lda_set.save()
@@ -845,17 +855,17 @@ class TopicModelsTrainingFile(TopicModelRelatedResource):
         table = utils.Validate.spreadsheet_and_get_table(file_)
 
         utils.Validate.table_has_num_columns(table, 1)
-        utils.Validate.table_has_headers(table, [Settings.CONTENT_COL])
+        utils.Validate.table_has_headers(table, [CONTENT_COL])
         utils.Validate.table_has_no_empty_cells(table)
 
         table_headers, table_data = table[0], table[1:]
         # Add the ID column to the table
-        table_headers = [Settings.ID_COL] + table_headers
+        table_headers = [ID_COL] + table_headers
         table_data = [[str(row_num)] + row for row_num, row in enumerate(table_data)]
 
-        if len(table_data) < Settings.MINIMUM_LDA_EXAMPLES:
+        if len(table_data) < MINIMUM_LDA_EXAMPLES:
             raise BadRequest(
-                f"We need at least {Settings.MINIMUM_LDA_EXAMPLES} for a topic model."
+                f"We need at least {MINIMUM_LDA_EXAMPLES} for a topic model."
             )
 
         return table_headers, table_data
@@ -909,23 +919,19 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
         assert len(keywords_per_topic) == len(examples_per_topic)
 
         topic_mdl_status_json = self._topic_model_status_json(topic_mdl)
-        topic_preview_json = TopicModelPreviewJson(
-            {
-                "topic_model_id": topic_mdl_status_json["topic_model_id"],
-                "topic_model_name": topic_mdl_status_json["topic_model_name"],
-                "num_topics": topic_mdl_status_json["num_topics"],
-                "topic_names": topic_mdl_status_json["topic_names"],
-                "notify_at_email": topic_mdl.notify_at_email,  # TODO: umm, why the black sheep?
-                "status": topic_mdl_status_json["status"],
-                "metrics": topic_mdl_status_json["metrics"],
-                "topic_previews": [
-                    OneTopicPreviewJson({"examples": examples, "keywords": keywords})
-                    for examples, keywords in zip(
-                        examples_per_topic, keywords_per_topic
-                    )
-                ],
-            }
-        )
+        topic_preview_json: TopicModelPreviewJson = {
+            "topic_model_id": topic_mdl_status_json["topic_model_id"],
+            "topic_model_name": topic_mdl_status_json["topic_model_name"],
+            "num_topics": topic_mdl_status_json["num_topics"],
+            "topic_names": topic_mdl_status_json["topic_names"],
+            "notify_at_email": topic_mdl.notify_at_email,  # TODO: umm, why the black sheep?
+            "status": topic_mdl_status_json["status"],
+            "metrics": topic_mdl_status_json["metrics"],
+            "topic_previews": [
+                {"examples": examples, "keywords": keywords}
+                for examples, keywords in zip(examples_per_topic, keywords_per_topic)
+            ],
+        }
         return topic_preview_json
 
     @staticmethod
@@ -964,12 +970,12 @@ class TopicModelsTopicsPreview(TopicModelRelatedResource):
         topics_by_doc_path = utils.Files.topic_model_topics_by_doc_file(topic_mdl.id_)
         topics_by_doc_df = pd.read_csv(topics_by_doc_path, index_col=0, header=0)  # type: ignore[attr-defined]
         bool_mask_topic_most_likely_examples: T.List[pd.Series[str]] = [
-            topics_by_doc_df[Settings.MOST_LIKELY_TOPIC_COL] == topic_num
+            topics_by_doc_df[MOST_LIKELY_TOPIC_COL] == topic_num
             for topic_num in range(topic_mdl.num_topics)
         ]
         examples_per_topic: T.List[T.List[str]] = [
-            topics_by_doc_df.loc[bool_mask, Settings.CONTENT_COL][
-                : Settings.MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW
+            topics_by_doc_df.loc[bool_mask, CONTENT_COL][
+                :MAX_NUM_EXAMPLES_PER_TOPIC_IN_PREIVEW
             ]
             .to_numpy()
             .tolist()
@@ -984,7 +990,7 @@ class TopicModelsKeywords(TopicModelRelatedResource, SupportSpreadsheetFileType)
 
     def __init__(self) -> None:
         self.reqparse = reqparse.RequestParser()
-        SupportSpreadsheetFileType.__init__(self)
+        SupportSpreadsheetFileType.__init__(self)  # type: ignore
 
     def get(self, topic_model_id: int) -> Response:
         topic_mdl = get_object_or_404(
@@ -1041,7 +1047,7 @@ class TopicModelsTopicsByDoc(TopicModelRelatedResource, SupportSpreadsheetFileTy
 
     def __init__(self) -> None:
         self.reqparse = reqparse.RequestParser()
-        SupportSpreadsheetFileType.__init__(self)
+        SupportSpreadsheetFileType.__init__(self)  # type: ignore
 
     def get(self, topic_model_id: int) -> Response:
         topic_mdl = get_object_or_404(
@@ -1090,24 +1096,24 @@ class TopicModelsTopicsByDoc(TopicModelRelatedResource, SupportSpreadsheetFileTy
             pd.testing.assert_index_equal(
                 keywords_df.columns,
                 pd.Index(
-                    [Settings.CONTENT_COL, Settings.STEMMED_CONTENT_COL]
+                    [CONTENT_COL, STEMMED_CONTENT_COL]
                     + [
-                        Settings.PROBAB_OF_TOPIC_TEMPLATE.format(
-                            Settings.DEFAULT_TOPIC_NAME_TEMPLATE.format(topic_num)
+                        PROBAB_OF_TOPIC_TEMPLATE.format(
+                            DEFAULT_TOPIC_NAME_TEMPLATE.format(topic_num)
                         )
                         for topic_num in range(1, topic_mdl.num_topics + 1)
                     ]
-                    + [Settings.MOST_LIKELY_TOPIC_COL]
+                    + [MOST_LIKELY_TOPIC_COL]
                 ),
             )
 
             keywords_df.columns = pd.Index(
-                [Settings.CONTENT_COL, Settings.STEMMED_CONTENT_COL]
+                [CONTENT_COL, STEMMED_CONTENT_COL]
                 + [
-                    Settings.PROBAB_OF_TOPIC_TEMPLATE.format(topic)
+                    PROBAB_OF_TOPIC_TEMPLATE.format(topic)
                     for topic in topic_mdl.topic_names
                 ]
-                + [Settings.MOST_LIKELY_TOPIC_COL]
+                + [MOST_LIKELY_TOPIC_COL]
             )
 
             keywords_df.to_csv(
@@ -1119,7 +1125,6 @@ class TopicModelsTopicsByDoc(TopicModelRelatedResource, SupportSpreadsheetFileTy
 
 # We will initialize database manually in here, so we are not going to do
 # db.may_need_database_init
-@needs_settings_init()
 def create_app(logging_level: int = logging.WARNING) -> Flask:
     """App factory to for easier testing. 
     Creates:
@@ -1137,25 +1142,25 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
     # Usually, we'd read this from app.config, but we need it to create app.config ...
     app = Flask(__name__)
 
-    app.config["SERVER_NAME"] = Settings.SERVER_NAME
+    app.config["SERVER_NAME"] = settings.SERVER_NAME
 
     # Create project root if necessary
-    if not Settings.PROJECT_DATA_DIRECTORY.exists():
-        Settings.PROJECT_DATA_DIRECTORY.mkdir()
+    if not settings.PROJECT_DATA_DIRECTORY.exists():
+        settings.PROJECT_DATA_DIRECTORY.mkdir()
         utils.Files.supervised_dir(ensure_exists=True)
         utils.Files.unsupervised_dir(ensure_exists=True)
 
     Version.ensure_project_data_dir_version_safe()
 
     # Create database tables if the SQLITE file is going to be new
-    if not Settings.DATABASE_FILE.exists():
-        database = pw.SqliteDatabase(str(Settings.DATABASE_FILE))
+    if not settings.DATABASE_FILE.exists():
+        database = pw.SqliteDatabase(str(settings.DATABASE_FILE))
         models.database_proxy.initialize(database)
         with models.database_proxy.connection_context():
             logger.info("Created tables because SQLITE file was not found.")
             models.database_proxy.create_tables(models.MODELS)
     else:
-        database = pw.SqliteDatabase(str(Settings.DATABASE_FILE))
+        database = pw.SqliteDatabase(str(settings.DATABASE_FILE))
         models.database_proxy.initialize(database)
         logger.info("SQLITE file found. Not creating tables")
 

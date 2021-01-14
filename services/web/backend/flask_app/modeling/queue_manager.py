@@ -5,7 +5,8 @@ import typing_extensions as TT
 from redis import Redis
 from rq import Queue  # type: ignore
 
-from flask_app.settings import Settings
+from flask_app.settings import settings
+
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ class TopicModelTrainingTaskArgs(TT.TypedDict):
 
 class QueueManager(object):
     def __init__(self) -> None:
-        connection = Redis(host=Settings.REDIS_HOST, port=Settings.REDIS_PORT)
+        connection = Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
         is_async = True
         self.classifiers_queue = Queue(
             name="classifiers", connection=connection, is_async=is_async

@@ -2,11 +2,10 @@ import logging
 import typing as T
 
 import typing_extensions as TT
+from flask_app.settings import settings
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
-from flask_app.settings import needs_settings_init
-from flask_app.settings import Settings
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -68,7 +67,7 @@ BODY: {body}
     def send(self, mail: Mail) -> FakeResponse:
         """Log email sent."""
         logging_string_fmt = self.logging_string_fmt
-        if Settings.SENDGRID_API_KEY:
+        if settings.SENDGRID_API_KEY:
             logging_string_fmt += "SENDGRID_API_KEY was set, so this email was (most likely) actually sent."
         else:
             logging_string_fmt += (
@@ -206,7 +205,6 @@ the problem persists, contact us by replying to this email.</p>
 class Emailer:
     """Handle all email sending."""
 
-    @needs_settings_init()
     def __init__(self) -> None:
         self._sg_clients: T.List[SengGridAPIClientProtocol] = []
 
@@ -214,9 +212,9 @@ class Emailer:
             LogSendGridAPIClient()
         )  # Print to console no matter what
 
-        if Settings.SENDGRID_API_KEY:
+        if settings.SENDGRID_API_KEY:
             self._sg_clients.append(
-                SendGridAPIClient(api_key=Settings.SENDGRID_API_KEY)
+                SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
             )
 
     @T.overload
@@ -226,7 +224,7 @@ class Emailer:
         to_email: str,
         *,
         classifier_name: str,
-        metrics: T.Dict[str, T.Union[float, int]],
+        metrics: T.Mapping[str, T.Union[float, int]],
     ) -> None:
         ...
 
@@ -249,7 +247,7 @@ class Emailer:
         *,
         topic_model_name: str,
         topic_model_preview_url: str,
-        metrics: T.Dict[str, T.Union[float, int]],
+        metrics: T.Mapping[str, T.Union[float, int]],
     ) -> None:
         ...
 
@@ -261,7 +259,7 @@ class Emailer:
             "classifier_training_finished",
         ],
         to_email: str,
-        **template_values: T.Union[str, T.Dict[str, T.Union[float, int]]],
+        **template_values: T.Union[str, T.Mapping[str, T.Union[float, int]]],
     ) -> None:
         template = _email_templates[email_template_name]
         template_values_html = {}
@@ -290,7 +288,7 @@ class Emailer:
                 template_values_html[key] = val
         html_content = template["html_content"].format(**template_values_html)
         message = Mail(
-            from_email=Settings.SENDGRID_FROM_EMAIL or "NOSENDERSET",
+            from_email=settings.SENDGRID_FROM_EMAIL or "NOSENDERSET",
             to_emails=to_email,
             subject=template["subject"],
             html_content=html_content,

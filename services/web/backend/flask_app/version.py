@@ -1,7 +1,7 @@
 import typing as T
 from pathlib import Path
 
-from flask_app.settings import Settings
+from flask_app.settings import settings
 
 
 class Version:
@@ -21,7 +21,7 @@ class Version:
 
     @classmethod
     def project_data_dir_indicator_file(cls) -> Path:
-        return Settings.PROJECT_DATA_DIRECTORY / "project_data_dir_version.txt"
+        return settings.PROJECT_DATA_DIRECTORY / "project_data_dir_version.txt"
 
     @classmethod
     def get_project_data_dir_version_on_disk(cls) -> T.Optional[T.Tuple[int, int]]:

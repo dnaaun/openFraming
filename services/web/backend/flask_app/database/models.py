@@ -1,12 +1,10 @@
 """Peewee database ORM."""
 import enum
+from flask_app.settings import settings
 import functools
 import typing as T
 
 import peewee as pw
-
-from flask_app.settings import needs_settings_init
-from flask_app.settings import Settings
 
 
 database_proxy = pw.DatabaseProxy()  # Create a proxy for our db.
@@ -21,7 +19,7 @@ class BaseModel(pw.Model):
 
     def refresh(self: SubClass) -> SubClass:
         # https://stackoverflow.com/a/32156865/13664712
-        return type(self).get(self._pk_expr())
+        return type(self).get(self._pk_expr())  # type: ignore
 
 
 # From: https://github.com/coleifer/peewee/issues/630
@@ -50,7 +48,12 @@ class EnumField(pw.CharField):
         return self._enum_class(value)
 
 
-class ListField(pw.TextField):
+if T.TYPE_CHECKING:
+    ListFieldBase = pw.Field[T.List[str]]
+else:
+    ListFieldBase = pw.TextField
+
+class ListField(ListFieldBase):
     """A field to facilitate storing lists of strings as a textfield."""
 
     def __init__(self, sep: str = ",", *args: T.Any, **kwargs: T.Any) -> None:
@@ -97,14 +100,15 @@ class ClassifierMetrics(BaseModel):
         accuracy:
     """
 
-    macro_f1_score: float = pw.FloatField()
-    macro_precision: float = pw.FloatField()
-    macro_recall: float = pw.FloatField()
-    accuracy: float = pw.FloatField()
+    macro_f1_score = pw.FloatField()
+    macro_precision = pw.FloatField()
+    macro_recall = pw.FloatField()
+    accuracy = pw.FloatField()
+
 
 
 class TopicModelMetrics(BaseModel):
-    umass_coherence: float = pw.FloatField()
+    umass_coherence = pw.FloatField()
 
 
 class LabeledSet(BaseModel):
@@ -121,10 +125,10 @@ class LabeledSet(BaseModel):
         metrics: Metrics on set. Can be null in the case of a train set.
     """
 
-    id_: int = pw.AutoField(primary_key=True)
-    training_or_inference_completed: bool = pw.BooleanField(default=False)  # type: ignore
-    error_encountered: bool = pw.BooleanField(default=False)  # type: ignore
-    metrics: ClassifierMetrics = pw.ForeignKeyField(ClassifierMetrics, null=True)  # type: ignore
+    id_ = pw.AutoField(primary_key=True)
+    training_or_inference_completed = pw.BooleanField(default=False)
+    error_encountered = pw.BooleanField(default=False) 
+    metrics = pw.ForeignKeyField(ClassifierMetrics, null=True)
 
 
 class Classifier(BaseModel):
@@ -149,13 +153,13 @@ class Classifier(BaseModel):
             name=name, category_names=category_names, notify_at_email=notify_at_email
         )
 
-    classifier_id: int = pw.AutoField(primary_key=True)  # type: ignore
-    name: str = pw.TextField()  # type: ignore
-    category_names: T.List[str] = ListField()  # type: ignore
-    trained_by_openFraming: bool = pw.BooleanField(default=False)  # type: ignore
-    train_set: T.Optional[LabeledSet] = pw.ForeignKeyField(LabeledSet, null=True)  # type: ignore
-    notify_at_email: str = pw.TextField()  # type: ignore
-    dev_set: T.Optional[LabeledSet] = pw.ForeignKeyField(LabeledSet, null=True)  # type: ignore
+    classifier_id = pw.AutoField(primary_key=True) 
+    name = pw.TextField() 
+    category_names = ListField() 
+    trained_by_openFraming = pw.BooleanField(default=False) 
+    train_set = pw.ForeignKeyField(LabeledSet, null=True) 
+    notify_at_email = pw.TextField() 
+    dev_set = pw.ForeignKeyField(LabeledSet, null=True) 
 
     test_sets: T.Iterable["TestSet"]  # provided by backref on TestSet
 
@@ -213,12 +217,12 @@ class TopicModel(BaseModel):
             topic_names=topic_names,
         )
 
-    id_: int = pw.AutoField()
-    name: str = pw.CharField()
-    num_topics: int = pw.IntegerField()
-    topic_names: T.List[str] = ListField(null=True)  # type: ignore
-    lda_set: T.Optional[LDASet] = pw.ForeignKeyField(LDASet, null=True)  # type: ignore
-    notify_at_email: str = pw.TextField()  # type: ignore
+    id_ = pw.AutoField()
+    name = pw.CharField()
+    num_topics = pw.IntegerField()
+    topic_names = ListField(null=True)
+    lda_set = pw.ForeignKeyField(LDASet, null=True)
+    notify_at_email = pw.TextField()
 
     # NOTE: The below is ONLY a type annotation.
     # The actual attribute is made available using "backreferences" in peewee
@@ -231,9 +235,9 @@ class TopicModel(BaseModel):
 
 
 class SemiSupervisedSet(BaseModel):
-    topic_model: TopicModel = pw.ForeignKeyField(TopicModel, backref="semi_supervised_sets")  # type: ignore
-    labeled_set: LabeledSet = pw.ForeignKeyField(LabeledSet)  # type: ignore
-    clustering_completed: bool = pw.BooleanField()  # type: ignore
+    topic_model = pw.ForeignKeyField(TopicModel, backref="semi_supervised_sets")
+    labeled_set = pw.ForeignKeyField(LabeledSet)
+    clustering_completed = pw.BooleanField()
 
 
 F = T.TypeVar("F", bound=T.Callable[..., T.Any])
@@ -247,9 +251,8 @@ def needs_database_init(func: F) -> F:
     # This functools.wraps is SUPER IMPORTANT because pickling the decorated function
     # fails without it, which is necessary for RQ.
     @functools.wraps(func)
-    @needs_settings_init()
     def wrapper(*args: T.Any, **kwargs: T.Any) -> T.Any:
-        database = pw.SqliteDatabase(str(Settings.DATABASE_FILE))
+        database = pw.SqliteDatabase(str(settings.DATABASE_FILE))
         database_proxy.initialize(database)
         return func(*args, **kwargs)
 

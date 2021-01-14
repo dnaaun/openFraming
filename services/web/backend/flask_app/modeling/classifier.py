@@ -1,4 +1,5 @@
 """Classifier related backend functionality."""
+from flask_app.settings import CONTENT_COL, LABEL_COL
 import tempfile
 import typing as T
 
@@ -14,11 +15,10 @@ from transformers import EvalPrediction
 from transformers import InputFeatures  # type: ignore
 from transformers import Trainer
 from transformers import TrainingArguments  # type: ignore
-from transformers.tokenization_utils import PreTrainedTokenizer
+from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
 from transformers.trainer_utils import PredictionOutput
 
 from flask_app.modeling.lda import CSV_EXTENSIONS
-from flask_app.settings import Settings
 
 # Named as such to distinguish from db.ClassifierMetrics
 ClassifierMetricsJson = TT.TypedDict(
@@ -38,7 +38,7 @@ class ClassificationDataset(Dataset):  # type: ignore
     def __init__(
         self,
         labels: T.List[str],
-        tokenizer: PreTrainedTokenizer,
+        tokenizer: T.Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
         label_map: T.Dict[str, int],
         dset_filename: str,
         content_column: str,
@@ -81,14 +81,18 @@ class ClassificationDataset(Dataset):  # type: ignore
         else:
             self.encoded_labels = None
         self.features = []
-        for i in range(len(self.encoded_content["input_ids"])):
+        # Not sure about the cast here, it may actually be pytorch tensor, not
+        # T.List[int]. But this is a fake cast that does nothing at run time, and only
+        # useful for type checking, so no biggie.
+        for i in range(len(T.cast(T.List[int], self.encoded_content["input_ids"]))):
             inputs = {
-                k: self.encoded_content[k][i] for k in self.encoded_content.keys()
+                k: T.cast(T.List[int], self.encoded_content[k])[i]
+                for k in self.encoded_content.keys()
             }
             if self.encoded_labels is not None:
-                feature = InputFeatures(**inputs, label=self.encoded_labels[i])
+                feature = InputFeatures(label=self.encoded_labels[i], **inputs) # type: ignore
             else:
-                feature = InputFeatures(**inputs, label=None)
+                feature = InputFeatures(label=None, **inputs) # type: ignore
             self.features.append(feature)
 
     def __len__(self) -> int:
@@ -104,13 +108,32 @@ class ClassificationDataset(Dataset):  # type: ignore
 class ClassifierModel(object):
     """Trainable BERT-based classifier given a training & eval set."""
 
+    @T.overload
+    def __init__(  # When training a new model
+        self,
+        labels: T.List[str],
+        model_path: str,
+        cache_dir: str,
+        output_dir: str,
+        num_train_epochs,
+        train_file: T.Optional[str],
+        dev_file: T.Optional[str] = None,
+    ) -> None:
+        ...
+
+    @T.overload
+    def __init__(  # When loading an existing model
+        self, labels: T.List[str], model_path: str, cache_dir: str,
+    ) -> None:
+        ...
+
     def __init__(
         self,
         labels: T.List[str],
         model_path: str,
         cache_dir: str,
         output_dir: T.Optional[str] = None,
-        num_train_epochs: T.Optional[float] = None,
+        num_train_epochs: float = 3.0,
         train_file: T.Optional[str] = None,
         dev_file: T.Optional[str] = None,
     ):
@@ -156,13 +179,9 @@ class ClassifierModel(object):
         )
 
         if train_file is not None:
-            self.train_dataset = self.make_dataset(
-                train_file, Settings.CONTENT_COL, Settings.LABEL_COL,
-            )
+            self.train_dataset = self.make_dataset(train_file, CONTENT_COL, LABEL_COL,)
         if dev_file is not None:
-            self.eval_dataset = self.make_dataset(
-                dev_file, Settings.CONTENT_COL, Settings.LABEL_COL,
-            )
+            self.eval_dataset = self.make_dataset(dev_file, CONTENT_COL, LABEL_COL,)
 
     def compute_metrics(self, p: EvalPrediction) -> ClassifierMetricsJson:
         """
@@ -176,14 +195,12 @@ class ClassifierModel(object):
         clsf_report_sklearn = classification_report(
             y_true=y_true, y_pred=y_pred, output_dict=True, labels=self.labels,
         )
-        final = ClassifierMetricsJson(
-            {
-                "accuracy": clsf_report_sklearn["accuracy"],
-                "macro_f1_score": clsf_report_sklearn["macro avg"]["f1-score"],
-                "macro_recall": clsf_report_sklearn["macro avg"]["recall"],
-                "macro_precision": clsf_report_sklearn["macro avg"]["precision"],
-            }
-        )
+        final: ClassifierMetricsJson = {
+            "accuracy": clsf_report_sklearn["accuracy"],
+            "macro_f1_score": clsf_report_sklearn["macro avg"]["f1-score"],
+            "macro_recall": clsf_report_sklearn["macro avg"]["recall"],
+            "macro_precision": clsf_report_sklearn["macro avg"]["precision"],
+        }
         return final
 
     def make_dataset(
@@ -212,7 +229,8 @@ class ClassifierModel(object):
         """Train a BERT-based model, using the training set to train & the eval set as
         validation.
         """
-        assert self.train_dataset is not None, "train_file was not provided!"
+        assert self.train_dataset is not None, "train_file was not provided!" 
+        assert self.output_dir is not None
 
         self.trainer = Trainer(
             model=self.model,
@@ -252,14 +270,13 @@ class ClassifierModel(object):
                 new_key = key.replace("eval_", "")
                 new_metrics[new_key] = val
 
-        return ClassifierMetricsJson(
-            {
-                "accuracy": new_metrics["accuracy"],
-                "macro_f1_score": new_metrics["macro_f1_score"],
-                "macro_recall": new_metrics["macro_recall"],
-                "macro_precision": new_metrics["macro_precision"],
-            }
-        )
+        res: ClassifierMetricsJson = {
+            "accuracy": new_metrics["accuracy"],
+            "macro_f1_score": new_metrics["macro_f1_score"],
+            "macro_recall": new_metrics["macro_recall"],
+            "macro_precision": new_metrics["macro_precision"],
+        }
+        return res
 
     def predict_and_save_predictions(
         self,
@@ -290,7 +307,7 @@ class ClassifierModel(object):
             output_dir = self.output_dir
 
         test_dset = self.make_dataset(test_set_path, content_column, None)
-        trainer: Trainer[None] = Trainer(
+        trainer = Trainer(
             model=self.model,
             args=TrainingArguments(
                 do_train=False,

@@ -20,7 +20,7 @@ from flask_app.modeling.lda import LDAModeler
 from flask_app.modeling.queue_manager import ClassifierPredictionTaskArgs
 from flask_app.modeling.queue_manager import ClassifierTrainingTaskArgs
 from flask_app.modeling.queue_manager import TopicModelTrainingTaskArgs
-from flask_app.settings import Settings
+from flask_app.settings import CONTENT_COL, DEFAULT_FILE_FORMAT, ID_COL, PREDICTED_LABEL_COL, settings
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -31,7 +31,8 @@ logger.setLevel(logging.DEBUG)
 def do_classifier_related_task(
     task_args: T.Union[ClassifierTrainingTaskArgs, ClassifierPredictionTaskArgs],
 ) -> None:
-    if task_args["task_type"] == "prediction":
+    if "test_output_file" in task_args:
+        task_args = T.cast(ClassifierPredictionTaskArgs, task_args) # help mypy
         test_set = models.TestSet.get(models.TestSet.id_ == task_args["test_set_id"])
         assert test_set.inference_began
         assert not test_set.inference_completed
@@ -45,14 +46,15 @@ def do_classifier_related_task(
 
             classifier_model.predict_and_save_predictions(
                 test_set_path=task_args["test_file"],
-                content_column=Settings.CONTENT_COL,
-                predicted_column=Settings.PREDICTED_LABEL_COL,
+                content_column=CONTENT_COL,
+                predicted_column=PREDICTED_LABEL_COL,
                 output_file_path=task_args["test_output_file"],
             )
         except BaseException as e:
             logger.critical(f"Error while doing prediction task: {e}")
             test_set.error_encountered = True
         else:
+            task_args = T.cast(ClassifierTrainingTaskArgs, task_args) # help mypy
             test_set.inference_completed = True
             emailer = emails.Emailer()
             emailer.send_email(
@@ -63,7 +65,7 @@ def do_classifier_related_task(
                     "ClassifiersTestSetsPredictions",
                     classifier_id=test_set.classifier.classifier_id,
                     test_set_id=test_set.id_,
-                    file_type=Settings.DEFAULT_FILE_FORMAT.strip("."),
+                    file_type=DEFAULT_FILE_FORMAT.strip("."),
                     _method="GET",
                 ),
             )
@@ -121,8 +123,8 @@ def do_topic_model_related_task(task_args: TopicModelTrainingTaskArgs) -> None:
     try:
         corpus = Corpus(
             file_name=task_args["training_file"],
-            content_column_name=Settings.CONTENT_COL,
-            id_column_name=Settings.ID_COL,
+            content_column_name=CONTENT_COL,
+            id_column_name=ID_COL,
         )
         lda_modeler = LDAModeler(
             corpus,
@@ -146,7 +148,7 @@ def do_topic_model_related_task(task_args: TopicModelTrainingTaskArgs) -> None:
             email_template_name="topic_model_training_finished",
             to_email=topic_mdl.notify_at_email,
             topic_model_name=topic_mdl.name,
-            topic_model_preview_url=f"http://{Settings.SERVER_NAME}/topicModelPreviews.html?topic_model_id={topic_mdl.id_}",
+            topic_model_preview_url=f"http://{settings.SERVER_NAME}/topicModelPreviews.html?topic_model_id={topic_mdl.id_}",
             metrics=T.cast(T.Dict[str, T.Union[int, float]], metrics),
         )
 

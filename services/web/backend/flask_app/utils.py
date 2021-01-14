@@ -1,5 +1,7 @@
 """Everything that is not dealing with HTTP and that doesn't belong in modeling/."""
 import csv
+from flask_app.settings import settings
+from flask_app.settings import SUPPORTED_NON_CSV_FORMATS
 import hashlib
 import io
 import mimetypes
@@ -11,7 +13,6 @@ from flask import current_app
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import BadRequest
 
-from flask_app.settings import Settings
 
 
 # mypy doesn't support recrsive types, so this is the best we can do
@@ -24,7 +25,7 @@ class Files:
     @classmethod
     def supervised_dir(cls, ensure_exists: bool = True) -> Path:
         """Dir for classifier weights, training and inference data."""
-        dir_ = Settings.PROJECT_DATA_DIRECTORY / "supervised"
+        dir_ = settings.PROJECT_DATA_DIRECTORY / "supervised"
         if ensure_exists:
             cls._create_dir_if_not_exists(dir_)
         return dir_
@@ -32,7 +33,7 @@ class Files:
     @classmethod
     def unsupervised_dir(cls, ensure_exists: bool = True) -> Path:
         """Dir for LDA results, training and inference data."""
-        dir_ = Settings.PROJECT_DATA_DIRECTORY / "unsupervised"
+        dir_ = settings.PROJECT_DATA_DIRECTORY / "unsupervised"
         if ensure_exists:
             cls._create_dir_if_not_exists(dir_)
         return dir_
@@ -184,7 +185,7 @@ class Validate:
                 " Perhaps using a different browser might help."
             )
 
-        if file_type in Settings.SUPPORTED_NON_CSV_FORMATS:
+        if file_type in SUPPORTED_NON_CSV_FORMATS:
             try:
                 df: pd.DataFrame = pd.read_excel(file_, na_filter=False, header=None)  # type: ignore
             except BaseException:
@@ -210,7 +211,7 @@ class Validate:
             raise BadRequest(
                 f"File type {file_type} was not understood as a valid spreadhseet type,"
                 "please upload one of the following file formats: "
-                + ", ".join(Settings.SUPPORTED_NON_CSV_FORMATS | {".csv"})
+                + ", ".join(SUPPORTED_NON_CSV_FORMATS | {".csv"})
             )
 
         return table
