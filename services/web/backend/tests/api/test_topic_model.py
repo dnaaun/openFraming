@@ -5,20 +5,25 @@ from unittest import mock
 import pandas as pd  # type: ignore
 from flask import current_app
 from flask import url_for
-from tests.common import AppMixin
+from tests.common import AppSetup
 from tests.common import make_csv_file
-from tests.common import RQWorkerMixin
+from tests.common import RQWorkerSetup
 
 from flask_app import utils
 from flask_app.app import API_URL_PREFIX
 from flask_app.app import TopicModelStatusJson
 from flask_app.database import models
 from flask_app.modeling.queue_manager import QueueManager
-from flask_app.settings import Settings
+from flask_app.settings import (
+    CONTENT_COL, ID_COL, MOST_LIKELY_TOPIC_COL, PROBAB_OF_TOPIC_TEMPLATE, STEMMED_CONTENT_COL, SUPPORTED_NON_CSV_FORMATS, TOPIC_PROPORTIONS_ROW, settings,
+    DEFAULT_TOPIC_NAME_TEMPLATE,
+    DEFAULT_NUM_KEYWORDS_TO_GENERATE,
+    DEFAULT_FILE_FORMAT,
+)
 from flask_app.utils import Json
 
 
-class TopicModelMixin(RQWorkerMixin, AppMixin):
+class TopicModelSetup(RQWorkerSetup, AppSetup):
     def setUp(self) -> None:
         super().setUp()
         num_topics = 10
@@ -26,7 +31,7 @@ class TopicModelMixin(RQWorkerMixin, AppMixin):
             name="test_topic_model",
             num_topics=num_topics,
             topic_names=[
-                Settings.DEFAULT_TOPIC_NAME_TEMPLATE.format(topic_num)
+                DEFAULT_TOPIC_NAME_TEMPLATE.format(topic_num)
                 for topic_num in range(1, num_topics + 1)
             ],
             notify_at_email="davidat@bu.edu",
@@ -39,7 +44,7 @@ class TopicModelMixin(RQWorkerMixin, AppMixin):
             [cell]
             for cell in [
                 # Taken from huffpost.com
-                f"{Settings.CONTENT_COL}",
+                f"{CONTENT_COL}",
                 "Florida Officer Who Was Filmed Shoving A Kneeling Black Protester Has Been Charged",
                 "Fox News Host Ed Henry Fired After Sexual Misconduct Investigation",
                 "Hong Kong Police Make First Arrests Under New Security Law Imposed By China",
@@ -72,29 +77,27 @@ class TopicModelMixin(RQWorkerMixin, AppMixin):
         ]
 
         # What we expect to see after upload file being processed in the backend
-        self._expected_training_table = [[Settings.ID_COL, Settings.CONTENT_COL]] + [
+        self._expected_training_table = [[ID_COL, CONTENT_COL]] + [
             [str(row_num), cell]
             for row_num, (cell,) in enumerate(self._valid_training_table[1:])
         ]
 
 
-class TestTopicModels(TopicModelMixin, unittest.TestCase):
+class TestTopicModels(TopicModelSetup, unittest.TestCase):
     def test_get(self) -> None:
         url = API_URL_PREFIX + "/topic_models/"
-        expected_topic_model_json = TopicModelStatusJson(
-            {
+        expected_topic_model_json: TopicModelStatusJson = {
                 "topic_model_id": self._topic_mdl.id_,
                 "topic_model_name": "test_topic_model",
                 "num_topics": self._topic_mdl.num_topics,
                 "topic_names": [
-                    Settings.DEFAULT_TOPIC_NAME_TEMPLATE.format(topic_num)
+                    DEFAULT_TOPIC_NAME_TEMPLATE.format(topic_num)
                     for topic_num in range(1, self._topic_mdl.num_topics + 1)
                 ],
                 "status": "not_begun",
                 "metrics": None,
                 "notify_at_email": self._topic_mdl.notify_at_email,
             }
-        )
         with current_app.test_client() as client:
             with self.subTest("get all topic models"):
                 with client.get(url) as resp:
@@ -137,20 +140,18 @@ class TestTopicModels(TopicModelMixin, unittest.TestCase):
                     resp_json: Json = resp.get_json()
 
                 self.assertIsInstance(resp_json, dict)
-                expected_topic_model_json = TopicModelStatusJson(
-                    {
+                expected_topic_model_json: TopicModelStatusJson = {
                         "topic_model_id": 999,
                         "topic_model_name": "test_topic_model",
                         "num_topics": 2,
                         "topic_names": [
-                            Settings.DEFAULT_TOPIC_NAME_TEMPLATE.format(topic_num)
+                            DEFAULT_TOPIC_NAME_TEMPLATE.format(topic_num)
                             for topic_num in range(1, num_topics + 1)
                         ],
                         "status": "not_begun",
                         "metrics": None,
                         "notify_at_email": "davidat@bu.edu",
                     }
-                )
 
                 assert isinstance(resp_json, dict)
                 resp_json.pop("topic_model_id")
@@ -161,7 +162,7 @@ class TestTopicModels(TopicModelMixin, unittest.TestCase):
                         )
 
 
-class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
+class TestTopicModelsTrainingFile(TopicModelSetup, unittest.TestCase):
     def test_post(self) -> None:
         # Mock the QueueManager
         queue_manager: QueueManager = current_app.queue_manager
@@ -193,7 +194,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
 
         # Asssert the queue manager was called with the right arguments
         queue_manager.add_topic_model_training.assert_called_with(
-            mallet_bin_directory=str(Settings.MALLET_BIN_DIRECTORY),
+            mallet_bin_directory=str(settings.MALLET_BIN_DIRECTORY),
             topic_model_id=self._topic_mdl.id_,
             training_file=str(training_file_path),
             fname_keywords=str(fname_keywords),
@@ -223,7 +224,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
 
         # Start the training
         queue_manager.add_topic_model_training(
-            mallet_bin_directory=str(Settings.MALLET_BIN_DIRECTORY),
+            mallet_bin_directory=str(settings.MALLET_BIN_DIRECTORY),
             topic_model_id=self._topic_mdl.id_,
             training_file=str(training_file_path),
             fname_keywords=str(fname_keywords),
@@ -272,7 +273,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
                 # Check that the examples are longer than the keywords
                 # doesnt NEED to be true, but should prbobably be true
                 self.assertEqual(
-                    len(preview["keywords"]), Settings.DEFAULT_NUM_KEYWORDS_TO_GENERATE
+                    len(preview["keywords"]), DEFAULT_NUM_KEYWORDS_TO_GENERATE
                 )
 
                 if len(preview["examples"]) > 0:
@@ -302,8 +303,8 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
         with self.subTest("get results of lda"):
             # Inspect the content of the keywords file
             expected_keywords_df_index = pd.Index(
-                [f"word_{i}" for i in range(Settings.DEFAULT_NUM_KEYWORDS_TO_GENERATE)]
-                + [Settings.TOPIC_PROPORTIONS_ROW]
+                [f"word_{i}" for i in range(DEFAULT_NUM_KEYWORDS_TO_GENERATE)]
+                + [TOPIC_PROPORTIONS_ROW]
             )
             expected_keywords_df_columns = pd.Index(topic_names)
             num_examples = len(self._valid_training_table) - 1  # -1 for the header
@@ -312,15 +313,15 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
                 [f"{i}" for i in range(num_examples)], name="Id",
             )
             expected_topics_by_doc_columns = pd.Index(
-                [Settings.CONTENT_COL, Settings.STEMMED_CONTENT_COL,]
+                [CONTENT_COL, STEMMED_CONTENT_COL,]
                 + [
-                    Settings.PROBAB_OF_TOPIC_TEMPLATE.format(topic)
+                    PROBAB_OF_TOPIC_TEMPLATE.format(topic)
                     for topic in topic_names
                 ]
-                + [Settings.MOST_LIKELY_TOPIC_COL]
+                + [MOST_LIKELY_TOPIC_COL]
             )
 
-            for file_type_with_dot in Settings.SUPPORTED_NON_CSV_FORMATS | {".csv"}:
+            for file_type_with_dot in SUPPORTED_NON_CSV_FORMATS | {".csv"}:
 
                 file_type = file_type_with_dot.strip(".")
                 with self.subTest(
@@ -398,7 +399,7 @@ class TestTopicModelsTrainingFile(TopicModelMixin, unittest.TestCase):
 
         # Start the training
         queue_manager.add_topic_model_training(
-            mallet_bin_directory=str(Settings.MALLET_BIN_DIRECTORY),
+            mallet_bin_directory=str(settings.MALLET_BIN_DIRECTORY),
             topic_model_id=self._topic_mdl.id_,
             training_file=str(training_file_path),
             fname_keywords=str(fname_keywords),

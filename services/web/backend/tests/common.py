@@ -21,25 +21,17 @@ from redis import Redis
 from rq import Queue
 from rq import Worker
 
-from flask_app import settings
 from flask_app.app import create_app
 from flask_app.database import models
-from flask_app.settings import Settings
+from flask_app.settings import SettingsFromOutside, settings
 
 F = T.TypeVar("F", bound=T.Callable[..., T.Any])
 
 
+# Small files to facilitate testing.
 TESTING_FILES_DIR = Path(__file__).parent / "testing_files"
 
-
-class MockedException(Exception):
-    pass
-
-
-def exception_raising_mock(*args: T.Any, **kwargs: T.Any) -> None:
-    raise MockedException()
-
-
+# Utility functions
 def make_csv_file(table: T.List[T.List[str]]) -> io.BytesIO:
     text_io = io.StringIO()
     writer = csv.writer(text_io)
@@ -49,40 +41,40 @@ def make_csv_file(table: T.List[T.List[str]]) -> io.BytesIO:
     return csv_file
 
 
-def debug_on(*exceptions: T.Type[Exception]) -> T.Callable[[F], F]:
-    """Decorator to go to pdb prompt on exceptions."""
-    # From stackoverflow.
-    if not exceptions:
-        exceptions = (Exception,)
+class SettingsSetup(unittest.TestCase):
+    """Sets up flask_app.settings.settings """
 
-    def decorator(f: F) -> F:
-        @functools.wraps(f)
-        def wrapper(*args: T.Any, **kwargs: T.Any) -> T.Any:
-            try:
-                return f(*args, **kwargs)
-            except exceptions:
-                info = sys.exc_info()
-                traceback.print_exception(*info)
-                pdb.post_mortem(info[2])
+    _patch: T.ContextManager
 
-        return wrapper  # type: ignore
+    @classmethod
+    def setUpClass(cls) -> None:
+        # NOTE: IF you do away with the following temporary directory, make sure to
+        # remove the shutil.rmtree call in tearDown() as well.
+        tmp_dir = Path(tempfile.mkdtemp(prefix="project_data_"))
+        settings = SettingsFromOutside(
+            PROJECT_DATA_DIRECTORY=tmp_dir,
+            DATABASE_FILE=tmp_dir / "sqlite.db",
+            SERVER_NAME="localhost",
+            # REDIS_HOST, REDIS_PORT, MALLET_BIN_DIRECTORY must be set exteranlly.
+            # SENDGRID_* can, but need not to, be set.
+        )
+        # Usually this is a context manager, hence shennanigans of calling __enter__()
+        # by hand.
+        cls._patch = mock.patch("flask_app.settings.settings", settings)
 
-    return decorator
+    @classmethod
+    def tearDownClass(cls) -> None:
+        shutil.rmtree(settings.PROJECT_DATA_DIRECTORY)
+        cls._patch.__exit__(None, None, None)
 
 
-class AppMixin(unittest.TestCase):
-    """Setup Flask() object, mock PROJECT_DATA_DIRECTORY and DATABASE_FILE."""
+class AppSetup(unittest.TestCase):
+    """Setup Flask() object (which is called app, hence name of class)."""
 
     def setUp(self) -> None:
-        # NOTE: IF you remove the following, make sure to remove the shutil.rmtree call
-        # in tearDown() as well.
 
         super().setUp()
-        with mock.patch.dict(
-            os.environ,
-            {"PROJECT_DATA_DIRECTORY": tempfile.mkdtemp(prefix="project_data_")},
-        ):
-            app = create_app(logging_level=logging.DEBUG)
+        app = create_app(logging_level=logging.DEBUG)
         app.config["TESTING"] = True
         app.config["DEBUG"] = True
 
@@ -96,7 +88,6 @@ class AppMixin(unittest.TestCase):
         self._app_context.pop()
         models.database_proxy.drop_tables(models.MODELS)
         models.database_proxy.close()
-        shutil.rmtree(Settings.PROJECT_DATA_DIRECTORY)
 
     def _assert_response_success(
         self, res: Response, url: T.Optional[str] = None
@@ -136,15 +127,15 @@ class AppMixin(unittest.TestCase):
         return df
 
 
-class RQWorkerMixin(unittest.TestCase):
+class RQWorkerSetup(unittest.TestCase):
     """Allow spawning RQ workers with burst=True."""
 
     def setUp(self) -> None:
         super().setUp()
-        settings.ensure_settings_initialized()
-        self._redis_conn = Redis(host=Settings.REDIS_HOST, port=Settings.REDIS_PORT)
+        self._redis_conn = Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
     def _burst_workers(self, queue_name: str) -> bool:
+        """Returns True if any jobs were processed."""
         queue = Queue(queue_name, connection=self._redis_conn)
         worker = Worker([queue], connection=self._redis_conn)
         return worker.work(burst=True)

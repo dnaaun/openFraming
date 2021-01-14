@@ -6,10 +6,10 @@ from unittest import mock
 import pandas as pd  # type: ignore
 from flask import current_app
 from flask import url_for
-from tests.common import AppMixin
+from tests.common import AppSetup
 from tests.common import debug_on  # noqa: 401
 from tests.common import make_csv_file
-from tests.common import RQWorkerMixin
+from tests.common import RQWorkerSetup
 from tests.common import TESTING_FILES_DIR
 
 from flask_app import utils
@@ -18,10 +18,10 @@ from flask_app.app import ClassifierStatusJson
 from flask_app.app import ClassifierTestSetStatusJson
 from flask_app.database import models
 from flask_app.modeling.queue_manager import QueueManager
-from flask_app.settings import Settings
+from flask_app.settings import PREDICTED_LABEL_COL, SUPPORTED_NON_CSV_FORMATS, TRANSFORMERS_MODEL, settings, CONTENT_COL, LABEL_COL
 
 
-class ClassifierMixin(RQWorkerMixin, AppMixin):
+class ClassifierSetup(RQWorkerSetup, AppSetup):
     def setUp(self) -> None:
         super().setUp()
         # Create a classifer in the database
@@ -34,7 +34,7 @@ class ClassifierMixin(RQWorkerMixin, AppMixin):
 
         self._valid_training_contents = "\n".join(
             [
-                f"{Settings.CONTENT_COL},{Settings.LABEL_COL}",
+                f"{CONTENT_COL},{LABEL_COL}",
                 "sky,up",
                 "earth,down",
                 "dimonds,down",
@@ -45,7 +45,7 @@ class ClassifierMixin(RQWorkerMixin, AppMixin):
         )
 
 
-class TestClassifiers(ClassifierMixin, unittest.TestCase):
+class TestClassifiers(ClassifierSetup, unittest.TestCase):
     def test_get(self) -> None:
         url = API_URL_PREFIX + "/classifiers/"
         with current_app.test_client() as client:
@@ -122,10 +122,10 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
         queue_manager.add_classifier_training.assert_called_with(
             classifier_id=self._clsf.classifier_id,
             labels=self._clsf.category_names,
-            model_path=Settings.TRANSFORMERS_MODEL,
+            model_path=TRANSFORMERS_MODEL,
             dev_file=str(dev_set_file),
             train_file=str(train_set_file),
-            cache_dir=str(Settings.TRANSFORMERS_CACHE_DIRECTORY),
+            cache_dir=str(settings.TRANSFORMERS_CACHE_DIRECTORY),
             output_dir=str(output_dir),
         )
 
@@ -134,7 +134,7 @@ class TestClassifiers(ClassifierMixin, unittest.TestCase):
         self.assertTrue(train_set_file.exists())
 
 
-class TestClassifiersTrainingFile(ClassifierMixin):
+class TestClassifiersTrainingFile(ClassifierSetup):
     def setUp(self) -> None:
         """Setup an "untrained" classifier."""
         super().setUp()
@@ -166,10 +166,10 @@ class TestClassifiersTrainingFile(ClassifierMixin):
         queue_manager.add_classifier_training(
             classifier_id=self._clsf.classifier_id,
             labels=self._clsf.category_names,
-            model_path=Settings.TRANSFORMERS_MODEL,
+            model_path=TRANSFORMERS_MODEL,
             train_file=str(train_set_file / "SOMETHING THAT DOESNT EXIST"),
             dev_file=str(dev_set_file),
-            cache_dir=str(Settings.TRANSFORMERS_CACHE_DIRECTORY),
+            cache_dir=str(settings.TRANSFORMERS_CACHE_DIRECTORY),
             output_dir=str(output_dir),
             num_train_epochs=2.0,
         )
@@ -200,10 +200,10 @@ class TestClassifiersTrainingFile(ClassifierMixin):
             queue_manager.add_classifier_training(
                 classifier_id=self._clsf.classifier_id,
                 labels=self._clsf.category_names,
-                model_path=Settings.TRANSFORMERS_MODEL,
+                model_path=TRANSFORMERS_MODEL,
                 train_file=str(train_set_file),
                 dev_file=str(dev_set_file),
-                cache_dir=str(Settings.TRANSFORMERS_CACHE_DIRECTORY),
+                cache_dir=str(settings.TRANSFORMERS_CACHE_DIRECTORY),
                 output_dir=str(output_dir),
                 num_train_epochs=2.0,
             )
@@ -288,7 +288,7 @@ class TestClassifiersTrainingFile(ClassifierMixin):
                     + f"/classifiers/{self._clsf.classifier_id}/test_sets/{created_test_set.id_}/file"
                 )
                 valid_test_file_table = [
-                    [f"{Settings.CONTENT_COL}"],
+                    [f"{CONTENT_COL}"],
                     ["galaxies"],
                     ["ocean"],
                     ["directions?"],
@@ -327,7 +327,7 @@ class TestClassifiersTrainingFile(ClassifierMixin):
 
             with self.subTest("test if predictions downloadable in various formats."):
                 # Test downloading predictions
-                for file_type_with_dot in Settings.SUPPORTED_NON_CSV_FORMATS | {".csv"}:
+                for file_type_with_dot in SUPPORTED_NON_CSV_FORMATS | {".csv"}:
                     with self.subTest(f"format : {file_type_with_dot}"):
                         file_type = file_type_with_dot.strip(".")
                         predictions_url = url_for(
@@ -348,18 +348,18 @@ class TestClassifiersTrainingFile(ClassifierMixin):
                         pd.testing.assert_index_equal(
                             predictions_df.columns,
                             pd.Index(
-                                [Settings.CONTENT_COL, Settings.PREDICTED_LABEL_COL,]
+                                [CONTENT_COL, PREDICTED_LABEL_COL]
                             ),
                         )
                         expected_examples_series = pd.Series(
                             list(zip(*valid_test_file_table[1:]))[0], name="Example"
                         )
                         pd.testing.assert_series_equal(
-                            predictions_df[Settings.CONTENT_COL],
+                            predictions_df[CONTENT_COL],
                             expected_examples_series,
                         )
                         self.assertTrue(
-                            set(predictions_df[Settings.PREDICTED_LABEL_COL].unique())
+                            set(predictions_df[PREDICTED_LABEL_COL].unique())
                             <= {"up", "down"}
                         )
 

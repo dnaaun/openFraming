@@ -2,23 +2,13 @@ import typing as T
 import unittest
 
 from flask import url_for
-from tests.common import AppMixin
+from tests.common import AppSetup
 
 import flask_app
 from flask_app import emails
 
-if T.TYPE_CHECKING:
-    _MixinBase = unittest.TestCase
-else:
-    _MixinBase = object
 
-import logging
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-
-class TestEmails(AppMixin, unittest.TestCase):
+class TestEmails(AppSetup, unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
         self._emailer = emails.Emailer()

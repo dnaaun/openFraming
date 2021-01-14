@@ -4,7 +4,7 @@ import unittest
 
 from flask import current_app
 from flask import request
-from tests.common import AppMixin
+from tests.common import AppSetup
 from tests.common import TESTING_FILES_DIR
 from werkzeug.exceptions import BadRequest
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class TestValidate(AppMixin):
+class TestValidate(AppSetup):
     def test_table_has_no_empty_cells(self) -> None:
         with self.assertRaises(BadRequest):
             utils.Validate.table_has_no_empty_cells([["not empty"], [""]])
