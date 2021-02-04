@@ -25,13 +25,26 @@ $(document).ready(function() {
 
     $('#nextBtn').on('click', function () {
         if (workflowChoice === 'framing') {
-            window.location.replace('framing.html');
+            window.location.replace('step4.html');
         } else if (workflowChoice === 'lda') {
-            window.location.replace('lda.html');
+            window.location.replace('step1.html');
         } else {
 
         }
-    })
+    });
+
+    $("#step1").load("step1.html", function () {
+        $.getScript("js/step1.js");
+    });
+
+    $("#step4").load("step4.html",function(){
+        $.getScript("js/step4.js");
+    });
+
+    $("#step5").load("step5.html",function(){
+        $.getScript("js/step4.js");
+    });
+
 
 });
 
@@ -51,150 +64,4 @@ function backToLanding() {
     $('#workflow-choice').addClass('hidden');
     $('#landing').removeClass('hidden');
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
