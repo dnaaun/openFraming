@@ -8,8 +8,6 @@ services:
       context: ./services/web
     expose:
       - "5000"
-    ports:
-      - "5000:5000"
     volumes:
       - project_data_volume:/home/app/project_data_directory
       - transformers_cache_volume:/home/app/transformers_cache_directory
