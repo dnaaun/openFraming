@@ -74,7 +74,7 @@ class Settings:
     @classmethod
     def initialize_from_env(cls) -> None:
         try:
-
+            print('here from env')
             settings_tup = SettingsFromOutside(
                 PROJECT_DATA_DIRECTORY=os.environ["PROJECT_DATA_DIRECTORY"],
                 TRANSFORMERS_CACHE_DIRECTORY=os.environ["TRANSFORMERS_CACHE_DIRECTORY"],
@@ -123,7 +123,7 @@ class Settings:
         cls.SENDGRID_FROM_EMAIL = settings_tup.SENDGRID_FROM_EMAIL
         cls.SERVER_NAME = settings_tup.SERVER_NAME
         cls._initialized_already = True
-
+        print('hereh')
         if cls.SENDGRID_API_KEY is None:
             logger.info(
                 "Env variable SENDGRID_API_KEY was None, "

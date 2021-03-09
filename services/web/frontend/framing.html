@@ -1,271 +1,207 @@
-<!DOCTYPE html>
 <html>
-
 <head>
-    <meta charset="UTF-8">
-    <title>OpenFraming</title>
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/main.css" rel="stylesheet">
-    <link href="css/custom_theme.css" rel="stylesheet">
-    <link href="theme.scss" rel="stylesheet">
-    <link href="images/openframing.png" rel="icon">
+  <!-- STYLES -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css"
+        integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
 
-    <!--<link href="fontawesome-free-5.13.0-web/css/fontawesome.css" rel="stylesheet">-->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="images/openframing.png" type="image/x-icon" />
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:200,300" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
+        integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+
+  <!-- CDNS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gojs/1.8.2/go-debug.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
+  <!-- LOCAL FILES -->
+  <script type="module" src="js/client.js"></script>
+  <script type="module" src="js/framing.js"></script>
+
+  <title>Open Framing</title>
 </head>
 
-<body class="container">
-    <header>
-    </header>
-    <nav class="navbar navbar-expand-lg navbar-light bg-dark">
-        <a class="navbar-brand" href="#" style="" contenteditable="true"><a href="OpenFraming.html" target="_blank"><img
-                    src="images/light.png" height="40" class="d-inline-block align-top" alt=""></a></a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
-            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav mr-auto" style="">
-                <li class="nav-item text-light" style="background-color: #f7daf7
-"><a class="nav-link text-dark" href="framing.html">Framing Analysis</a></li>
-                <li class="nav-item text-white">
-                    <a class="nav-link text-white" href="LDA.html">LDA</a>
-                </li>
-                <li class="nav-item text-white">
-                    <a class="nav-link text-white" href="tutorials.html">Tutorials</a>
-                </li>
-                <li class="nav-item text-white">
-                    <a class="nav-link text-white" href="FAQ.html">FAQ</a>
-                </li>
-            </ul>
-            <form class="form-inline my-2 my-lg-0">
-                <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-                <button class="btn my-2 my-sm-0 btn-purple btn-info text-dark" type="submit">Search</button>
-            </form>
+<body>
+
+<nav class="navbar navbar-expand-md navbar-light">
+  <a class="navbar-brand" href="client.html" id="navbarBrand">Open Framing</a>
+</nav>
+
+<!--  Choose Input Section  -->
+<div class="main-content container">
+  <div class="row">
+    <div id="framing-main" class="col-md-12">
+      <div class="card card-main">
+        <div class="card-body">
+          <p id="help" class="new-user">Help panel 1</p>
         </div>
-    </nav>
-    <div class="">
-        <div class="container">
-            <div class="row d-flex align-items-start bg-light pt-3">
-                <div class="px-5 col-md-8 text-center mx-auto bg-light">
-                    <h3 class="display-3 text-dark py-3" style="	text-shadow: 0px 0px 0px black;"><b>Framing
-                            Analysis</b></h3>
-                    <!-- <p class="mb-3 text-body">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean scelerisque nunc velit, at hendrerit urna commodo et. Morbi vitae velit venenatis, hendrerit felis vehicula, tempor ligula</p> -->
-                </div>
+      </div>
+      <br>
+      <div id="policy-issue" class="card card-main">
+        <div class="card-header">
+          Step 1: Select Policy Issue
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-sm">
+              Please either <b>select one of our pretrained policy issue models</b> that corresponds to your document or <b>build your own new model</b> by writing the name of the policy issue in the input box that accompanies:
             </div>
+          </div>
+          <div class="row">
+            <div class="col-sm policy-radio">
+              <form>
+                <input type="radio" id="gunviolence" name="policyissue" value="gunviolence">
+                <label for="gunviolence">Gun Violence</label><br>
+
+                <input type="radio" id="immigration" name="policyissue" value="immigration">
+                <label for="immigration">Immigration</label><br>
+
+                <input type="radio" id="tobacco" name="policyissue" value="tobacco">
+                <label for="tobacco">Tobacco</label><br>
+
+                <input type="radio" id="samesexmarriage" name="policyissue" value="samesexmarriage">
+                <label for="samesexmarriage">Same-sex Marriage</label><br>
+
+                <input type="radio" id="other" name="policyissue" value="other">
+                <label for="other">Other: </label>
+                <input disabled type="text" id="other-text" name="policyissue" value=""><br>
+              </form>
+            </div>
+          </div>
+          <div id= "other-issue" class="hidden card card-main">
+            <div class="card-body">
+              <p>To select your own policy issue, please enter the frames for issue framing classification separated by commas. Below is an example using the frame names for the "Gun Violence" issue.</p>
+              <textarea id="other-frames"
+                        placeholder="gun control,politics,school/public space safety,public opinion"
+                        rows="3"
+              ></textarea>
+              <p>Please also upload your sample annotated data in .csv, .xls, or .xlsx format. You may also choose to use our example file instead.</p>
+<!--              <div class="row">-->
+<!--                <div class="col-sm">-->
+                  <input id="training-file-invisible" type="file" class="hidden">
+                  <a style="width: 20%;" id="training-file-visible" class="btn btn-outline-lilac mt-2 btn-block">Choose File</a>
+<!--                </div>-->
+<!--                <div class="col-sm" style="text-align: center">-->
+<!--                  <p><b> - OR - </b></p>-->
+<!--                </div>-->
+<!--                <div class="col-sm">-->
+<!--                  <a id="example-training" class="btn btn-outline-lilac mt-2 btn-block">Download Example</a>-->
+<!--                </div>-->
+<!--              </div>-->
+              <div id="training-filepath" class="hidden row"></div>
+            </div>
+          </div>
         </div>
+
+        <div class="card-footer text-right">
+          <button id="backBtn1" class="navBtn pull-left">Back
+            <i class="far fa-arrow-alt-circle-left"></i>
+          </button>
+
+          <button id="nextBtn1" class="navBtn">Next
+<!--          <button disabled id="nextBtn1" class="navBtn">Next-->
+            <i class="far fa-arrow-alt-circle-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="data" class="hidden card card-main">
+        <div class="card-header">
+          Step 2: Input Your Data
+        </div>
+        <div class="card-body">
+          <p>Please upload your data in .csv, .xls, or .xlsx format. Select a document file. You may also choose to use our example file instead.</p>
+<!--          <div class="row">-->
+<!--            <div class="col-sm">-->
+              <input id="testing-file-invisible" type="file" class="hidden">
+              <a style="width: 20%;" id="testing-file-visible" class="btn btn-outline-lilac mt-2 btn-block">Choose File</a>
+<!--            </div>-->
+<!--            <div class="col-sm" style="text-align: center">-->
+<!--              <p><b> - OR - </b></p>-->
+<!--            </div>-->
+<!--            <div class="col-sm">-->
+<!--              <a id="example-testing" class="btn btn-outline-lilac mt-2 btn-block">Download Example</a>-->
+<!--            </div>-->
+<!--          </div>-->
+          <div id="testing-filepath" class="hidden row"></div>
+        </div>
+        <div class="card-footer text-right">
+          <button id="backBtn2" class="navBtn pull-left">Back
+            <i class="far fa-arrow-alt-circle-left"></i>
+          </button>
+
+          <button id="nextBtn2" class="navBtn">Next
+<!--          <button disabled id="nextBtn2" class=" navBtn">Next-->
+            <i class="far fa-arrow-alt-circle-right"></i>
+          </button>
+        </div>
+      </div>
+      <div id="email" class="hidden card card-main">
+        <div class="card-header">
+          Step 3: Enter Email
+        </div>
+        <div class="card-body">
+          <label>Email address: </label>
+          <input type="text" id="user-email" value="">
+        </div>
+        <div class="card-footer text-right">
+          <button id="backBtn3" class="navBtn pull-left">Back
+            <i class="far fa-arrow-alt-circle-left"></i>
+          </button>
+
+          <button id="nextBtn3" class="navBtn">Next
+<!--          <button disabled id="nextBtn3" class=" navBtn">Next-->
+            <i class="far fa-arrow-alt-circle-right"></i>
+          </button>
+        </div>
+      </div>
+      <div id="final" class="hidden card card-main">
+        <div class="card-header">
+          Review and Submit
+        </div>
+        <div class="card-body">
+          <table id='framing-review' class="table table-condensed">
+            <tr>
+              <td width="20%">
+                <b>Policy Issue</b>
+              </td>
+              <td id="review-issue" width="80%" class="align-middle"></td>
+            </tr>
+            <tr>
+              <td width="20%">
+                <b>Training File</b>
+              </td>
+              <td id="review-training" width="80%" class="align-middle"></td>
+            </tr>
+            <tr>
+              <td width="20%">
+                <b>Testing File</b>
+              </td>
+              <td id="review-testing" width="80%" class="align-middle"></td>
+            </tr>
+            <tr>
+              <td width="20%">
+                <b>Email Address</b>
+              </td>
+              <td id="review-email" width="80%" class="align-middle"></td>
+            </tr>
+          </table>
+          <hr>
+          <a style="width: 20%;" class="btn btn-outline-lilac mt-2 btn-block">Submit</a>
+        </div>
+        <div class="card-footer text-left">
+          <button id="backBtn4" class="navBtn">Back
+            <i class="far fa-arrow-alt-circle-left"></i>
+          </button>
+        </div>
+      </div>
     </div>
-    <div class="wrapper pb-0 bg-light" id="hideAllStep">
-
-        <div class="container" id="hideStep1">
-            <div class="row">
-                <div class="col-md-12 bg-secondary">
-                    <h4 class="bg-secondary text-white pl-0 pt-1">Step 1: Select Policy Issue</h4>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <p class="pt-2">Please either <b>select one of our pretrained policy issue models</b> that
-                        corresponds to your document or <b>build your own new model</b> by writing the name of the
-                        policy issue in the input box that accompanies:</p>
-                    <div id="policyissueradiobutton">
-                        <div class="form-check-inline">
-                            <label class="form-check-label">
-                                <input type="radio" class="form-check-input" id="gunviolence" name="policyissue"
-                                    value="gunviolence" checked="">Gun Violence </label>
-                        </div>
-                        <div class="form-check-inline">
-                            <label class="form-check-label">
-                                <input type="radio" class="form-check-input" id="immigration" name="policyissue"
-                                    value="immigration" disabled>Immigration </label>
-                        </div>
-                        <div class="form-check-inline">
-                            <label class="form-check-label">
-                                <input type="radio" class="form-check-input" id="tobocco" name="policyissue"
-                                    value="tobocco" disabled>Tobacco </label>
-                        </div>
-                        <div class="form-check-inline">
-                            <label class="form-check-label">
-                                <input type="radio" class="form-check-input" id="samesexmarriage" name="policyissue"
-                                    value="samesexmarriage" disabled>Same-sex Marriage </label>
-                        </div>
-                        <br>
-                        <div>
-                            <label class="other-policy">
-                                <input class="other-policy" type="radio" name="policyissue" id="other_fruit"
-                                    value="other"> or <b>train</b> a new policy issue model: <input type="text"
-                                    name="otherpolicyname" id="other_text"></label>
-                        </div>
-                        <!--
-                                <div class="form-check-inline">
-                                       <label class="form-check-label">
-                        <input type="radio" class="form-check-input" id="otherradiobutton" name="policyissue" value="other">Other
-                    </label>
-                </div>
-                -->
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="container other-option" id="hideStep1_1">
-            <div class="row">
-                <div class="col-md-12"><label for="category_names">If you chose 'Other' for policy issue, please enter
-                        the frames for issue framing classification with comma separated values. Here you see the frame
-                        name examples for <b>Gun
-                            Violence</b> issue.</label></div>
-            </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="form-group"><textarea class="form-control" id="category_names" rows="3"
-                            placeholder="gun control,politics,school/public space safety,public opinion"></textarea><span
-                            style="color: red;" id="commaerror">Please
-                            separate the frame names with a comma</span>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <span>If you chose <b>Other</b> for <b>Policy Issue</b> please upload a sample annotated data in
-                        CSV, xls, or xlsx format.
-                        <div class="form-group">
-                            <input type="file" name="annotatedsamplefile1" id="annotatedsamplefile1"
-                                accept=".xlsx, .xls, .csv" class="">
-                            <button type="button" class="btn btn-secondary text-white" id="downloadTrainingFile"
-                                value="test">Try Our Train File</button>
-                            <!-- <button type="button" class="btn btn-secondary text-white" id="inputLabel" value="test">Input Our Categories</button> -->
-
-
-                        </div>
-                        <span id="emptysamplefileerror" style="display:none;">Please upload a sample annotated file if
-                            you chose <b>Other</b></span>
-                    </span>
-
-                </div>
-            </div>
-        </div>
-
-        <div class="container" id="hideStep2">
-
-            <div class="row">
-                <div class="col-md-12 bg-secondary">
-                    <h4 class="pt-1 bg-secondary text-white">Step 2: Input Your Data</h4>
-                </div>
-            </div>
-
-            <div class="row">
-
-                <!-- <div class="col-md-12"><label for="documenttextarea" class="mt-3 text-body">Please input your text for framing classification!</label>
-                    <div class="form-group"><textarea class="form-control" id="documenttextarea" rows="3" placeholder="Students Lead Huge Rallies for Gun Control Across the U.S."></textarea></div>
-                    <div class="row">
-                        <div class="col-md-12 text-dark"><label for="documenttextarea" class="text-white text-center"><b><u class="text-dark">OR</u></b></label></div>
-                    </div> -->
-                <div class="row step2">
-                    <div class="col-md-12"><label for="documenttextarea" class="text-body">Please upload your data in
-                            form of a Excel sheet or CSV file, please upload it by clicking on the button
-                            below.<br>Select a document
-                            file.<br></label>
-                        <div class="form-group">
-                            <input type="file" name="annotatedsamplefile2" id="annotatedsamplefile2"
-                                accept=".xlsx, .xls, .csv" class="">
-                            <button type="button" class="btn btn-secondary text-white" id="downloadTestFile"
-                                value="test">Try Our Test File</button>
-
-                        </div>
-                    </div>
-                </div>
-                <!-- </div> -->
-            </div>
-        </div>
-
-
-
-
-        <div class="container" id="hideStep3">
-            <div class="row">
-                <div class="col-md-12 bg-secondary">
-                    <h4 class="bg-secondary text-white pl-0 pt-1">Step 3: Enter Email</h4>
-                </div>
-            </div>
-
-            <!-- <div class="container"> -->
-            <div class="row">
-                <div class="col-md-12 pt-2 py-2 step3"><label data-error="wrong" data-success="right">Enter your
-                        email</label>
-                    <div class="form-group">
-                        <div class="form-group"><input type="email"
-                                class="col-3 form-control validate purple-border email" id="email"
-                                placeholder="john.doe@example.com"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12 bg-secondary">
-                    <h4 class="bg-secondary text-white pl-0 pt-1">Final Step: Perform Analysis</h4>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12 py-3">
-                    <!-- <a class="btn btn-secondary text-white" href="#">Perform Analysis</a> -->
-                    <button type="button" class="btn btn-secondary text-white" id="performAnalysis" value="test">Perform
-                        Analysis</button>
-                    <i id="framing-spinner" hidden style="margin-left: 5px" class="fa fa-spinner fa-spin"></i>
-                    <label id="analysis-error" hidden style="color: red"></label>
-
-                </div>
-            </div>
-            <!-- </div> -->
-        </div>
-
-        <div class="container con-width" id="result">
-            <div class="row progress">
-                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" id="progressBar"
-                    style="width:0%"></div>
-            </div>
-
-
-            <div class="row">
-                <div class="col-md-12 bg-light">
-                    <h4 class="py-3" id="result-status">Your data is being processed. Please wait a couple of minutes...
-                    </h4>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="form-group"><textarea class="form-control" id="result_text" rows="10"
-                            placeholder="The result will be shown here."></textarea>
-                        <!-- <span style="color: red;" id=""></span> -->
-                    </div>
-                    <button type="button" class="btn btn-secondary text-white disabled"
-                        id="download-button">Download</button>
-                    <!-- <button type="button" class="btn btn-outline-primary disabled">Primary</button> -->
-                </div>
-            </div>
-
-        </div>
-
-
-
-    </div>
-
-
-
-    <footer class="page-footer font-small">
-        <!-- Copyright -->
-        <div class="footer-copyright text-center">© 2020 All Rights Reversed </div>
-        <!-- Copyright -->
-    </footer>
-    <!-- Footer -->
-    <!-- Footer -->
+  </div>
+</div>
 
 </body>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/js/all.js"
-    integrity="sha256-2JRzNxMJiS0aHOJjG+liqsEOuBb6++9cY4dSOyiijX4=" crossorigin="anonymous"></script>
-<!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/all.min.css" rel="stylesheet">-->
-<!-- <script src="https://kit.fontawesome.com/56018e5250.js" crossorigin="anonymous"></script> -->
-<script src="js/jquery-3.5.1.min.js"></script>
-<script src="js/main.js"></script>
-<script src="js/bootstrap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.0/axios.min.js"></script>
-
 </html>
