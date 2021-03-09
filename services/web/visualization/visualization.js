@@ -1,6 +1,7 @@
+//  Racing Bar chart
 duration = 250
 n = 12
-k = 10
+k = 15
 
 // Data processing steps
 function get_datevalue(data){
@@ -20,6 +21,10 @@ function parse2(dae){
     var parse = d3.timeParse("%Y-%m-%d");
     return parse(dae);
 }
+function parse3(dae){
+  var parse = d3.timeParse("%m-%d-%Y");
+  return parse(dae);
+}
 
 function get_keyframes(datevalues, names){
     const keyframes = [];
@@ -38,16 +43,16 @@ function get_keyframes(datevalues, names){
 }
 
 // Plotting functions
-function bars(svg, prev, next) {
+function bars(svg, prev, next, data2) {
     let bar = svg.append("g")
-      .attr("fill-opacity", 0.7)
+      .attr("fill-opacity", 0.8)
       .selectAll("rect");
   
     return ([date, data], transition) => bar = bar
       .data(data.slice(0, n), d => d.name)
       .join(
         enter => enter.append("rect")
-          .attr("fill", color(data))
+          .attr("fill", color(data2))
           .attr("height", y.bandwidth())
           .attr("x", x(0))
           .attr("y", d => y((prev.get(d) || d).rank))
@@ -74,7 +79,7 @@ function labels(svg, x, y) {
     .join(
       enter => enter.append("text")
         .attr("transform", d => `translate(${x((prev.get(d) || d).value)},${y((prev.get(d) || d).rank)})`)
-        .attr("y", y.bandwidth() / 2)
+        .attr("y", y.bandwidth() /2)
         .attr("x", -6)
         .attr("dy", "-0.25em")
         .text(d => d.name)
@@ -98,7 +103,7 @@ formatNumber = d3.format(",d")
 function textTween(a, b) {
     const i = d3.interpolateNumber(a, b);
     return function(t) {
-      this.textContent = formatNumber(i(t));
+      this.textContent = i(t).toFixed(2) + '%';
     };
 }
 
@@ -150,7 +155,7 @@ function color(data){
     scale.domain(Array.from(categoryByName.values()));
     return d => scale(categoryByName.get(d.name));
   };
-  return d => scale(d.name);
+  return data => scale(data.name);
 }
 
 
@@ -170,12 +175,12 @@ async function chart(data, keyframes, prev, next){
     .rangeRound([margin.top, margin.top + barSize * (n + 1 + 0.1)])
     .padding(0.1);
 
-    const svg = d3.select("body").append("svg")
+    const svg = d3.select("div.chart").append("svg")
       .attr("width", width)
       .attr("height", height);
     
-  
-    const updateBars = bars(svg, prev, next);
+    
+    const updateBars = bars(svg, prev, next, data);
     const updateAxis = axis(svg, x, y, margin);
     const updateLabels = labels(svg, x, y);
     const updateTicker = ticker(svg, barSize, keyframes);
@@ -195,27 +200,404 @@ async function chart(data, keyframes, prev, next){
       updateBars(keyframe, transition);
       updateLabels(keyframe, transition);
       updateTicker(keyframe, transition);
-  
       // invalidation.then(() => svg.interrupt());
       await transition.end();
     }
   }
 
-d3.csv("category-brands.csv", function(d) {
-    
-    return {
-      date : parse2(d.date),
-      name : d.name,
-      category : d.category,
-      value : +d.value
-    };
-  }).then(function(data){
-    names = new Set(data.map(d => d.name));
-    dat = get_datevalue(data);
-    keyframes = get_keyframes(dat,  names);
-    nameframes = d3.groups(keyframes.flatMap(([, data]) => data), d => d.name);
-    prev = new Map(nameframes.flatMap(([, data]) => d3.pairs(data, (a, b) => [b, a])));
-    next = new Map(nameframes.flatMap(([, data]) => d3.pairs(data)));
-    chart(data, keyframes, prev, next);
-});
+function plot_chart(path){
+  d3.csv(path, function(d) {
+      
+      return {
+        date : parse2(d.date),
+        name : d.name,
+        category : d.category,
+        value : +d.value
+      };
+    }).then(function(data){
+      names = new Set(data.map(d => d.name));
+      dat = get_datevalue(data);
+      keyframes = get_keyframes(dat,  names);
+      nameframes = d3.groups(keyframes.flatMap(([, data]) => data), d => d.name);
+      prev = new Map(nameframes.flatMap(([, data]) => d3.pairs(data, (a, b) => [b, a])));
+      next = new Map(nameframes.flatMap(([, data]) => d3.pairs(data)));
+      chart(data, keyframes, prev, next);
+  })
+}
+function remove_active_from_tabs(){
+  $('.covid_tab_us a').removeClass('active');
+  $('.covid_tab_ko a').removeClass('active');
+  $('.gun_violence a').removeClass('active');
+}
+function show_covid(arg){
+  remove_active_from_tabs()
+  $('.covid_tab_'+arg+' a').addClass('active');
+  $('.gunviolence_div').hide();
+  document.getElementsByClassName('chart')[0].innerHTML = arg+ '<br>'
+  plot_chart("covid19_"+arg+".csv") 
+}
 
+// Gunviolence Static Bar chart
+
+var pie_width = null;
+pie_height = null;
+pie_margin = null;
+
+var bar_width = null
+bar_height = null;
+var margin = null;
+
+var radius = null;
+var svg = null;
+var svg_bar = null;
+var color_pie = null;
+var data_processing = null
+
+function process_data(data, data_processing){
+  count_category = []
+  if(data_processing.indexOf('left')!=-1){
+    temp = data.filter(x=>{
+      if(x.leaning=='Left'){
+        return x
+      }
+    });
+    count_category = count_category.concat(temp);
+  }
+  if(data_processing.indexOf('right')!=-1){
+    temp = data.filter(x=>{
+      if(x.leaning=='Right'){
+        return x
+      }
+    });
+    count_category = count_category.concat(temp);
+  }
+  if(data_processing.indexOf('neutral')!=-1){
+    temp = data.filter(x=>{
+      if(x.leaning=='Neutral'){
+        return x
+      }
+    });
+    count_category = count_category.concat(temp);
+  }
+  
+  if(data_processing.indexOf('2016')!=-1){
+    temp = data.filter(x=>{
+      if(x.date.getFullYear()==2016){
+        return x
+      }
+    });
+    count_category = count_category.concat(temp);
+  }
+
+  if(data_processing.indexOf('2017')!=-1){
+    temp = data.filter(x=>{
+      if(x.date.getFullYear()==2017){
+        return x
+      }
+    });
+    count_category = count_category.concat(temp);
+  }
+  
+  if(data_processing.indexOf('2018')!=-1){
+    temp = data.filter(x=>{
+      if(x.date.getFullYear()==2018){
+        return x
+      }
+    });
+    count_category = count_category.concat(temp);
+  }
+
+  if(count_category.length==0){
+    count_category = data
+  }
+  categories_count = count_category.map(x=>x.category).reduce(function(countMap, word) {countMap[word] = ++countMap[word] || 1;return countMap}, {})
+  categories_month = count_category
+  .map(x=>[x.date.getMonth(), x.category])
+  .reduce((r, [v, k]) => {
+    if(!r[v]) r[v] = {};
+      r[v][k] = ++r[v][k] || 1;
+      return r;
+    }, {})
+  return [categories_count, categories_month];
+}
+
+
+function update(data, color) {
+  // Compute the position of each group on the pie:
+  var temp = new Map(Object.entries(data))
+  let total_temp = Object.entries(data).map(x => x[1]).reduce((x, y)=>x + y, 0)
+  var data_ready = pie(Array.from(temp, ([nam, value])=>({'key': nam, 'value': value})))
+  data_ready.sort(function(a, b) {
+    var nameA = a.data.key.toUpperCase(); // ignore upper and lowercase
+    var nameB = b.data.key.toUpperCase(); // ignore upper and lowercase
+    if (nameA < nameB) {
+      return -1;
+    }
+    if (nameA > nameB) {
+      return 1;
+    }
+    // names must be equal
+    return 0;
+  })
+  console.log('heree', data_ready);
+  // map to data
+  // var u = svg.selectAll("path")
+  //   .data(data_ready)
+  var arc = d3.arc()
+    .innerRadius(radius * 0.5)         // This is the size of the donut hole
+    .outerRadius(radius * 0.8)
+  
+  var outerArc = d3.arc()
+  .innerRadius(radius * 0.9)
+  .outerRadius(radius * 0.9)
+  // Build the pie chart: Basically, each part of the pie is a path that we build using the arc function.
+  svg.selectAll("*").remove();
+  svg
+  .selectAll('allSlices')
+  .data(data_ready)
+  .enter()
+  .insert('path')
+  .attr('d', arc)
+  .attr('fill', function(d){ return(color(d.data.key)) })
+  .attr("stroke", "white")
+  .style("stroke-width", "2px")
+  .style("opacity", 0.7)
+  .transition().duration(1000)
+		.attrTween("d", function(d) {
+			this._current = this._current || d;
+			var interpolate = d3.interpolate(this._current, d);
+			this._current = interpolate(0);
+			return function(t) {
+				return arc(interpolate(t));
+			};
+		})
+
+  svg
+  .selectAll('allPolylines')
+  .data(data_ready)
+  .enter()
+  .insert('polyline')
+    .attr("stroke", "black")
+    .style("fill", "none")
+    .attr("stroke-width", 1)
+    .transition().duration(1000)
+		.attrTween("points", function(d){
+			this._current = this._current || d;
+			var interpolate = d3.interpolate(this._current, d);
+			this._current = interpolate(0);
+			return function(t) {
+				var d2 = interpolate(t);
+				var pos = outerArc.centroid(d2);
+				pos[0] = radius * 0.95 * (midAngle(d2) < Math.PI ? 1 : -1);
+				return [arc.centroid(d2), outerArc.centroid(d2), pos];
+			};			
+		});
+    
+
+    function midAngle(d){
+      return d.startAngle + (d.endAngle - d.startAngle)/2;
+    }
+
+    svg
+    .selectAll('allLabels')
+    .data(data_ready)
+    .enter()
+    .insert('text')
+    .text( function(d) { return (d.data.key + ' (' + (d.data.value/total_temp*100).toFixed(2)+ '%)') } )
+    .style("font-size", 10.5)
+    .transition().duration(1000)
+		.attrTween("transform", function(d) {
+			this._current = this._current || d;
+			var interpolate = d3.interpolate(this._current, d);
+			this._current = interpolate(0);
+			return function(t) {
+				var d2 = interpolate(t);
+				var pos = outerArc.centroid(d2);
+				pos[0] = radius * (midAngle(d2) < Math.PI ? 1 : -1);
+				return "translate("+ pos +")";
+			};
+		})
+		.styleTween("text-anchor", function(d){
+			this._current = this._current || d;
+			var interpolate = d3.interpolate(this._current, d);
+			this._current = interpolate(0);
+			return function(t) {
+				var d2 = interpolate(t);
+				return midAngle(d2) < Math.PI ? "start":"end";
+			};
+		})
+}
+
+function create_bar(data2, color_bar){
+  $('.bar-graph').html('By Month <br>');
+  svg_bar = d3.select("div.bar-graph")
+    .append("svg")
+    .attr("width", bar_width + margin.left + margin.right)
+    .attr("height", bar_height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  data = []
+  max_val = -1
+  color_codes = []
+  flag = 0;
+  var months = Object.keys(data2);
+  var entries = Object.entries(data2);
+  for(let i = 0;i<months.length;i++){
+    temp = {}
+    temp['month'] = i;
+    temp_val = 0;
+    for(let entry of Object.keys(data2[0]).sort()){
+      temp[entry] = entries[i][1][entry];
+      temp_val += entries[i][1][entry];
+      if(flag==0) color_codes.push(color_bar(entry));
+    }
+    flag = 1;
+    if(temp_val>max_val) max_val = temp_val;
+    data.push(temp);
+  }
+  var parse = d3.format("m");
+  var subgroups = Object.keys(data[0]).slice(1)
+  console.log(subgroups)
+  var groups = data.map(x => {return x.month})
+  var x = d3.scaleBand()
+  .domain(groups)
+  .range([0, bar_width])
+  .padding([0.2])
+  
+  svg_bar.append("g")
+    .attr("transform", "translate(0," + bar_height + ")")
+    .call(d3.axisBottom(x).tickSizeOuter(0));
+
+  var y = d3.scaleLinear()
+    .domain([0, max_val])
+    .range([ bar_height, 0 ]);
+  
+  svg_bar.append("g")
+    .call(d3.axisLeft(y));
+
+
+  var stackedData = d3.stack()
+    .keys(subgroups)
+    (data);
+  console.log(stackedData);
+
+  svg_bar.append("g")
+  .selectAll("g")
+  // Enter in the stack data = loop key per key = group per group
+  .data(stackedData)
+  .enter().append("g")
+  .attr("fill", function(d) {return color_bar(d.key); })
+  .attr("opacity", 0.7)
+  .selectAll("rect")
+  // enter a second time = loop subgroup per subgroup to add all rectangles
+  .data(function(d) { return d; })
+  .enter().append("rect")
+    .attr("x", function(d) {return x(d.data.month); })
+    .attr("y", function(d) { return y(d[1]); })
+    .attr("height", function(d) { return y(d[0]) - y(d[1]); })
+    .attr("width",x.bandwidth());
+  
+  var legend = svg_bar.selectAll(".legend")
+    .data(color_codes)
+    .enter().append("g")
+    .attr("class", "legend")
+    .attr("transform", function(d, i) { return "translate(30," + i * 19 + ")"; });
+    
+  legend.append("text")
+    .attr("x", bar_width -120)
+    .attr("y", 9)
+    .attr("dy", ".10em")
+    .style("text-anchor", "start")
+    .style("font-size", "14")
+    .text(function(d, i) { 
+      return Object.keys(data2[0]).sort()[i];
+    });
+  legend.append("rect")
+    .attr("x", bar_width - 140)
+    .attr("width", 12)
+    .attr("height", 12)
+    .style("fill", function(d, i) {return color_codes.slice().reverse()[i];})
+    .style("opacity", 0.7);
+    
+
+}
+
+function add_names_to_div(names){
+  console.log(names)
+  for(let name of names){
+    $('.news-list').append(
+      "<li class='list-group-item'>"+name+"</li>"
+    )
+  }
+}
+
+function plot_pie_chart(path, data_processing){
+
+  
+    d3.csv(path,function(d) {
+      
+      return {
+        date : parse3(d.date),
+        name : d.name,
+        title : d.title,
+        leaning : d.leaning,
+        category : d.category,
+      };
+    }).then(function(data){
+      names = new Set(data.map(d => d.name));
+      add_names_to_div(names);
+      var some = process_data(data, data_processing);
+      if(color_pie==null){
+        color_pie = d3.scaleOrdinal()
+            .domain(Object.keys(some))
+            .range(d3.schemeCategory10);
+      }
+      update(some[0], color_pie)
+      create_bar(some[1], color_pie);
+  })
+
+}
+
+function show_gunviolence(val='all'){
+  // document.getElementsByClassName('chart')[0].innerHTML ='Gunviolence <br>'
+  data_processing = []
+  $('.gunviolence_div').show();
+
+  remove_active_from_tabs();
+  
+  $('.gunviolence_tab a').addClass('active');
+  $('.chart').html('Gunviolence <br>')
+  $('.bar-graph').html('By Month <br>')
+  
+  pie_width = 800,
+  pie_height = 800,
+  pie_margin = 170;
+
+  margin = {top: 10, right: 80, bottom: 20, left: 50},
+  bar_width = 550,
+  bar_height = 500;
+
+  radius = Math.min(pie_width, pie_height) / 2 - pie_margin
+  pie = d3.pie()
+    .value(function(d) {return d.value; })
+    .sort(function(a, b) {return d3.ascending(a.key, b.key);} ) // This make sure that group order remains the same in the pie chart
+  svg = d3.select("div.chart")
+    .append("svg")
+    .attr("width", pie_width)
+    .attr("height", pie_height)
+    .append("g")
+    .attr("transform", "translate(" + pie_width / 2 + "," + pie_height / 2 + ")");
+
+  plot_pie_chart("/gunviolence_data.csv", data_processing)
+}
+
+function check_clicked(val){
+  if($('.'+val).prop('checked')==true){
+    data_processing.push(val)
+  }else{
+    index = data_processing.indexOf(val)
+    data_processing.splice(index)
+  }
+  plot_pie_chart("/gunviolence_data.csv", data_processing)
+}

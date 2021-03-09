@@ -1,0 +1,683 @@
+date,name,category,value
+2020-01-05,Domestic COVID-19 outbreak,Domestic outbreak,0
+2020-01-12,Domestic COVID-19 outbreak,Domestic outbreak,0
+2020-01-19,Domestic COVID-19 outbreak,Domestic outbreak,0
+2020-01-26,Domestic COVID-19 outbreak,Domestic outbreak,0
+2020-02-02,Domestic COVID-19 outbreak,Domestic outbreak,0
+2020-02-09,Domestic COVID-19 outbreak,Domestic outbreak,0
+2020-02-16,Domestic COVID-19 outbreak,Domestic outbreak,0
+2020-02-23,Domestic COVID-19 outbreak,Domestic outbreak,10.87
+2020-03-01,Domestic COVID-19 outbreak,Domestic outbreak,15.43
+2020-03-08,Domestic COVID-19 outbreak,Domestic outbreak,22.79
+2020-03-15,Domestic COVID-19 outbreak,Domestic outbreak,0
+2020-03-22,Domestic COVID-19 outbreak,Domestic outbreak,5.99
+2020-03-29,Domestic COVID-19 outbreak,Domestic outbreak,13.3
+2020-04-05,Domestic COVID-19 outbreak,Domestic outbreak,10.35
+2020-04-12,Domestic COVID-19 outbreak,Domestic outbreak,9.13
+2020-04-19,Domestic COVID-19 outbreak,Domestic outbreak,12.1
+2020-04-26,Domestic COVID-19 outbreak,Domestic outbreak,8.16
+2020-05-03,Domestic COVID-19 outbreak,Domestic outbreak,14.42
+2020-05-10,Domestic COVID-19 outbreak,Domestic outbreak,11.3
+2020-05-17,Domestic COVID-19 outbreak,Domestic outbreak,8.01
+2020-05-24,Domestic COVID-19 outbreak,Domestic outbreak,11.41
+2020-05-31,Domestic COVID-19 outbreak,Domestic outbreak,0
+2020-06-07,Domestic COVID-19 outbreak,Domestic outbreak,10.28
+2020-06-14,Domestic COVID-19 outbreak,Domestic outbreak,3.54
+2020-06-21,Domestic COVID-19 outbreak,Domestic outbreak,14.54
+2020-06-28,Domestic COVID-19 outbreak,Domestic outbreak,13.1
+2020-07-05,Domestic COVID-19 outbreak,Domestic outbreak,18.67
+2020-07-12,Domestic COVID-19 outbreak,Domestic outbreak,14.35
+2020-07-19,Domestic COVID-19 outbreak,Domestic outbreak,15.55
+2020-07-26,Domestic COVID-19 outbreak,Domestic outbreak,13.89
+2020-08-02,Domestic COVID-19 outbreak,Domestic outbreak,13.85
+2020-01-05,Frontline healthcare,Healthcare,0
+2020-01-12,Frontline healthcare,Healthcare,0
+2020-01-19,Frontline healthcare,Healthcare,0
+2020-01-26,Frontline healthcare,Healthcare,0
+2020-02-02,Frontline healthcare,Healthcare,0
+2020-02-09,Frontline healthcare,Healthcare,0
+2020-02-16,Frontline healthcare,Healthcare,0
+2020-02-23,Frontline healthcare,Healthcare,0
+2020-03-01,Frontline healthcare,Healthcare,0
+2020-03-08,Frontline healthcare,Healthcare,0
+2020-03-15,Frontline healthcare,Healthcare,7.24
+2020-03-22,Frontline healthcare,Healthcare,11.42
+2020-03-29,Frontline healthcare,Healthcare,9.05
+2020-04-05,Frontline healthcare,Healthcare,11.27
+2020-04-12,Frontline healthcare,Healthcare,8.85
+2020-04-19,Frontline healthcare,Healthcare,6.94
+2020-04-26,Frontline healthcare,Healthcare,10.45
+2020-05-03,Frontline healthcare,Healthcare,10.53
+2020-05-10,Frontline healthcare,Healthcare,0
+2020-05-17,Frontline healthcare,Healthcare,11.08
+2020-05-24,Frontline healthcare,Healthcare,0
+2020-05-31,Frontline healthcare,Healthcare,0
+2020-06-07,Frontline healthcare,Healthcare,0
+2020-06-14,Frontline healthcare,Healthcare,0
+2020-06-21,Frontline healthcare,Healthcare,5.36
+2020-06-28,Frontline healthcare,Healthcare,10.81
+2020-07-05,Frontline healthcare,Healthcare,0
+2020-07-12,Frontline healthcare,Healthcare,7.27
+2020-07-19,Frontline healthcare,Healthcare,0
+2020-07-26,Frontline healthcare,Healthcare,0
+2020-08-02,Frontline healthcare,Healthcare,0
+2020-01-05,Scientific research & opinion,Science,31.38
+2020-01-12,Scientific research & opinion,Science,0
+2020-01-19,Scientific research & opinion,Science,0
+2020-01-26,Scientific research & opinion,Science,0
+2020-02-02,Scientific research & opinion,Science,0
+2020-02-09,Scientific research & opinion,Science,0
+2020-02-16,Scientific research & opinion,Science,0
+2020-02-23,Scientific research & opinion,Science,0
+2020-03-01,Scientific research & opinion,Science,0
+2020-03-08,Scientific research & opinion,Science,0
+2020-03-15,Scientific research & opinion,Science,0
+2020-03-22,Scientific research & opinion,Science,0
+2020-03-29,Scientific research & opinion,Science,0
+2020-04-05,Scientific research & opinion,Science,0
+2020-04-12,Scientific research & opinion,Science,0
+2020-04-19,Scientific research & opinion,Science,0
+2020-04-26,Scientific research & opinion,Science,0
+2020-05-03,Scientific research & opinion,Science,0
+2020-05-10,Scientific research & opinion,Science,0
+2020-05-17,Scientific research & opinion,Science,4.8
+2020-05-24,Scientific research & opinion,Science,0
+2020-05-31,Scientific research & opinion,Science,0
+2020-06-07,Scientific research & opinion,Science,0
+2020-06-14,Scientific research & opinion,Science,0
+2020-06-21,Scientific research & opinion,Science,0
+2020-06-28,Scientific research & opinion,Science,0
+2020-07-05,Scientific research & opinion,Science,5.01
+2020-07-12,Scientific research & opinion,Science,2.56
+2020-07-19,Scientific research & opinion,Science,2.2
+2020-07-26,Scientific research & opinion,Science,2.34
+2020-08-02,Scientific research & opinion,Science,0
+2020-01-05,Government responses and actions,Government,0
+2020-01-12,Government responses and actions,Government,21.28
+2020-01-19,Government responses and actions,Government,0
+2020-01-26,Government responses and actions,Government,9.37
+2020-02-02,Government responses and actions,Government,11.4
+2020-02-09,Government responses and actions,Government,8.19
+2020-02-16,Government responses and actions,Government,10.07
+2020-02-23,Government responses and actions,Government,18.63
+2020-03-01,Government responses and actions,Government,10.57
+2020-03-08,Government responses and actions,Government,17.46
+2020-03-15,Government responses and actions,Government,11.96
+2020-03-22,Government responses and actions,Government,21.59
+2020-03-29,Government responses and actions,Government,17.48
+2020-04-05,Government responses and actions,Government,21.77
+2020-04-12,Government responses and actions,Government,8.59
+2020-04-19,Government responses and actions,Government,12.98
+2020-04-26,Government responses and actions,Government,18.57
+2020-05-03,Government responses and actions,Government,10.41
+2020-05-10,Government responses and actions,Government,12.97
+2020-05-17,Government responses and actions,Government,14.13
+2020-05-24,Government responses and actions,Government,12.39
+2020-05-31,Government responses and actions,Government,4.73
+2020-06-07,Government responses and actions,Government,0
+2020-06-14,Government responses and actions,Government,9.94
+2020-06-21,Government responses and actions,Government,13.84
+2020-06-28,Government responses and actions,Government,17.67
+2020-07-05,Government responses and actions,Government,12.11
+2020-07-12,Government responses and actions,Government,3.03
+2020-07-19,Government responses and actions,Government,0
+2020-07-26,Government responses and actions,Government,0
+2020-08-02,Government responses and actions,Government,0
+2020-01-05,Personal preventive actions,Personal,0
+2020-01-12,Personal preventive actions,Personal,0
+2020-01-19,Personal preventive actions,Personal,0
+2020-01-26,Personal preventive actions,Personal,0
+2020-02-02,Personal preventive actions,Personal,0
+2020-02-09,Personal preventive actions,Personal,0
+2020-02-16,Personal preventive actions,Personal,0
+2020-02-23,Personal preventive actions,Personal,0
+2020-03-01,Personal preventive actions,Personal,0
+2020-03-08,Personal preventive actions,Personal,0
+2020-03-15,Personal preventive actions,Personal,11.18
+2020-03-22,Personal preventive actions,Personal,13.28
+2020-03-29,Personal preventive actions,Personal,22.75
+2020-04-05,Personal preventive actions,Personal,17.45
+2020-04-12,Personal preventive actions,Personal,13.68
+2020-04-19,Personal preventive actions,Personal,18.81
+2020-04-26,Personal preventive actions,Personal,7.63
+2020-05-03,Personal preventive actions,Personal,6.62
+2020-05-10,Personal preventive actions,Personal,19.05
+2020-05-17,Personal preventive actions,Personal,12.84
+2020-05-24,Personal preventive actions,Personal,11.91
+2020-05-31,Personal preventive actions,Personal,9.8
+2020-06-07,Personal preventive actions,Personal,15.95
+2020-06-14,Personal preventive actions,Personal,12.52
+2020-06-21,Personal preventive actions,Personal,5.36
+2020-06-28,Personal preventive actions,Personal,5.5
+2020-07-05,Personal preventive actions,Personal,18.69
+2020-07-12,Personal preventive actions,Personal,3.03
+2020-07-19,Personal preventive actions,Personal,3.81
+2020-07-26,Personal preventive actions,Personal,17.92
+2020-08-02,Personal preventive actions,Personal,0
+2020-01-05,Domestic economic consequences,Domestic economy,0
+2020-01-12,Domestic economic consequences,Domestic economy,0
+2020-01-19,Domestic economic consequences,Domestic economy,0
+2020-01-26,Domestic economic consequences,Domestic economy,0
+2020-02-02,Domestic economic consequences,Domestic economy,0
+2020-02-09,Domestic economic consequences,Domestic economy,0
+2020-02-16,Domestic economic consequences,Domestic economy,0
+2020-02-23,Domestic economic consequences,Domestic economy,0
+2020-03-01,Domestic economic consequences,Domestic economy,0
+2020-03-08,Domestic economic consequences,Domestic economy,4.99
+2020-03-15,Domestic economic consequences,Domestic economy,25.84
+2020-03-22,Domestic economic consequences,Domestic economy,18.5
+2020-03-29,Domestic economic consequences,Domestic economy,15.46
+2020-04-05,Domestic economic consequences,Domestic economy,0
+2020-04-12,Domestic economic consequences,Domestic economy,16.11
+2020-04-19,Domestic economic consequences,Domestic economy,20.32
+2020-04-26,Domestic economic consequences,Domestic economy,13.93
+2020-05-03,Domestic economic consequences,Domestic economy,26.42
+2020-05-10,Domestic economic consequences,Domestic economy,18.46
+2020-05-17,Domestic economic consequences,Domestic economy,15.71
+2020-05-24,Domestic economic consequences,Domestic economy,12.39
+2020-05-31,Domestic economic consequences,Domestic economy,13.32
+2020-06-07,Domestic economic consequences,Domestic economy,7.43
+2020-06-14,Domestic economic consequences,Domestic economy,9.94
+2020-06-21,Domestic economic consequences,Domestic economy,7.86
+2020-06-28,Domestic economic consequences,Domestic economy,8.83
+2020-07-05,Domestic economic consequences,Domestic economy,5.65
+2020-07-12,Domestic economic consequences,Domestic economy,9.39
+2020-07-19,Domestic economic consequences,Domestic economy,17.68
+2020-07-26,Domestic economic consequences,Domestic economy,10.38
+2020-08-02,Domestic economic consequences,Domestic economy,14.27
+2020-01-05,Impact on the education sector ,Education,0
+2020-01-12,Impact on the education sector ,Education,0
+2020-01-19,Impact on the education sector ,Education,0
+2020-01-26,Impact on the education sector ,Education,0
+2020-02-02,Impact on the education sector ,Education,0
+2020-02-09,Impact on the education sector ,Education,0
+2020-02-16,Impact on the education sector ,Education,0
+2020-02-23,Impact on the education sector ,Education,0
+2020-03-01,Impact on the education sector ,Education,0
+2020-03-08,Impact on the education sector ,Education,9.97
+2020-03-15,Impact on the education sector ,Education,5.83
+2020-03-22,Impact on the education sector ,Education,5.84
+2020-03-29,Impact on the education sector ,Education,0
+2020-04-05,Impact on the education sector ,Education,0
+2020-04-12,Impact on the education sector ,Education,6.88
+2020-04-19,Impact on the education sector ,Education,0
+2020-04-26,Impact on the education sector ,Education,7.63
+2020-05-03,Impact on the education sector ,Education,18.32
+2020-05-10,Impact on the education sector ,Education,7.93
+2020-05-17,Impact on the education sector ,Education,12.45
+2020-05-24,Impact on the education sector ,Education,6.53
+2020-05-31,Impact on the education sector ,Education,4.96
+2020-06-07,Impact on the education sector ,Education,0
+2020-06-14,Impact on the education sector ,Education,5.26
+2020-06-21,Impact on the education sector ,Education,6.23
+2020-06-28,Impact on the education sector ,Education,4.8
+2020-07-05,Impact on the education sector ,Education,6.46
+2020-07-12,Impact on the education sector ,Education,5.87
+2020-07-19,Impact on the education sector ,Education,6.08
+2020-07-26,Impact on the education sector ,Education,9.43
+2020-08-02,Impact on the education sector ,Education,7.07
+2020-01-05,Medical and other supplies ,Supplies,0
+2020-01-12,Medical and other supplies ,Supplies,0
+2020-01-19,Medical and other supplies ,Supplies,0
+2020-01-26,Medical and other supplies ,Supplies,0
+2020-02-02,Medical and other supplies ,Supplies,0
+2020-02-09,Medical and other supplies ,Supplies,0
+2020-02-16,Medical and other supplies ,Supplies,0
+2020-02-23,Medical and other supplies ,Supplies,0
+2020-03-01,Medical and other supplies ,Supplies,0
+2020-03-08,Medical and other supplies ,Supplies,0
+2020-03-15,Medical and other supplies ,Supplies,0
+2020-03-22,Medical and other supplies ,Supplies,0
+2020-03-29,Medical and other supplies ,Supplies,0
+2020-04-05,Medical and other supplies ,Supplies,0
+2020-04-12,Medical and other supplies ,Supplies,0
+2020-04-19,Medical and other supplies ,Supplies,0
+2020-04-26,Medical and other supplies ,Supplies,0
+2020-05-03,Medical and other supplies ,Supplies,0
+2020-05-10,Medical and other supplies ,Supplies,0
+2020-05-17,Medical and other supplies ,Supplies,0
+2020-05-24,Medical and other supplies ,Supplies,0
+2020-05-31,Medical and other supplies ,Supplies,0
+2020-06-07,Medical and other supplies ,Supplies,0
+2020-06-14,Medical and other supplies ,Supplies,0
+2020-06-21,Medical and other supplies ,Supplies,0
+2020-06-28,Medical and other supplies ,Supplies,0
+2020-07-05,Medical and other supplies ,Supplies,0
+2020-07-12,Medical and other supplies ,Supplies,0
+2020-07-19,Medical and other supplies ,Supplies,0
+2020-07-26,Medical and other supplies ,Supplies,0
+2020-08-02,Medical and other supplies ,Supplies,0
+2020-01-05,Impact on entertainment & sports ,Entertainment & sports,0
+2020-01-12,Impact on entertainment & sports ,Entertainment & sports,0
+2020-01-19,Impact on entertainment & sports ,Entertainment & sports,0
+2020-01-26,Impact on entertainment & sports ,Entertainment & sports,0
+2020-02-02,Impact on entertainment & sports ,Entertainment & sports,0
+2020-02-09,Impact on entertainment & sports ,Entertainment & sports,0
+2020-02-16,Impact on entertainment & sports ,Entertainment & sports,0
+2020-02-23,Impact on entertainment & sports ,Entertainment & sports,0
+2020-03-01,Impact on entertainment & sports ,Entertainment & sports,0
+2020-03-08,Impact on entertainment & sports ,Entertainment & sports,12.61
+2020-03-15,Impact on entertainment & sports ,Entertainment & sports,10.08
+2020-03-22,Impact on entertainment & sports ,Entertainment & sports,0
+2020-03-29,Impact on entertainment & sports ,Entertainment & sports,0
+2020-04-05,Impact on entertainment & sports ,Entertainment & sports,0
+2020-04-12,Impact on entertainment & sports ,Entertainment & sports,6.88
+2020-04-19,Impact on entertainment & sports ,Entertainment & sports,8.6
+2020-04-26,Impact on entertainment & sports ,Entertainment & sports,9.4
+2020-05-03,Impact on entertainment & sports ,Entertainment & sports,7.94
+2020-05-10,Impact on entertainment & sports ,Entertainment & sports,6.94
+2020-05-17,Impact on entertainment & sports ,Entertainment & sports,0
+2020-05-24,Impact on entertainment & sports ,Entertainment & sports,8.58
+2020-05-31,Impact on entertainment & sports ,Entertainment & sports,7.36
+2020-06-07,Impact on entertainment & sports ,Entertainment & sports,8.99
+2020-06-14,Impact on entertainment & sports ,Entertainment & sports,18.49
+2020-06-21,Impact on entertainment & sports ,Entertainment & sports,20.11
+2020-06-28,Impact on entertainment & sports ,Entertainment & sports,9.87
+2020-07-05,Impact on entertainment & sports ,Entertainment & sports,12.66
+2020-07-12,Impact on entertainment & sports ,Entertainment & sports,11.81
+2020-07-19,Impact on entertainment & sports ,Entertainment & sports,11.48
+2020-07-26,Impact on entertainment & sports ,Entertainment & sports,15.45
+2020-08-02,Impact on entertainment & sports ,Entertainment & sports,22.36
+2020-01-05,Impact on tourism ,Tourism,0
+2020-01-12,Impact on tourism ,Tourism,0
+2020-01-19,Impact on tourism ,Tourism,0
+2020-01-26,Impact on tourism ,Tourism,0
+2020-02-02,Impact on tourism ,Tourism,0
+2020-02-09,Impact on tourism ,Tourism,0
+2020-02-16,Impact on tourism ,Tourism,0
+2020-02-23,Impact on tourism ,Tourism,0
+2020-03-01,Impact on tourism ,Tourism,0
+2020-03-08,Impact on tourism ,Tourism,0
+2020-03-15,Impact on tourism ,Tourism,0
+2020-03-22,Impact on tourism ,Tourism,0
+2020-03-29,Impact on tourism ,Tourism,0
+2020-04-05,Impact on tourism ,Tourism,0
+2020-04-12,Impact on tourism ,Tourism,0
+2020-04-19,Impact on tourism ,Tourism,0
+2020-04-26,Impact on tourism ,Tourism,0
+2020-05-03,Impact on tourism ,Tourism,0
+2020-05-10,Impact on tourism ,Tourism,0
+2020-05-17,Impact on tourism ,Tourism,0
+2020-05-24,Impact on tourism ,Tourism,0
+2020-05-31,Impact on tourism ,Tourism,0
+2020-06-07,Impact on tourism ,Tourism,0
+2020-06-14,Impact on tourism ,Tourism,0
+2020-06-21,Impact on tourism ,Tourism,0
+2020-06-28,Impact on tourism ,Tourism,0
+2020-07-05,Impact on tourism ,Tourism,0
+2020-07-12,Impact on tourism ,Tourism,0
+2020-07-19,Impact on tourism ,Tourism,0
+2020-07-26,Impact on tourism ,Tourism,0
+2020-08-02,Impact on tourism ,Tourism,0
+2020-01-05,Impact on domestic politics ,Politics,0
+2020-01-12,Impact on domestic politics ,Politics,0
+2020-01-19,Impact on domestic politics ,Politics,0
+2020-01-26,Impact on domestic politics ,Politics,0
+2020-02-02,Impact on domestic politics ,Politics,0
+2020-02-09,Impact on domestic politics ,Politics,0
+2020-02-16,Impact on domestic politics ,Politics,0
+2020-02-23,Impact on domestic politics ,Politics,0
+2020-03-01,Impact on domestic politics ,Politics,0
+2020-03-08,Impact on domestic politics ,Politics,9.46
+2020-03-15,Impact on domestic politics ,Politics,6.77
+2020-03-22,Impact on domestic politics ,Politics,0
+2020-03-29,Impact on domestic politics ,Politics,0
+2020-04-05,Impact on domestic politics ,Politics,0
+2020-04-12,Impact on domestic politics ,Politics,0
+2020-04-19,Impact on domestic politics ,Politics,0
+2020-04-26,Impact on domestic politics ,Politics,0
+2020-05-03,Impact on domestic politics ,Politics,0
+2020-05-10,Impact on domestic politics ,Politics,6.71
+2020-05-17,Impact on domestic politics ,Politics,0
+2020-05-24,Impact on domestic politics ,Politics,10.21
+2020-05-31,Impact on domestic politics ,Politics,6.57
+2020-06-07,Impact on domestic politics ,Politics,19.01
+2020-06-14,Impact on domestic politics ,Politics,9.68
+2020-06-21,Impact on domestic politics ,Politics,8.71
+2020-06-28,Impact on domestic politics ,Politics,5.5
+2020-07-05,Impact on domestic politics ,Politics,0
+2020-07-12,Impact on domestic politics ,Politics,11.75
+2020-07-19,Impact on domestic politics ,Politics,13.09
+2020-07-26,Impact on domestic politics ,Politics,14.71
+2020-08-02,Impact on domestic politics ,Politics,14.63
+2020-01-05,Online discussion ,Online,0
+2020-01-12,Online discussion ,Online,0
+2020-01-19,Online discussion ,Online,0
+2020-01-26,Online discussion ,Online,0
+2020-02-02,Online discussion ,Online,0
+2020-02-09,Online discussion ,Online,0
+2020-02-16,Online discussion ,Online,0
+2020-02-23,Online discussion ,Online,0
+2020-03-01,Online discussion ,Online,0
+2020-03-08,Online discussion ,Online,0
+2020-03-15,Online discussion ,Online,0
+2020-03-22,Online discussion ,Online,0
+2020-03-29,Online discussion ,Online,0
+2020-04-05,Online discussion ,Online,0
+2020-04-12,Online discussion ,Online,0
+2020-04-19,Online discussion ,Online,0
+2020-04-26,Online discussion ,Online,0
+2020-05-03,Online discussion ,Online,0
+2020-05-10,Online discussion ,Online,0
+2020-05-17,Online discussion ,Online,0
+2020-05-24,Online discussion ,Online,0
+2020-05-31,Online discussion ,Online,0
+2020-06-07,Online discussion ,Online,0
+2020-06-14,Online discussion ,Online,0
+2020-06-21,Online discussion ,Online,0
+2020-06-28,Online discussion ,Online,0
+2020-07-05,Online discussion ,Online,0
+2020-07-12,Online discussion ,Online,0
+2020-07-19,Online discussion ,Online,0
+2020-07-26,Online discussion ,Online,0
+2020-08-02,Online discussion ,Online,0
+2020-01-05,Racism & race relations,Racism,0
+2020-01-12,Racism & race relations,Racism,0
+2020-01-19,Racism & race relations,Racism,0
+2020-01-26,Racism & race relations,Racism,0
+2020-02-02,Racism & race relations,Racism,0
+2020-02-09,Racism & race relations,Racism,0
+2020-02-16,Racism & race relations,Racism,0
+2020-02-23,Racism & race relations,Racism,0
+2020-03-01,Racism & race relations,Racism,0
+2020-03-08,Racism & race relations,Racism,0
+2020-03-15,Racism & race relations,Racism,0
+2020-03-22,Racism & race relations,Racism,0
+2020-03-29,Racism & race relations,Racism,0
+2020-04-05,Racism & race relations,Racism,0
+2020-04-12,Racism & race relations,Racism,0
+2020-04-19,Racism & race relations,Racism,0
+2020-04-26,Racism & race relations,Racism,0
+2020-05-03,Racism & race relations,Racism,0
+2020-05-10,Racism & race relations,Racism,0
+2020-05-17,Racism & race relations,Racism,0
+2020-05-24,Racism & race relations,Racism,5.17
+2020-05-31,Racism & race relations,Racism,24.56
+2020-06-07,Racism & race relations,Racism,19.06
+2020-06-14,Racism & race relations,Racism,12.21
+2020-06-21,Racism & race relations,Racism,6.23
+2020-06-28,Racism & race relations,Racism,10.72
+2020-07-05,Racism & race relations,Racism,9.63
+2020-07-12,Racism & race relations,Racism,0
+2020-07-19,Racism & race relations,Racism,11.42
+2020-07-26,Racism & race relations,Racism,2.34
+2020-08-02,Racism & race relations,Racism,0
+2020-01-05,International COVID-19 outbreak,International outbreak,0
+2020-01-12,International COVID-19 outbreak,International outbreak,27.2
+2020-01-19,International COVID-19 outbreak,International outbreak,4.91
+2020-01-26,International COVID-19 outbreak,International outbreak,0
+2020-02-02,International COVID-19 outbreak,International outbreak,13.86
+2020-02-09,International COVID-19 outbreak,International outbreak,7.99
+2020-02-16,International COVID-19 outbreak,International outbreak,27.92
+2020-02-23,International COVID-19 outbreak,International outbreak,21.28
+2020-03-01,International COVID-19 outbreak,International outbreak,9.43
+2020-03-08,International COVID-19 outbreak,International outbreak,8.87
+2020-03-15,International COVID-19 outbreak,International outbreak,6.44
+2020-03-22,International COVID-19 outbreak,International outbreak,11.62
+2020-03-29,International COVID-19 outbreak,International outbreak,0
+2020-04-05,International COVID-19 outbreak,International outbreak,13.91
+2020-04-12,International COVID-19 outbreak,International outbreak,7.14
+2020-04-19,International COVID-19 outbreak,International outbreak,0
+2020-04-26,International COVID-19 outbreak,International outbreak,0
+2020-05-03,International COVID-19 outbreak,International outbreak,0
+2020-05-10,International COVID-19 outbreak,International outbreak,0
+2020-05-17,International COVID-19 outbreak,International outbreak,0
+2020-05-24,International COVID-19 outbreak,International outbreak,0
+2020-05-31,International COVID-19 outbreak,International outbreak,9.8
+2020-06-07,International COVID-19 outbreak,International outbreak,0
+2020-06-14,International COVID-19 outbreak,International outbreak,0
+2020-06-21,International COVID-19 outbreak,International outbreak,0
+2020-06-28,International COVID-19 outbreak,International outbreak,0
+2020-07-05,International COVID-19 outbreak,International outbreak,0
+2020-07-12,International COVID-19 outbreak,International outbreak,0
+2020-07-19,International COVID-19 outbreak,International outbreak,0
+2020-07-26,International COVID-19 outbreak,International outbreak,0
+2020-08-02,International COVID-19 outbreak,International outbreak,0
+2020-01-05,Global economic consequences,Global economy,0
+2020-01-12,Global economic consequences,Global economy,0
+2020-01-19,Global economic consequences,Global economy,7.41
+2020-01-26,Global economic consequences,Global economy,10.61
+2020-02-02,Global economic consequences,Global economy,13.47
+2020-02-09,Global economic consequences,Global economy,24.53
+2020-02-16,Global economic consequences,Global economy,21.13
+2020-02-23,Global economic consequences,Global economy,26.11
+2020-03-01,Global economic consequences,Global economy,10.71
+2020-03-08,Global economic consequences,Global economy,4.99
+2020-03-15,Global economic consequences,Global economy,0
+2020-03-22,Global economic consequences,Global economy,0
+2020-03-29,Global economic consequences,Global economy,0
+2020-04-05,Global economic consequences,Global economy,0
+2020-04-12,Global economic consequences,Global economy,0
+2020-04-19,Global economic consequences,Global economy,7.57
+2020-04-26,Global economic consequences,Global economy,0
+2020-05-03,Global economic consequences,Global economy,0
+2020-05-10,Global economic consequences,Global economy,0
+2020-05-17,Global economic consequences,Global economy,10.24
+2020-05-24,Global economic consequences,Global economy,7.04
+2020-05-31,Global economic consequences,Global economy,0
+2020-06-07,Global economic consequences,Global economy,16.21
+2020-06-14,Global economic consequences,Global economy,0
+2020-06-21,Global economic consequences,Global economy,0
+2020-06-28,Global economic consequences,Global economy,0
+2020-07-05,Global economic consequences,Global economy,0
+2020-07-12,Global economic consequences,Global economy,9.39
+2020-07-19,Global economic consequences,Global economy,0
+2020-07-26,Global economic consequences,Global economy,0
+2020-08-02,Global economic consequences,Global economy,0
+2020-01-05,Responses from international organizations ,International organizations,0
+2020-01-12,Responses from international organizations ,International organizations,0
+2020-01-19,Responses from international organizations ,International organizations,0
+2020-01-26,Responses from international organizations ,International organizations,0
+2020-02-02,Responses from international organizations ,International organizations,0
+2020-02-09,Responses from international organizations ,International organizations,0
+2020-02-16,Responses from international organizations ,International organizations,0
+2020-02-23,Responses from international organizations ,International organizations,0
+2020-03-01,Responses from international organizations ,International organizations,0
+2020-03-08,Responses from international organizations ,International organizations,0
+2020-03-15,Responses from international organizations ,International organizations,0
+2020-03-22,Responses from international organizations ,International organizations,0
+2020-03-29,Responses from international organizations ,International organizations,0
+2020-04-05,Responses from international organizations ,International organizations,0
+2020-04-12,Responses from international organizations ,International organizations,0
+2020-04-19,Responses from international organizations ,International organizations,0
+2020-04-26,Responses from international organizations ,International organizations,0
+2020-05-03,Responses from international organizations ,International organizations,0
+2020-05-10,Responses from international organizations ,International organizations,0
+2020-05-17,Responses from international organizations ,International organizations,0
+2020-05-24,Responses from international organizations ,International organizations,0
+2020-05-31,Responses from international organizations ,International organizations,0
+2020-06-07,Responses from international organizations ,International organizations,0
+2020-06-14,Responses from international organizations ,International organizations,0
+2020-06-21,Responses from international organizations ,International organizations,0
+2020-06-28,Responses from international organizations ,International organizations,0
+2020-07-05,Responses from international organizations ,International organizations,0
+2020-07-12,Responses from international organizations ,International organizations,0
+2020-07-19,Responses from international organizations ,International organizations,0
+2020-07-26,Responses from international organizations ,International organizations,0
+2020-08-02,Responses from international organizations ,International organizations,0
+2020-01-05,International collaboration,International collaboration,0
+2020-01-12,International collaboration,International collaboration,0
+2020-01-19,International collaboration,International collaboration,0
+2020-01-26,International collaboration,International collaboration,0
+2020-02-02,International collaboration,International collaboration,0
+2020-02-09,International collaboration,International collaboration,0
+2020-02-16,International collaboration,International collaboration,0
+2020-02-23,International collaboration,International collaboration,0
+2020-03-01,International collaboration,International collaboration,0
+2020-03-08,International collaboration,International collaboration,0
+2020-03-15,International collaboration,International collaboration,0
+2020-03-22,International collaboration,International collaboration,0
+2020-03-29,International collaboration,International collaboration,0
+2020-04-05,International collaboration,International collaboration,0
+2020-04-12,International collaboration,International collaboration,0
+2020-04-19,International collaboration,International collaboration,0
+2020-04-26,International collaboration,International collaboration,0
+2020-05-03,International collaboration,International collaboration,0
+2020-05-10,International collaboration,International collaboration,0
+2020-05-17,International collaboration,International collaboration,0
+2020-05-24,International collaboration,International collaboration,0
+2020-05-31,International collaboration,International collaboration,0
+2020-06-07,International collaboration,International collaboration,0
+2020-06-14,International collaboration,International collaboration,0
+2020-06-21,International collaboration,International collaboration,0
+2020-06-28,International collaboration,International collaboration,0
+2020-07-05,International collaboration,International collaboration,0
+2020-07-12,International collaboration,International collaboration,0
+2020-07-19,International collaboration,International collaboration,0
+2020-07-26,International collaboration,International collaboration,0
+2020-08-02,International collaboration,International collaboration,0
+2020-01-05,COVID-19 outbreak in China,Outbreak in China,58.39
+2020-01-12,COVID-19 outbreak in China,Outbreak in China,51.51
+2020-01-19,COVID-19 outbreak in China,Outbreak in China,53.09
+2020-01-26,COVID-19 outbreak in China,Outbreak in China,47.14
+2020-02-02,COVID-19 outbreak in China,Outbreak in China,45.3
+2020-02-09,COVID-19 outbreak in China,Outbreak in China,29.37
+2020-02-16,COVID-19 outbreak in China,Outbreak in China,30.44
+2020-02-23,COVID-19 outbreak in China,Outbreak in China,0
+2020-03-01,COVID-19 outbreak in China,Outbreak in China,7.8
+2020-03-08,COVID-19 outbreak in China,Outbreak in China,8.87
+2020-03-15,COVID-19 outbreak in China,Outbreak in China,6.44
+2020-03-22,COVID-19 outbreak in China,Outbreak in China,4.23
+2020-03-29,COVID-19 outbreak in China,Outbreak in China,0
+2020-04-05,COVID-19 outbreak in China,Outbreak in China,3.9
+2020-04-12,COVID-19 outbreak in China,Outbreak in China,7.14
+2020-04-19,COVID-19 outbreak in China,Outbreak in China,0
+2020-04-26,COVID-19 outbreak in China,Outbreak in China,4.64
+2020-05-03,COVID-19 outbreak in China,Outbreak in China,0
+2020-05-10,COVID-19 outbreak in China,Outbreak in China,12.74
+2020-05-17,COVID-19 outbreak in China,Outbreak in China,0
+2020-05-24,COVID-19 outbreak in China,Outbreak in China,5.78
+2020-05-31,COVID-19 outbreak in China,Outbreak in China,10.28
+2020-06-07,COVID-19 outbreak in China,Outbreak in China,0
+2020-06-14,COVID-19 outbreak in China,Outbreak in China,10.74
+2020-06-21,COVID-19 outbreak in China,Outbreak in China,0
+2020-06-28,COVID-19 outbreak in China,Outbreak in China,0
+2020-07-05,COVID-19 outbreak in China,Outbreak in China,11.11
+2020-07-12,COVID-19 outbreak in China,Outbreak in China,0
+2020-07-19,COVID-19 outbreak in China,Outbreak in China,2.2
+2020-07-26,COVID-19 outbreak in China,Outbreak in China,0
+2020-08-02,COVID-19 outbreak in China,Outbreak in China,0
+2020-01-05,Impact on the diaspora,Diaspora,0
+2020-01-12,Impact on the diaspora,Diaspora,0
+2020-01-19,Impact on the diaspora,Diaspora,0
+2020-01-26,Impact on the diaspora,Diaspora,0
+2020-02-02,Impact on the diaspora,Diaspora,0
+2020-02-09,Impact on the diaspora,Diaspora,3.55
+2020-02-16,Impact on the diaspora,Diaspora,0
+2020-02-23,Impact on the diaspora,Diaspora,0
+2020-03-01,Impact on the diaspora,Diaspora,0
+2020-03-08,Impact on the diaspora,Diaspora,0
+2020-03-15,Impact on the diaspora,Diaspora,0
+2020-03-22,Impact on the diaspora,Diaspora,0
+2020-03-29,Impact on the diaspora,Diaspora,0
+2020-04-05,Impact on the diaspora,Diaspora,0
+2020-04-12,Impact on the diaspora,Diaspora,0
+2020-04-19,Impact on the diaspora,Diaspora,0
+2020-04-26,Impact on the diaspora,Diaspora,0
+2020-05-03,Impact on the diaspora,Diaspora,0
+2020-05-10,Impact on the diaspora,Diaspora,0
+2020-05-17,Impact on the diaspora,Diaspora,0
+2020-05-24,Impact on the diaspora,Diaspora,0
+2020-05-31,Impact on the diaspora,Diaspora,0
+2020-06-07,Impact on the diaspora,Diaspora,0
+2020-06-14,Impact on the diaspora,Diaspora,0
+2020-06-21,Impact on the diaspora,Diaspora,0
+2020-06-28,Impact on the diaspora,Diaspora,0
+2020-07-05,Impact on the diaspora,Diaspora,0
+2020-07-12,Impact on the diaspora,Diaspora,0
+2020-07-19,Impact on the diaspora,Diaspora,0
+2020-07-26,Impact on the diaspora,Diaspora,0
+2020-08-02,Impact on the diaspora,Diaspora,0
+2020-01-05,U.S. - China relationship, Sino-US relations,0
+2020-01-12,U.S. - China relationship, Sino-US relations,0
+2020-01-19,U.S. - China relationship, Sino-US relations,0
+2020-01-26,U.S. - China relationship, Sino-US relations,0
+2020-02-02,U.S. - China relationship, Sino-US relations,0
+2020-02-09,U.S. - China relationship, Sino-US relations,0
+2020-02-16,U.S. - China relationship, Sino-US relations,0
+2020-02-23,U.S. - China relationship, Sino-US relations,0
+2020-03-01,U.S. - China relationship, Sino-US relations,0
+2020-03-08,U.S. - China relationship, Sino-US relations,0
+2020-03-15,U.S. - China relationship, Sino-US relations,0
+2020-03-22,U.S. - China relationship, Sino-US relations,0
+2020-03-29,U.S. - China relationship, Sino-US relations,0
+2020-04-05,U.S. - China relationship, Sino-US relations,0
+2020-04-12,U.S. - China relationship, Sino-US relations,0
+2020-04-19,U.S. - China relationship, Sino-US relations,0
+2020-04-26,U.S. - China relationship, Sino-US relations,0
+2020-05-03,U.S. - China relationship, Sino-US relations,0
+2020-05-10,U.S. - China relationship, Sino-US relations,0
+2020-05-17,U.S. - China relationship, Sino-US relations,0
+2020-05-24,U.S. - China relationship, Sino-US relations,0
+2020-05-31,U.S. - China relationship, Sino-US relations,0
+2020-06-07,U.S. - China relationship, Sino-US relations,0
+2020-06-14,U.S. - China relationship, Sino-US relations,0
+2020-06-21,U.S. - China relationship, Sino-US relations,0
+2020-06-28,U.S. - China relationship, Sino-US relations,0
+2020-07-05,U.S. - China relationship, Sino-US relations,0
+2020-07-12,U.S. - China relationship, Sino-US relations,0
+2020-07-19,U.S. - China relationship, Sino-US relations,0
+2020-07-26,U.S. - China relationship, Sino-US relations,0
+2020-08-02,U.S. - China relationship, Sino-US relations,0
+2020-01-05,International relations,International,0
+2020-01-12,International relations,International,0
+2020-01-19,International relations,International,0
+2020-01-26,International relations,International,0
+2020-02-02,International relations,International,0
+2020-02-09,International relations,International,0
+2020-02-16,International relations,International,0
+2020-02-23,International relations,International,0
+2020-03-01,International relations,International,0
+2020-03-08,International relations,International,0
+2020-03-15,International relations,International,0
+2020-03-22,International relations,International,0
+2020-03-29,International relations,International,0
+2020-04-05,International relations,International,0
+2020-04-12,International relations,International,0
+2020-04-19,International relations,International,0
+2020-04-26,International relations,International,0
+2020-05-03,International relations,International,0
+2020-05-10,International relations,International,0
+2020-05-17,International relations,International,0
+2020-05-24,International relations,International,0
+2020-05-31,International relations,International,0
+2020-06-07,International relations,International,0
+2020-06-14,International relations,International,0
+2020-06-21,International relations,International,0
+2020-06-28,International relations,International,0
+2020-07-05,International relations,International,0
+2020-07-12,International relations,International,0
+2020-07-19,International relations,International,0
+2020-07-26,International relations,International,0
+2020-08-02,International relations,International,0
+2020-01-05,Other,Other,10.23
+2020-01-12,Other,Other,0
+2020-01-19,Other,Other,34.59
+2020-01-26,Other,Other,32.87
+2020-02-02,Other,Other,15.96
+2020-02-09,Other,Other,26.38
+2020-02-16,Other,Other,10.44
+2020-02-23,Other,Other,23.12
+2020-03-01,Other,Other,46.06
+2020-03-08,Other,Other,0
+2020-03-15,Other,Other,8.21
+2020-03-22,Other,Other,7.54
+2020-03-29,Other,Other,21.95
+2020-04-05,Other,Other,21.37
+2020-04-12,Other,Other,15.59
+2020-04-19,Other,Other,12.67
+2020-04-26,Other,Other,19.58
+2020-05-03,Other,Other,5.35
+2020-05-10,Other,Other,3.89
+2020-05-17,Other,Other,10.74
+2020-05-24,Other,Other,8.6
+2020-05-31,Other,Other,8.63
+2020-06-07,Other,Other,3.06
+2020-06-14,Other,Other,7.68
+2020-06-21,Other,Other,11.77
+2020-06-28,Other,Other,13.19
+2020-07-05,Other,Other,0
+2020-07-12,Other,Other,21.54
+2020-07-19,Other,Other,16.49
+2020-07-26,Other,Other,13.54
+2020-08-02,Other,Other,27.82

@@ -1,14 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <script src="https://d3js.org/d3.v6.min.js"></script>
-</head>
-<body>
+    <head>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+        <script src="https://d3js.org/d3.v6.min.js"></script>
+    </head>
+    <body>
+        <ul class="nav nav-tabs">
+        <li class="nav-item covid_tab_us">
+            <a class="nav-link active" aria-current="page" href="#" onclick="show_covid('us')">Covid-19 US</a>
+        </li>
+        <li class="nav-item covid_tab_ko">
+            <a class="nav-link" href="#" onclick="show_covid('ko')">Covid-19 Ko</a>
+        </li>
+        <li class="nav-item gunviolence_tab">
+            <a class="nav-link" href="#" onclick="show_gunviolence()">Gunviolence</a>
+        </li>
+        </ul>
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="help-bar col-4 gunviolence_div" style="display:none;">
+                    <span>
+                        <h6>Political Leaning : </h6>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input left" type="checkbox" id="inlineCheckbox1" value="left" onclick="check_clicked('left')">
+                            <label class="form-check-label" for="inlineCheckbox1">Left</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input right" type="checkbox" id="inlineCheckbox2" value="right" onclick="check_clicked('right')">
+                            <label class="form-check-label" for="inlineCheckbox2">Right</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input neutral" type="checkbox" id="inlineCheckbox3" value="neutral" onclick="check_clicked('neutral')">
+                            <label class="form-check-label" for="inlineCheckbox3">None</label>
+                        </div>
+                    </span>
+                    <br><br>
+                    <span>
+                        <h6>Filter by year : </h6>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input 2016" type="checkbox" id="inlineCheckbox1" value="2016" onclick="check_clicked('2016')">
+                            <label class="form-check-label" for="inlineCheckbox1">2016</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input 2017" type="checkbox" id="inlineCheckbox2" value="2017" onclick="check_clicked('2017')">
+                            <label class="form-check-label" for="inlineCheckbox2">2017</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input 2018" type="checkbox" id="inlineCheckbox3" value="2018" onclick="check_clicked('2018')">
+                            <label class="form-check-label" for="inlineCheckbox3">2018</label>
+                        </div>
+                    </span>
+                    <br><br>
+                    <div class="card" style="width: 18rem;">
+                        <div class="card-header">
+                          News Sites
+                        </div>
+                        <ul class="list-group list-group-flush news-list">
 
-<script>
-    // write your d3 code here.. 
-    console.log('cool bacha');
-</script>
-<script src='./visualization.js'></script>
-</body>
+                        </ul>
+                      </div>
+                </div>
+                <div class="col-8">
+                    <!-- d3 charts here -->
+                    <div class="chart">
+
+                    </div>
+                    <div class="bar-graph">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    <script>
+        // write your d3 code here.. 
+        console.log('cool bacha');
+    </script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src='./visualization.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous"></script>
+    </body>
 </html>
