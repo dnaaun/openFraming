@@ -204,6 +204,13 @@ class OneClassifier(ClassifierRelatedResource):
         return self._classifier_status(clsf)
 
 
+class Something(Resource):
+    def get(self):
+        return {'hello': 'world'}
+
+
+
+
 class Classifiers(ClassifierRelatedResource):
     """Create a classifer, get a list of classifiers."""
 
@@ -1137,8 +1144,8 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
     # Usually, we'd read this from app.config, but we need it to create app.config ...
     app = Flask(__name__)
 
-    app.config["SERVER_NAME"] = Settings.SERVER_NAME
-
+    # app.config["SERVER_NAME"] = Settings.SERVER_NAME
+    app.config["SERVER_NAME"] = "0.0.0.0:5000"
     # Create project root if necessary
     if not Settings.PROJECT_DATA_DIRECTORY.exists():
         Settings.PROJECT_DATA_DIRECTORY.mkdir()
@@ -1173,7 +1180,7 @@ def create_app(logging_level: int = logging.WARNING) -> Flask:
             models.database_proxy.close()
 
     api = Api(app)
-
+    api.add_resource(Something, '/something')
     # Add commands
     database_commands.add_commands_to_app(app)
 

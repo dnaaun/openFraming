@@ -70,13 +70,12 @@ RUN set -eux; \
 	case "$arch" in \
 # arm64v8
 		arm64 | aarch64) \
-			downloadUrl=https://download.java.net/java/early_access/jdk16/26/GPL/openjdk-16-ea+26_linux-aarch64_bin.tar.gz; \
-			downloadSha256=1e2fefe414a16aceeae6816b4e48b426e79bb647927a44bbfe4d692156096e74; \
-			;; \
+			downloadUrl=https://download.java.net/java/GA/jdk16/7863447f0ab643c585b9bdebf67c69db/35/GPL/openjdk-16_linux-aarch64_bin.tar.gz; \
+			downloadSha256=5afe8561d1c6f777bf0f70bf5d994187ff607b8c4c6ff1194f849a0bb933d805			;; \
 # amd64
 		amd64 | i386:x86-64) \
-			downloadUrl=https://download.java.net/java/early_access/jdk16/26/GPL/openjdk-16-ea+26_linux-x64_bin.tar.gz; \
-			downloadSha256=e74300f3f770122358d768d45e181d29c710e8d41bbc4ab8e492929f2867347c; \
+			downloadUrl=https://download.java.net/java/GA/jdk16/7863447f0ab643c585b9bdebf67c69db/35/GPL/openjdk-16_linux-x64_bin.tar.gz; \
+			downloadSha256=25f51624a17545a769e97ded5d51075ab31f9a52de925f7292cff951becf8fd2 \
 			;; \
 # fallback
 		*) echo >&2 "error: unsupported architecture: '$arch'"; exit 1 ;; \
@@ -178,4 +177,8 @@ RUN chown -R app:app $HOME
 WORKDIR $APP_HOME/backend/
 
 ENTRYPOINT [ "../entrypoint.sh" ]
-CMD [ "gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "flask_app.app:create_app()" ]
+ENV FLASK_APP=flask_app/app.py
+ENV FLASK_ENV=development
+ENV FLASK_RUN_HOST=0.0.0.0
+# CMD [ "gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "flask_app.app:create_app()" ]
+CMD ["flask", "run"]

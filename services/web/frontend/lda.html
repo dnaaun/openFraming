@@ -1,0 +1,94 @@
+<html>
+<head>
+  <!-- STYLES -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css"
+        integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="images/openframing.png" type="image/x-icon" />
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:200,300" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
+        integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+
+  <!-- CDNS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gojs/1.8.2/go-debug.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
+  <!-- LOCAL FILES -->
+  <script type="module" src="js/client.js"></script>
+  <script type="module" src="js/lda.js"></script>
+
+  <title>Open Framing</title>
+</head>
+
+<body>
+
+<nav class="navbar navbar-expand-md navbar-light">
+  <a class="navbar-brand" href="client.html" id="navbarBrand">Open Framing</a>
+</nav>
+
+<!--  Choose Input Section  -->
+<div class="main-content container">
+  <div class="row">
+    <div id="lda-main" class="col-md-12">
+      <div class="card card-main">
+        <div class="card-header">
+          Enter your topic model information
+        </div>
+        <div class="card-body">
+          <table id='lda-form' class="table table-condensed">
+            <tr>
+              <td width="40%">
+                <b>Topic model name</b>
+              </td>
+              <td width="60%" class="align-middle">
+                <input type="text" id="tm-name" name="tm-name" value="">
+              </td>
+            </tr>
+            <tr>
+              <td width="40%">
+                <b>Number of topics</b>
+              </td>
+              <td width="60%" class="align-middle">
+                <input type="number" id="tm-num" name="tm-num" value="">
+              </td>
+            </tr>
+            <tr>
+              <td width="40%">
+                <b>Training file</b>
+              </td>
+              <td width="60%" class="align-middle">
+                <input id="tm-training-invisible" type="file" class="hidden">
+                <a style="width: 31%" id="tm-training-visible" class="btn btn-outline-lilac mt-2 btn-block">Choose File</a>
+                <label id="tm-training-filepath" class="hidden"></label>
+              </td>
+            </tr>
+            <tr>
+              <td width="40%">
+                <b>Email address</b>
+              </td>
+              <td width="60%" class="align-middle">
+                <input type="text" id="tm-email" name="tm-email" value="">
+              </td>
+            </tr>
+          </table>
+          <hr>
+          <a style="width: 20%;" class="btn btn-outline-lilac mt-2 btn-block">Submit</a>
+        </div>
+
+        <div class="card-footer text-left">
+          <button id="backBtn" class="navBtn">Back
+            <i class="far fa-arrow-alt-circle-left"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
