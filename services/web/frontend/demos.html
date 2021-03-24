@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- STYLES -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css"
+          integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="images/openframing.png" type="image/x-icon" />
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:200,300" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
+          integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+
+    <!-- CDNS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gojs/1.8.2/go-debug.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://d3js.org/d3-time.v2.min.js"></script>
+    <script src="https://d3js.org/d3-time-format.v3.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
+    <!-- LOCAL JS -->
+    <script type="application/javascript" src="js/demos.js"></script>
+
+    <title>Open Framing</title>
+</head>
+    <body>
+
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <a class="navbar-brand" href="home.html">OpenFraming</a>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="faq.html">FAQ</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="demos.html">Demo</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="https://github.com/davidatbu/openFraming/tree/master">Source Code</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="playground.html">Get Started</a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="main-content container">
+            <div class="card card-main">
+                <ul class="nav nav-tabs" id="demo-tabs" role="tablist">
+                    <li class="nav-item active" role="presentation">
+                        <a class="nav-link active" href="#covid-us" aria-controls="covid-us" role="tab" data-toggle="tab">Covid-19 US</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" href="#covid-ko" aria-controls="covid-ko" role="tab" data-toggle="tab">Covid-19 Korea</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" href="#gun-violence" aria-controls="gun-violence" role="tab" data-toggle="tab">Gun Violence</a>
+                    </li>
+                </ul>
+                <div class="tab-content" id="demo-tab-content">
+<!--  COVID-19 US TAB  -->
+                    <div style="margin: 5%;" class="tab-pane fade show active" id="covid-us" role="tabpanel" aria-labelledby="covid-us-tab">
+                        <h2>Framing of Covid-19 in U.S. news media over time </h2>
+                        <diV id="cov-us-chart" class="chart"></diV>
+                    </div>
+<!--  COVID-19 KO TAB  -->
+                    <div style="margin: 5%;" class="tab-pane fade" id="covid-ko" role="tabpanel" aria-labelledby="covid-ko-tab">
+                        <h2>Framing of Covid-19 in South Korean news media over time </h2>
+                        <div id="cov-ko-chart" class="chart"></div>
+                    </div>
+<!--  GUN VIOLENCE TAB  -->
+                    <div style="margin: 5%;" class="tab-pane fade" id="gun-violence" role="tabpanel" aria-labelledby="gun-violence-tab">
+                        <h2>Explore framing of gun violence in the news using the checkboxes below</h2>
+                        <div class="row">
+                            <div style="padding-right: 0;" class="help-bar col-4 gunviolence_div">
+                                <div class="row">
+                                    <div class="col-sm"><b>Political Leaning:</b></div>
+                                </div>
+                                <div class="row">
+                                    <div style="margin-left: 5%" class="col-sm">
+                                        <input id="left" class="form-check-input left" type="checkbox" value="left" onclick="check_clicked('left')">
+                                        <label for="left" class="form-check-label">Left</label>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div style="margin-left: 5%" class="col-sm">
+                                        <input id="right" class="form-check-input right" type="checkbox" value="right" onclick="check_clicked('right')">
+                                        <label for="right" class="form-check-label">Right</label>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div style="margin-left: 5%" class="col-sm">
+                                        <input id="none" class="form-check-input neutral" type="checkbox" value="neutral" onclick="check_clicked('neutral')">
+                                        <label for="none" class="form-check-label">None</label>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-sm"><b>Filter by year:</b></div>
+                                </div>
+                                <div class="row">
+                                    <div style="margin-left: 5%" class="col-sm">
+                                        <input id="2016" class="form-check-input 2016" type="checkbox" value="2016" onclick="check_clicked('2016')">
+                                        <label for="2016" class="form-check-label">2016</label>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div style="margin-left: 5%" class="col-sm">
+                                        <input id="2017" class="form-check-input 2017" type="checkbox" value="2017" onclick="check_clicked('2017')">
+                                        <label for="2017" class="form-check-label">2017</label>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div style="margin-left: 5%" class="col-sm">
+                                        <input id="2018" class="form-check-input 2018" type="checkbox" value="2018" onclick="check_clicked('2018')">
+                                        <label for="2018" class="form-check-label">2018</label>
+                                    </div>
+                                </div>
+                                <br><br>
+                                <div class="card" style="width: 18rem;">
+                                    <div class="card-header">News Sites</div>
+                                    <ul id="news-list" class="list-group list-group-flush"></ul>
+                                </div>
+                            </div>
+                            <div style="padding: 0;" class="col-8">
+                                <!-- d3 charts here -->
+                                <div id="gunv-chart" class="chart"></div>
+                                <div id="gunv-bars" class="bar-graph"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-right"></div>
+            </div>
+        </div>
+    </body>
+</html>

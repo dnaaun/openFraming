@@ -4,12 +4,12 @@ const path = require('path');
 const router = express.Router();
 
 router.get('/',function(req,res){
-  res.sendFile(path.join(__dirname+'/index.html'));
+  res.sendFile(path.join(__dirname+'/demo.html'));
   //__dirname : It will resolve to your project folder.
 });
 
-router.get('/visualization.js', function(req, res){
-    res.sendFile(__dirname + '/visualization.js');
+router.get('/demo.js', function(req, res){
+    res.sendFile(__dirname + '/demo.js');
 });
 
 router.get('/category-brands.csv', function(req, res){
