@@ -1,0 +1,198 @@
+
+body {
+    font-family: 'Montserrat', sans-serif;
+}
+
+p {
+    font-size: 22px;
+    line-height: 28px;
+    letter-spacing: 0.1px;
+}
+
+.info strong{
+    color: rebeccapurple;
+}
+
+.spacer {
+    height: 50px;
+    width: 100%;
+    display: block;
+}
+
+.navbar {
+    background-color: #FFFFFF;
+    -webkit-box-shadow: -1px 6px 12px 0px rgba(207,207,207,0.82);
+    -moz-box-shadow: -1px 6px 12px 0px rgba(207,207,207,0.82);
+    box-shadow: -1px 6px 12px 0px rgba(207,207,207,0.82);
+    font-size: 20px;
+}
+
+/* always have some space below the content so that we can scroll properly*/
+.main-content {
+    margin-bottom: 10%;
+    padding: 50px;
+}
+
+
+.row {
+    margin-bottom: 8px;
+    margin-left: 0;
+}
+
+.card{
+    border-radius: 8px;
+    padding: 20px;
+    display: block;
+    vertical-align: middle;
+    font-size: 19px;
+    width: 100%;
+}
+
+.card-header{
+    text-align: center;
+}
+
+.card-main {
+    background-color: #FFFFFF;
+    border-color:#c8c8c8;
+    padding: 0;
+}
+
+.card-text {
+    margin-top: 0;
+}
+
+
+.hidden {
+    display: none !important;
+}
+
+.horizontal-padding{
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.scrollable {
+    width: 105%; /*card has padding*/
+    overflow-y: auto;
+    max-height: 120px;
+    padding: 0;
+}
+
+/*
+Main page table
+ */
+.table > tbody > tr:first-child > td {
+    border: none;
+}
+
+
+.sticky {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 200px;
+    background: #bbb;
+    z-index: 2;
+    height: 20px;
+}
+
+/*
+Buttons
+*/
+
+/* custom button color */
+.btn-theme{color:#fff;background-color:rebeccapurple;border-color:rebeccapurple}
+
+.btn-theme:hover{color:#fff;background-color:#8442c7;border-color:#8442c7}
+.btn-theme:focus,.btn-primary.focus{box-shadow:0 0 0 .2rem #8e47d6}
+.btn-theme.disabled,
+.btn-theme:disabled{color:#fff;background-color:#8e47d6;border-color:#8e47d6}
+.btn-theme:not(:disabled):not(.disabled):active,
+.btn-theme:not(:disabled):not(.disabled).active,
+.show>.btn-theme.dropdown-toggle{color:#fff;background-color:#8e47d6;border-color:#000}
+.btn-theme:not(:disabled):not(.disabled):active:focus,
+.btn-theme:not(:disabled):not(.disabled).active:focus,
+.show>.btn-theme.dropdown-toggle:focus{box-shadow:0 0 0 .2rem #8e47d6}
+
+.btn-outline-theme{color:#000;background-color:transparent;background-image:none;border-color:#c8a8ed}
+.btn-outline-theme:hover{color:#000;background-color:#c8a8ed;border-color:#c8a8ed}
+.btn-outline-theme:focus,
+.btn-outline-theme.focus{box-shadow:0 0 0 .2rem #c8a8ed}
+.btn-outline-theme.disabled,
+.btn-outline-theme:disabled{color:#c8a8ed;background-color:transparent}
+.btn-outline-theme:not(:disabled):not(.disabled):active,
+.btn-outline-theme:not(:disabled):not(.disabled).active,
+.show>.btn-outline-theme.dropdown-toggle{color:#fff;background-color:#c8a8ed;border-color:#c8a8ed}
+.btn-outline-theme:not(:disabled):not(.disabled):active:focus,
+.btn-outline-theme:not(:disabled):not(.disabled).active:focus,
+.show>.btn-outline-theme.dropdown-toggle:focus{box-shadow:0 0 0 .2rem #c8a8ed}
+/* end custom button color */
+
+.navBtn{
+    cursor: pointer;
+    font-family: 'Montserrat', sans-serif;
+    background-color: transparent;
+    border: transparent;
+}
+
+
+.pull-right {
+    float: right !important;
+}
+
+.pull-left {
+    float: left !important;
+}
+
+button:disabled {
+    cursor: not-allowed;
+}
+
+
+textarea {
+    font-family: 'Montserrat', sans-serif;
+    width:100%;
+}
+
+.logo {
+    width: auto;
+    height: 50px;
+    padding: 5px;
+}
+
+
+.sidenav {
+    height: 100%;
+    width: 13%;
+    position: fixed;
+    /*z-index: 1;*/
+    top: 50px;
+    left: 0;
+    background-color: #eeeeee;
+    overflow-x: hidden;
+    padding-top: 20px;
+}
+
+.sidenav a {
+    padding: 6px 6px 6px 32px;
+    text-decoration: none;
+    color: rebeccapurple;
+    display: block;
+}
+
+
+.jump {
+    padding: 6px 6px 6px 32px;
+    color: white;
+    display: block;
+    background-color: rebeccapurple;
+}
+
+.answer {
+    padding-left: 50px;
+}
+
+.main {
+    margin-left: 200px; /* Same as the width of the sidenav */
+}

@@ -19,17 +19,13 @@
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
 
   <!-- LOCAL FILES -->
-  <script type="module" src="js/client.js"></script>
-  <script type="module" src="js/step4.js"></script>
+<!--  <script type="module" src="../js/client.js"></script>-->
+<!--  <script type="module" src="../js/step4.js"></script>-->
 
   <title>Open Framing</title>
 </head>
 
 <body>
-
-<!--<nav class="navbar navbar-expand-md navbar-light">-->
-<!--  <a class="navbar-brand" href="client.html" id="navbarBrand">Open Framing</a>-->
-<!--</nav>-->
 
 <!--  Choose Input Section  -->
 <div class="main-content container">
@@ -37,18 +33,22 @@
     <div id="framing-main" class="col-md-12">
       <div class="card card-main">
         <div class="card-body">
-          <p id="help" class="new-user">Help panel 1</p>
+          <p class="new-user">
+            If you are satisfied with the performance of the frame classification model trained from
+            <strong>Step 4</strong>, you can now take the last step to use the trained model to predict
+            all the remaining unlabeled data.
+          </p>
         </div>
       </div>
       <br>
-      <div id="policy-issue" class="card card-main">
+      <div id="policy-issue5" class="card card-main">
         <div class="card-header">
           Select a Pre-Trained Policy Issue
         </div>
         <div class="card-body">
           <div class="row">
             <div class="col-sm">
-              Please <b>select one of our pretrained policy issue models</b> that corresponds to your document.
+              Please select one of our pretrained policy issue models that corresponds to your document.
             </div>
           </div>
           <div class="row">
@@ -67,6 +67,18 @@
                 <label for="samesexmarriage">Same-sex Marriage</label><br>
               </form>
             </div>
+          </div>
+          <div class="row"><div class="col-sm" style="text-align: center"><strong>- OR -</strong></div></div>
+          <div class="row">
+            <div class="col-sm">
+              If you trained a new policy issue on our system, retrieve it's ID from your confirmation email to use that
+              model instead.
+            </div>
+          </div>
+          <div class="spacer"></div>
+          <div class="row">
+            <label style="margin-right: 10px;">ID: </label>
+            <input type="text" id="pi-id" name="pi-id" value=""><br>
           </div>
         </div>
 

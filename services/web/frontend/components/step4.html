@@ -1,0 +1,197 @@
+<html>
+<head>
+  <!-- STYLES -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css"
+        integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="images/openframing.png" type="image/x-icon" />
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:200,300" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
+        integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+
+  <!-- CDNS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gojs/1.8.2/go-debug.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
+  <!-- LOCAL JS -->
+  <script type="module" src="js/client.js"></script>
+  <script type="module" src="js/step4.js"></script>
+<!--  <script type="text/javascript" src="js/client.js"></script>-->
+<!--  <script type="text/javascript" src="js/step4.js"></script>-->
+
+  <title>Open Framing</title>
+</head>
+
+<body>
+
+<!--  Choose Input Section  -->
+<div class="main-content container">
+  <div class="row">
+    <div id="framing-main" class="col-md-12">
+      <div class="card card-main">
+        <div class="card-body">
+          <p class="new-user">
+            The goal of <strong>Step 4</strong> is to use the documents you have labeled from <strong>Step 3</strong>
+            to build a BERT-based, frame classification model. <strong style="color: rebeccapurple">BERT</strong>,
+            which stands for <strong style="color: rebeccapurple">Bidirectional Encoder Representations from
+            Transformers</strong>, is a state-of-the-art deep learning model. Here we’re using BERT to classify text
+            examples into categories, i.e. frames. This is a supervised method, meaning we will need a sample of
+            labeled documents to train the model.
+          </p>
+        </div>
+      </div>
+      <br>
+      <div id="policy-issue" class="card card-main">
+        <div class="card-header">Build a Frame Classification Model with Deep Learning</div>
+        <div class="card-body">
+<!--    START FC INPUTS      -->
+          <div class="container" style="font-size: 85%">
+<!--     FC NAME       -->
+            <div class="row">
+              <div class="col-sm"><b>Frame classification model name </b></div>
+              <div class="col-sm"><input type="text" id="fc-name" name="fc-name" value=""></div>
+            </div>
+            <div class="row">
+              <div class="col-sm">
+                <label>* Give a name to your frame classification model
+                </label>
+              </div>
+            </div>
+            <hr>
+<!--     FC FILE       -->
+            <div class="row">
+              <div class="col-sm"><b>Upload a data file</b></div>
+              <div class="col-sm">
+                <input id="fc-training-invisible" type="file" class="hidden" accept=".xls,.xlsx,.csv,.tsv">
+                <a style="width: 50%; color: white" id="fc-training-visible" class="btn btn-theme mt-2 btn-block">Choose File</a>
+                <label id="fc-training-filepath" class="hidden"></label></div>
+            </div>
+            <div class="row">
+              <div class="col-sm">
+                <label>* Upload a data file (.xls, .xlsx, .csv, or .tsv) containing a column labeled “example”, which
+                  will contain the text documents and a column called “category,” which contains a category (frame)
+                  label. There should be one document and one category label per row. You can use any category labels
+                  you want (text or numbers) as long as the labels are internally consistent. Please do not include
+                  unlabeled documents in the dataset; they will be discarded during training. See the sample file.
+                  Note that data preprocessing is not necessary to build a BERT model. You can upload dataset of
+                  any of the ## languages.
+                </label>
+              </div>
+            </div>
+            <hr>
+<!--     FC CATEGORIES       -->
+            <div class="row">
+              <div class="col-sm"><b>Category labels</b></div>
+              <div class="col-sm">
+                <textarea rows="4" id="fc-labels" placeholder="gun control,politics,school/public space safety,public opinion"></textarea>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-sm">
+                <label>* Enter the category labels, separated by commas. Again, the category labels can be text or
+                  numbers and should be consistent with the ones in your uploaded data file. The example above uses
+                  frame names as category labels for the issue of gun violence.
+                </label>
+              </div>
+            </div>
+            <hr>
+<!--    FC EMAIL        -->
+            <div class="row">
+              <div class="col-sm"><b>Email address</b></div>
+              <div class="col-sm"><input type="text" id="fc-email" name="fc-email" value=""></div>
+            </div>
+            <div class="row">
+              <div class="col-sm">
+                <label>
+                  * We will send you an email when the BERT model has been trained and results files are ready to
+                  download. You will receive basic metrics on the model’s performance on a small subsample of the data
+                  you provided that has been held out from the training data. This means that the model does not see
+                  this data when training, so it is a good measure of how the model will perform on other unlabeled data.
+                  In general, we aim for model accuracy above 80%, but your needs (and the difficulty of the labeling
+                  task itself) may vary. The email you get after you train your model will contain the following metrics:
+                  Macro FB-1, Macro precision, Macro recall, and accuracy.
+                </label>
+              </div>
+            </div>
+            <hr>
+          </div>
+          <a id="submit4" style="width: 20%; color: white;" class="btn btn-theme mt-2 btn-block">Submit</a>
+
+          <br>
+          <div id="error4" class="hidden card card-main" style="background: #ffe3e3">
+            <div class="card-body">
+              <p id="error4-text"  class="new-user"><b>Error panel 4</b></p>
+            </div>
+          </div>
+
+          <div id="success4"  class="hidden card card-main" style="background: #e3ffe3">
+            <div class="card-body">
+              <p id="success4-text"  class="new-user"><b>Success panel 4</b></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!--            &lt;!&ndash;          <div id= "other-issue" class="card card-main">&ndash;&gt;-->
+<!--&lt;!&ndash;            <div class="card-body">&ndash;&gt;-->
+<!--              <p>To train your own policy issue, please enter the frames for issue framing classification separated by commas. Below is an example using the frame names for the "Gun Violence" issue.</p>-->
+<!--              <textarea id="other-frames"-->
+<!--                        placeholder="gun control,politics,school/public space safety,public opinion"-->
+<!--                        rows="3"-->
+<!--              ></textarea>-->
+<!--          <hr>-->
+<!--              <p>Please upload your sample annotated data in .csv, .xls, or .xlsx format. You may also choose to use our example file instead.</p>-->
+<!--&lt;!&ndash;              <div class="row">&ndash;&gt;-->
+<!--&lt;!&ndash;                <div class="col-sm">&ndash;&gt;-->
+<!--                  <input id="training-file-invisible" type="file" class="hidden">-->
+<!--                  <a style="width: 20%;" id="training-file-visible" class="btn btn-outline-theme mt-2 btn-block">Choose File</a>-->
+<!--&lt;!&ndash;                </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                <div class="col-sm" style="text-align: center">&ndash;&gt;-->
+<!--&lt;!&ndash;                  <p><b> - OR - </b></p>&ndash;&gt;-->
+<!--&lt;!&ndash;                </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                <div class="col-sm">&ndash;&gt;-->
+<!--&lt;!&ndash;                  <a id="example-training" class="btn btn-outline-lilac mt-2 btn-block">Download Example</a>&ndash;&gt;-->
+<!--&lt;!&ndash;                </div>&ndash;&gt;-->
+<!--&lt;!&ndash;              </div>&ndash;&gt;-->
+<!--              <div id="training-filepath" class="hidden row"></div>-->
+<!--&lt;!&ndash;            </div>&ndash;&gt;-->
+<!--&lt;!&ndash;          </div>&ndash;&gt;-->
+<!--          <hr>-->
+<!--          <p>Please provide an email address for us to contact you when training is complete.</p>-->
+<!--          <label>Email: </label>-->
+<!--          <input type="text" id="train-email" value=""><br>-->
+<!--          <hr>-->
+<!--          <a id="submit4" style="width: 20%;" class="btn btn-outline-theme mt-2 btn-block">Submit</a>-->
+<!--          <br>-->
+<!--          <div class="hidden card card-main" style="background: #ffe3e3">-->
+<!--            <div class="card-body">-->
+<!--              <p id="error4" class="new-user"><b>Error panel 4</b></p>-->
+<!--            </div>-->
+<!--          </div>-->
+
+<!--          <div class="hidden card card-main" style="background: #e3ffe3">-->
+<!--            <div class="card-body">-->
+<!--              <p id="success4" class="new-user"><b>Success panel 4</b></p>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--        </div>-->
+
+<!--&lt;!&ndash;      </div>&ndash;&gt;-->
+<!--&lt;!&ndash;        <div class="card-footer text-right"></div>&ndash;&gt;-->
+<!--&lt;!&ndash;      </div>&ndash;&gt;-->
+<!--    </div>-->
+<!--  </div>-->
+<!--</div>-->
+
+</body>
+</html>

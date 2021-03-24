@@ -1,0 +1,56 @@
+<html>
+<head>
+  <!-- STYLES -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css"
+        integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="images/openframing.png" type="image/x-icon" />
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:200,300" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
+        integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+
+  <!-- CDNS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gojs/1.8.2/go-debug.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
+  <!-- LOCAL FILES -->
+
+  <title>Open Framing</title>
+</head>
+
+<body>
+
+<!--  Choose Input Section  -->
+<div class="main-content container">
+  <div class="row">
+    <div id="framing-main" class="col-md-12">
+      <div id="policy-issue" class="card card-main">
+        <div class="card-header">Label Frames with Content Analysis</div>
+        <div class="card-body">
+          <p>In <strong>Step 3</strong>, you should draw a sample of documents and manually classify the documents into the frames
+            identified from <strong>Step 2</strong>. The goal of this step is to generate ground truth labels, which you will need to
+            build a machine learning model in <strong>Step 4</strong>.
+          </p>
+          <p>
+            We recommend that you use the method of quantitative content analysis (QCA) to label frames. QCA is a
+            commonly used method in communication research. To perform QCA, a representative sample of text (or other
+            type of content) is drawn, on which two or more trained coders apply a codebook protocol, which should
+            include all of the variables (e.g., frames) for analysis and their definitions. Prior to coding the entire
+            sample independently, coders are first trained on the codebook, and their agreement on how to apply the
+            codes is measured with Intercoder Reliability (ICR). In QCA, high ICR – meaning that two or more coders
+            consistently categorized the content similarly – also typically indicates high validity of the coded results.
+            Once coders have reached an acceptable ICR (above 90% agreement or 0.70 Krippendorf α), they can code the
+            rest of the sample independently. See our demo for more information about how to content analyze frames
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
