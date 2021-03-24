@@ -1,67 +1,51 @@
-
-
-let workflowChoice = '';
+let BASE_URL = "http://" + window.location.host + "/api";
+// uncomment below to test on AWS EC2 instance
+// const BASE_URL = "http://ec2-3-90-135-165.compute-1.amazonaws.com/api";
 
 /* * * * * * */
 /*  BROWSER  */
 /* * * * * * */
 $(document).ready(function() {
 
-    // show workflow options if click "Playground"
-    $('#playground').on('click', function () {
-        showWorkflowOptions();
-    });
-
-    // to go back to landing page from workflow options
-    $('#backBtn').on('click', function () {
-        backToLanding();
-    });
-
-    // enable Next if workflow is selected
-    $('input[type=radio][name=workflow]').change(function() {
-        $("#nextBtn").attr("disabled", false);
-        workflowChoice = $(this).val();
-    });
-
-    $('#nextBtn').on('click', function () {
-        if (workflowChoice === 'framing') {
-            window.location.replace('step4.html');
-        } else if (workflowChoice === 'lda') {
-            window.location.replace('step1.html');
-        } else {
-
-        }
-    });
-
-    $("#step1").load("step1.html", function () {
+    $("#step1").load("components/step1.html", function () {
+        $.getScript("js/client.js");
         $.getScript("js/step1.js");
     });
 
-    $("#step4").load("step4.html",function(){
+    $("#step2").load("components/step2.html");
+
+    $("#step3").load("components/step3.html");
+
+    $("#step4").load("components/step4.html",function(){
+        $.getScript("js/client.js");
         $.getScript("js/step4.js");
     });
 
-    $("#step5").load("step5.html",function(){
-        $.getScript("js/step4.js");
+    $("#step5").load("components/step5.html",function(){
+        // $.getScript("js/step4.js");
     });
 
 
 });
 
+/* * * * * * */
+/*  HELPERS  */
+/* * * * * * */
+
+function getErrorMessage(message) {
+    if (typeof message === "object") {
+        let strArr = [];
+        for (let key of Object.keys(message)) {
+            strArr.push(message[key]);
+        }
+        return strArr.join('; ')
+
+    } else {
+        return message;
+    }
+}
 
 
 /* * * * * * * */
 /*  HIDE/SHOW  */
 /* * * * * * * */
-
-
-function showWorkflowOptions() {
-    $('#landing').addClass('hidden');
-    $('#workflow-choice').removeClass('hidden');
-}
-
-function backToLanding() {
-    $('#workflow-choice').addClass('hidden');
-    $('#landing').removeClass('hidden');
-}
-

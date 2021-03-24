@@ -3,17 +3,12 @@
 /*  DATA   */
 /* * * * * */
 
-let issue = '';
-let trainingFile = '';
-let newFrames = [];
-let testingFile = '';
-let emailAddress = '';
 
-
-const help1 = 'Help panel 1';
-const help2 = 'Help panel 2';
-const help3 = 'Help panel 3';
-const help4 = 'Help panel 4';
+function cleanCategories(categories) {
+    let catsArr = categories.split(',');
+    catsArr = catsArr.map((cat) => {return cat.trim()});
+    return catsArr;
+}
 
 
 /* * * * * * */
@@ -21,138 +16,87 @@ const help4 = 'Help panel 4';
 /* * * * * * */
 $(document).ready(function() {
 
-    // Step 1 page logic
-    $("input[name='policyissue']").change(function(){
-        // enable next if policy issue selected
-        $("#nextBtn1").attr("disabled", false);
-        // if choice is 'Other' show panel
-        if ($(this).val() === 'other') {
-            $('#other-issue').removeClass('hidden');
-            $('#other-text').attr('disabled', false).focus();
+    $('#fc-training-visible').on('click', function () {
+        $('#fc-training-invisible').click();
+    });
+
+    $("input[id='fc-training-invisible']").change(function() {
+        let file = $(this).val().split('\\').pop();
+        $('#fc-training-filepath')
+            .html(`File chosen: ${file}`)
+            .removeClass('hidden');
+    });
+
+    $('#submit4').on('click', function () {
+        // handle missing info first
+        if ($('#fc-name').val() === "") {
+            $('#error4-text').html('Please provide a name for your classifier.');
+            $('#error4').removeClass('hidden');
+        } else if (document.getElementById("fc-training-invisible").files.length === 0) {
+            $('#error4-text').html('Please provide a training file.');
+            $('#error4').removeClass('hidden');
+        } else if ($('#fc-labels').val() === "") {
+            $('#error4-text').html('Please provide categories for your classifier.');
+            $('#error4').removeClass('hidden');
+        } else if ($('#fc-email').val() === "") {
+            $('#error4-text').html('Please provide an email to send your results to.');
+            $('#error4').removeClass('hidden');
+
         } else {
-            $('#other-issue').addClass('hidden');
-            $('#other-text').attr('disabled', true);
+
+            $('#error4').addClass('hidden');
+
+            // POST request for topic model
+            const POST_CLASSIFIER = `${BASE_URL}/classifiers/`;
+            const categories = cleanCategories($('#fc-labels').val());
+            let postData = {
+                classifier_name: $('#fc-name').val(),
+                category_names: categories,
+                notify_at_email: $('#fc-email').val()
+            };
+            $.ajax({
+                url: POST_CLASSIFIER,
+                type: 'POST',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify(postData),
+                success: function (data) {
+                    console.log('success in topic model POST');
+                    // POST request for training file
+                    const POST_FC_TRAINING_FILE = `${BASE_URL}/topic_models/${data.classifier_id}/training/file`;
+                    let fileFD = new FormData();
+                    fileFD.append('file', document.getElementById("fc-training-invisible").files[0]);
+
+                    $.ajax({
+                        url: POST_FC_TRAINING_FILE,
+                        data: fileFD,
+                        type: 'POST',
+                        processData: false,
+                        contentType: false,
+                        success: function(){
+                            console.log('STEP 4 - success in training file POST');
+                            $('#success4').removeClass('hidden');
+                        },
+                        error: function (xhr, status, err) {
+                            console.log(xhr.responseText);
+                            let error = getErrorMessage(JSON.parse(xhr.responseText).message);
+                            $('#error4').html(`An error occurred while uploading your file: ${error}`).removeClass('hidden');
+                        }
+                    });
+                },
+                error: function (xhr, status, err) {
+                    console.log(xhr.responseText);
+                    let error = getErrorMessage(JSON.parse(xhr.responseText).message);
+                    $('#error4').html(`An error occurred while creating the classifier: ${error}`).removeClass('hidden');
+                }
+            });
         }
-    });
-
-    $('#training-file-visible').on('click', function () {
-        $('#training-file-invisible').click();
-    });
-
-    $("input[id='training-file-invisible']").change(function() {
-        let file = $(this).val().split('\\').pop();
-        $('#training-filepath')
-            .html(`File chosen: ${file}`)
-            .removeClass('hidden');
-    });
-
-    $('#example-training').click(function(e) {
-        e.preventDefault();  //stop the browser from following
-        window.location.href = 'examples/train.csv';
-
-        $('#other-text').val('Gun Violence');
-        $('#other-frames').val('2nd Amendment rights,Economic consequences,Gun control,Mental health,Politics,Public opinion,Race,School or public space safety,Society');
-    });
-
-
-    // Step 1 nav
-    $('#backBtn1').on('click', function () {
-        window.location.replace('client.html');
-    });
-    $('#nextBtn1').on('click', function () {
-        $('#policy-issue').addClass('hidden');
-        $('#data').removeClass('hidden');
-        $('#help').html(help2);
-        handlePolicyIssue();
-    });
-
-
-    // Step 2 page logic
-    $('#testing-file-visible').on('click', function () {
-        $('#testing-file-invisible').click();
-    });
-
-    $("input[id='testing-file-invisible']").change(function() {
-        let file = $(this).val().split('\\').pop();
-        $('#testing-filepath')
-            .html(`File chosen: ${file}`)
-            .removeClass('hidden');
-    });
-
-    $('#example-testing').click(function(e) {
-        e.preventDefault();  //stop the browser from following
-        window.location.href = 'examples/test.csv';
-    });
-
-    // Step 2 nav
-    $('#backBtn2').on('click', function () {
-        $('#data').addClass('hidden');
-        $('#policy-issue').removeClass('hidden');
-        $('#help').html(help1);
-    });
-    $('#nextBtn2').on('click', function () {
-        $('#data').addClass('hidden');
-        $('#email').removeClass('hidden');
-        $('#help').html(help3);
-    });
-
-
-    // Step 3 nav
-    $('#backBtn3').on('click', function () {
-        $('#email').addClass('hidden');
-        $('#data').removeClass('hidden');
-        $('#help').html(help2);
-    });
-    $('#nextBtn3').on('click', function () {
-        $('#email').addClass('hidden');
-        $('#final').removeClass('hidden');
-        $('#help').html(help4);
-        setReviewPage();
-    });
-
-
-    // Step 4 nav
-    $('#backBtn4').on('click', function () {
-        $('#final').addClass('hidden');
-        $('#email').removeClass('hidden');
-        $('#help').html(help3);
     });
 
 });
 
 
-
-
-
 /* * * * * * * */
 /*  HELPERS    */
 /* * * * * * * */
-
-
-function handlePolicyIssue() {
-    if ($("input[name='policyissue']:checked").val() === 'other') {
-        issue = $('#other-text').val();
-        console.log(issue);
-        newFrames = $('#other-frames').val().split(',');
-        $('#review-issue').html(issue);
-        trainingFile = $('#training-file-invisible').val();
-        $('#review-training').html(trainingFile.split('\\').pop());
-    } else {
-        issue = $("input[name='policyissue']:checked").next('label').text();
-        $('#review-training').html('N/A');
-    }
-}
-
-function setReviewPage() {
-    // issue global value is set in handlePolicyIssue()
-    testingFile = $('#testing-file-invisible').val();
-    emailAddress = $('#user-email').val();
-
-    $('#review-issue').html(issue);
-    $('#review-testing').html(testingFile.split('\\').pop());
-    $('#review-email').html(emailAddress);
-}
-
-
-
 
